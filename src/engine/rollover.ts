@@ -376,7 +376,6 @@ function step9_coachReview(newDate: string): void {
       commentBlock: `Rollover complete for ${newDate}. Ready to go!`,
       sourceType: 'rollover',
       timestamp: new Date().toISOString(),
-      triggerRef: null,
     };
     const updatedUser = {
       ...user,
