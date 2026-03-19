@@ -1,0 +1,51 @@
+// ─────────────────────────────────────────
+// SETTINGS — SYSTEM SINGLETON
+// Stores all user-controlled application preferences.
+// No id — singleton per device.
+// ─────────────────────────────────────────
+
+export interface TimePreferences {
+  dayStart: string;   // HH:MM
+  weekStart: string;  // mon | tue | ... | sun
+}
+
+export interface TrackingSettings {
+  // BUILD-time task — shape TBD
+  [key: string]: unknown;
+}
+
+export interface CoachPreferences {
+  tone: string;
+  trackingSettings: TrackingSettings;
+  character: 'default' | string;
+}
+
+export interface DisplayPreferences {
+  mode: 'light' | 'dark';
+  theme: 'default' | string; // defers to Coach.activeTheme when 'default'
+}
+
+// ── STUB PROPERTIES (LOCAL chapter — stored as null) ──────────────────────────
+
+/** [MULTI-USER] Social and sharing preferences */
+export type SocialPreferencesStub = null;
+
+/** [APP-STORE] Push notification and alarm settings */
+export type NotificationPreferencesStub = null;
+
+/** [MULTI-USER / APP-STORE] Storage provider, lastSynced, cloudRef */
+export type StoragePreferencesStub = null;
+
+// ── SETTINGS ROOT ─────────────────────────────────────────────────────────────
+
+export interface Settings {
+  timePreferences: TimePreferences;
+  coachPreferences: CoachPreferences;
+  displayPreferences: DisplayPreferences;
+  /** [MULTI-USER] stub — null in LOCAL */
+  socialPreferences: SocialPreferencesStub;
+  /** [APP-STORE] stub — null in LOCAL */
+  notificationPreferences: NotificationPreferencesStub;
+  /** [MULTI-USER / APP-STORE] stub — null in LOCAL */
+  storagePreferences: StoragePreferencesStub;
+}
