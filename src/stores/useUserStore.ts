@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { User, UserStats, Avatar, BadgeBoard, Equipment, Feed } from '../types';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -33,38 +34,51 @@ const initialState: UserState = {
 
 // ── STORE ─────────────────────────────────────────────────────────────────────
 
-export const useUserStore = create<UserState & UserActions>()((set) => ({
-  ...initialState,
+export const useUserStore = create<UserState & UserActions>()(
+  persist(
+    (set) => ({
+      ...initialState,
 
-  setUser: (_user) => {
-    void _user;
-    // TODO: implement — persist User singleton to localStorage
-  },
+      setUser: (user) => {
+        set({ user });
+        // TODO: MVP06 — storageSet(STORAGE_KEY_USER, user)
+      },
 
-  setStats: (_stats) => {
-    void _stats;
-    // TODO: implement — patch User.progression.stats
-  },
+      setStats: (stats) =>
+        set((state) =>
+          state.user
+            ? { user: { ...state.user, progression: { ...state.user.progression, stats } } }
+            : {},
+        ),
 
-  setAvatar: (_avatar) => {
-    void _avatar;
-    // TODO: implement — patch User.progression.avatar
-  },
+      setAvatar: (avatar) =>
+        set((state) =>
+          state.user
+            ? { user: { ...state.user, progression: { ...state.user.progression, avatar } } }
+            : {},
+        ),
 
-  setBadgeBoard: (_badgeBoard) => {
-    void _badgeBoard;
-    // TODO: implement — patch User.progression.badgeBoard
-  },
+      setBadgeBoard: (badgeBoard) =>
+        set((state) =>
+          state.user
+            ? { user: { ...state.user, progression: { ...state.user.progression, badgeBoard } } }
+            : {},
+        ),
 
-  setEquipment: (_equipment) => {
-    void _equipment;
-    // TODO: implement — patch User.progression.equipment
-  },
+      setEquipment: (equipment) =>
+        set((state) =>
+          state.user
+            ? { user: { ...state.user, progression: { ...state.user.progression, equipment } } }
+            : {},
+        ),
 
-  setFeed: (_feed) => {
-    void _feed;
-    // TODO: implement — patch User.feed
-  },
+      setFeed: (feed) =>
+        set((state) =>
+          state.user ? { user: { ...state.user, feed } } : {},
+        ),
 
-  reset: () => set(initialState),
-}));
+      reset: () => set(initialState),
+    }),
+    { name: 'cdb-user' },
+  ),
+);

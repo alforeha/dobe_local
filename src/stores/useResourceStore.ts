@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { Resource, Badge, Gear, Useable, Attachment } from '../types';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -55,58 +56,78 @@ const initialState: ResourceState = {
 
 // ── STORE ─────────────────────────────────────────────────────────────────────
 
-export const useResourceStore = create<ResourceState & ResourceActions>()((set) => ({
-  ...initialState,
+export const useResourceStore = create<ResourceState & ResourceActions>()(
+  persist(
+    (set) => ({
+      ...initialState,
 
-  setResource: (_resource) => {
-    void _resource;
-    // TODO: implement — upsert, persist to localStorage key resource:{uuid}
-  },
+      setResource: (resource) => {
+        set((state) => ({ resources: { ...state.resources, [resource.id]: resource } }));
+        // TODO: MVP06 — storageSet(storageKey.resource(resource.id), resource)
+      },
 
-  removeResource: (_id) => {
-    void _id;
-    // TODO: implement
-  },
+      removeResource: (id) => {
+        set((state) => {
+          const resources = { ...state.resources };
+          delete resources[id];
+          return { resources };
+        });
+      },
 
-  setBadge: (_badge) => {
-    void _badge;
-    // TODO: implement — persist to localStorage key badge:{uuid}
-  },
+      setBadge: (badge) => {
+        set((state) => ({ badges: { ...state.badges, [badge.id]: badge } }));
+        // TODO: MVP06 — storageSet(storageKey.badge(badge.id), badge)
+      },
 
-  removeBadge: (_id) => {
-    void _id;
-    // TODO: implement
-  },
+      removeBadge: (id) => {
+        set((state) => {
+          const badges = { ...state.badges };
+          delete badges[id];
+          return { badges };
+        });
+      },
 
-  setGear: (_gear) => {
-    void _gear;
-    // TODO: implement — persist to localStorage key gear:{uuid}
-  },
+      setGear: (gearItem) => {
+        set((state) => ({ gear: { ...state.gear, [gearItem.id]: gearItem } }));
+        // TODO: MVP06 — storageSet(storageKey.gear(gearItem.id), gearItem)
+      },
 
-  removeGear: (_id) => {
-    void _id;
-    // TODO: implement
-  },
+      removeGear: (id) => {
+        set((state) => {
+          const gear = { ...state.gear };
+          delete gear[id];
+          return { gear };
+        });
+      },
 
-  setUseable: (_useable) => {
-    void _useable;
-    // TODO: implement — persist to localStorage key useable:{uuid}
-  },
+      setUseable: (useable) => {
+        set((state) => ({ useables: { ...state.useables, [useable.id]: useable } }));
+        // TODO: MVP06 — storageSet(storageKey.useable(useable.id), useable)
+      },
 
-  removeUseable: (_id) => {
-    void _id;
-    // TODO: implement
-  },
+      removeUseable: (id) => {
+        set((state) => {
+          const useables = { ...state.useables };
+          delete useables[id];
+          return { useables };
+        });
+      },
 
-  setAttachment: (_attachment) => {
-    void _attachment;
-    // TODO: implement — persist to localStorage key attachment:{uuid}
-  },
+      setAttachment: (attachment) => {
+        set((state) => ({ attachments: { ...state.attachments, [attachment.id]: attachment } }));
+        // TODO: MVP06 — storageSet(storageKey.attachment(attachment.id), attachment)
+      },
 
-  removeAttachment: (_id) => {
-    void _id;
-    // TODO: implement
-  },
+      removeAttachment: (id) => {
+        set((state) => {
+          const attachments = { ...state.attachments };
+          delete attachments[id];
+          return { attachments };
+        });
+      },
 
-  reset: () => set(initialState),
-}));
+      reset: () => set(initialState),
+    }),
+    { name: 'cdb-resources' },
+  ),
+);

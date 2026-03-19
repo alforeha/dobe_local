@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { Act } from '../types';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -30,18 +31,27 @@ const initialState: ProgressionState = {
 
 // ── STORE ─────────────────────────────────────────────────────────────────────
 
-export const useProgressionStore = create<ProgressionState & ProgressionActions>()((set) => ({
-  ...initialState,
+export const useProgressionStore = create<ProgressionState & ProgressionActions>()(
+  persist(
+    (set) => ({
+      ...initialState,
 
-  setAct: (_act) => {
-    void _act;
-    // TODO: implement — upsert to acts map, persist to localStorage key act:{uuid}
-  },
+      setAct: (act) => {
+        set((state) => ({ acts: { ...state.acts, [act.id]: act } }));
+        // TODO: MVP06 — storageSet(storageKey.act(act.id), act)
+      },
 
-  removeAct: (_actId) => {
-    void _actId;
-    // TODO: implement — remove from acts map, remove from localStorage
-  },
+      removeAct: (actId) => {
+        set((state) => {
+          const acts = { ...state.acts };
+          delete acts[actId];
+          return { acts };
+        });
+        // TODO: MVP06 — storageDelete(storageKey.act(actId))
+      },
 
-  reset: () => set(initialState),
-}));
+      reset: () => set(initialState),
+    }),
+    { name: 'cdb-progression' },
+  ),
+);

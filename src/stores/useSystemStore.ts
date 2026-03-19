@@ -6,6 +6,7 @@
 // ─────────────────────────────────────────
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { Settings } from '../types';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -37,23 +38,22 @@ const initialState: SystemState = {
 
 // ── STORE ─────────────────────────────────────────────────────────────────────
 
-export const useSystemStore = create<SystemState & SystemActions>()((set) => ({
-  ...initialState,
+export const useSystemStore = create<SystemState & SystemActions>()(
+  persist(
+    (set) => ({
+      ...initialState,
 
-  setSettings: (_settings) => {
-    void _settings;
-    // TODO: implement — persist to localStorage via storageLayer
-  },
+      setSettings: (settings) => {
+        set({ settings });
+        // TODO: MVP06 — also write via storageLayer(STORAGE_KEY_SETTINGS, settings)
+      },
 
-  setLastRollover: (_timestamp) => {
-    void _timestamp;
-    // TODO: implement
-  },
+      setLastRollover: (lastRollover) => set({ lastRollover }),
 
-  setSessionStart: (_timestamp) => {
-    void _timestamp;
-    // TODO: implement
-  },
+      setSessionStart: (sessionStart) => set({ sessionStart }),
 
-  reset: () => set(initialState),
-}));
+      reset: () => set(initialState),
+    }),
+    { name: 'cdb-system' },
+  ),
+);

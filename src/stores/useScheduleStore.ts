@@ -6,6 +6,7 @@
 // ─────────────────────────────────────────
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { PlannedEvent, Event, QuickActionsEvent, Task, TaskTemplate } from '../types';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -53,48 +54,78 @@ const initialState: ScheduleState = {
 
 // ── STORE ─────────────────────────────────────────────────────────────────────
 
-export const useScheduleStore = create<ScheduleState & ScheduleActions>()((set) => ({
-  ...initialState,
+export const useScheduleStore = create<ScheduleState & ScheduleActions>()(
+  persist(
+    (set) => ({
+      ...initialState,
 
-  setPlannedEvent: (_plannedEvent) => {
-    void _plannedEvent;
-    // TODO: implement — upsert, persist to localStorage key plannedEvent:{uuid}
-  },
+      setPlannedEvent: (plannedEvent) => {
+        set((state) => ({
+          plannedEvents: { ...state.plannedEvents, [plannedEvent.id]: plannedEvent },
+        }));
+        // TODO: MVP06 — storageSet(storageKey.plannedEvent(plannedEvent.id), plannedEvent)
+      },
 
-  removePlannedEvent: (_id) => {
-    void _id;
-    // TODO: implement
-  },
+      removePlannedEvent: (id) => {
+        set((state) => {
+          const plannedEvents = { ...state.plannedEvents };
+          delete plannedEvents[id];
+          return { plannedEvents };
+        });
+        // TODO: MVP06 — storageDelete(storageKey.plannedEvent(id))
+      },
 
-  setActiveEvent: (_event) => {
-    void _event;
-    // TODO: implement — upsert to activeEvents, persist to event:{uuid} or qa:{date}
-  },
+      setActiveEvent: (event) => {
+        set((state) => ({
+          activeEvents: { ...state.activeEvents, [event.id]: event },
+        }));
+        // TODO: MVP06 — persist to event:{uuid} or qa:{date} via storageLayer
+      },
 
-  archiveEvent: (_eventId) => {
-    void _eventId;
-    // TODO: implement — move from activeEvents → historyEvents at rollover
-  },
+      archiveEvent: (eventId) =>
+        set((state) => {
+          const event = state.activeEvents[eventId];
+          if (!event) return {};
+          const activeEvents = { ...state.activeEvents };
+          delete activeEvents[eventId];
+          return {
+            activeEvents,
+            historyEvents: { ...state.historyEvents, [eventId]: event },
+          };
+        }),
 
-  setTask: (_task) => {
-    void _task;
-    // TODO: implement — upsert, persist to localStorage key task:{uuid}
-  },
+      setTask: (task) => {
+        set((state) => ({ tasks: { ...state.tasks, [task.id]: task } }));
+        // TODO: MVP06 — storageSet(storageKey.task(task.id), task)
+      },
 
-  removeTask: (_taskId) => {
-    void _taskId;
-    // TODO: implement
-  },
+      removeTask: (taskId) => {
+        set((state) => {
+          const tasks = { ...state.tasks };
+          delete tasks[taskId];
+          return { tasks };
+        });
+        // TODO: MVP06 — storageDelete(storageKey.task(taskId))
+      },
 
-  setTaskTemplate: (_key, _template) => {
-    void _key; void _template;
-    // TODO: implement — persist to localStorage key taskTemplate:{uuid}
-  },
+      setTaskTemplate: (key, template) => {
+        set((state) => ({
+          taskTemplates: { ...state.taskTemplates, [key]: template },
+        }));
+        // TODO: MVP06 — storageSet(storageKey.taskTemplate(key), template)
+      },
 
-  removeTaskTemplate: (_key) => {
-    void _key;
-    // TODO: implement
-  },
+      removeTaskTemplate: (key) => {
+        set((state) => {
+          const taskTemplates = { ...state.taskTemplates };
+          delete taskTemplates[key];
+          return { taskTemplates };
+        });
+        // TODO: MVP06 — storageDelete(storageKey.taskTemplate(key))
+      },
 
-  reset: () => set(initialState),
-}));
+      reset: () => set(initialState),
+    }),
+    { name: 'cdb-schedule' },
+  ),
+);

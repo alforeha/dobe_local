@@ -1,8 +1,31 @@
 // ─────────────────────────────────────────
 // STORAGE LAYER
 // Typed get / set / delete / list / clear wrappers over localStorage.
-// No logic implemented yet — shells only.
+// All localStorage access in the app routes through here — never call
+// localStorage directly elsewhere in the codebase.
 // ─────────────────────────────────────────
+
+import {
+  STORAGE_KEY_SETTINGS,
+  STORAGE_KEY_USER,
+  STORAGE_PREFIX_ACT,
+  STORAGE_PREFIX_PLANNED_EVENT,
+  STORAGE_PREFIX_EVENT,
+  STORAGE_PREFIX_QUICK_ACTIONS,
+  STORAGE_PREFIX_RESOURCE,
+  STORAGE_PREFIX_TASK,
+  STORAGE_PREFIX_TASK_TEMPLATE,
+  STORAGE_PREFIX_BADGE,
+  STORAGE_PREFIX_GEAR,
+  STORAGE_PREFIX_USEABLE,
+  STORAGE_PREFIX_ATTACHMENT,
+  STORAGE_PREFIX_EXPERIENCE,
+} from './storageKeys';
+import {
+  getStorageUsage,
+  checkBudget,
+  runEvictionHandler,
+} from './storageBudget';
 
 // ── GET ───────────────────────────────────────────────────────────────────────
 
@@ -11,21 +34,45 @@
  * Returns null if the key does not exist or JSON.parse fails.
  */
 export function storageGet<T>(key: string): T | null {
-  // TODO: implement
-  void key;
-  return null;
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return null;
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
 }
 
 // ── SET ───────────────────────────────────────────────────────────────────────
 
 /**
  * Serialise and write a value to localStorage.
- * Throws StorageQuotaError if the write exceeds available budget.
+ * Fires a console warning if usage is above the threshold.
+ * Attempts eviction and throws StorageQuotaError if the write cannot proceed.
  */
 export function storageSet<T>(key: string, value: T): void {
-  // TODO: implement — call storageBudget.checkBudget() before write
-  void key;
-  void value;
+  const serialised = JSON.stringify(value);
+  // Each UTF-16 character occupies 2 bytes
+  const requiredBytes = serialised.length * 2;
+
+  const usage = getStorageUsage();
+
+  if (usage.isAboveWarningThreshold) {
+    console.warn(
+      `[CAN-DO-BE] Storage above warning threshold: ${usage.usedKB.toFixed(1)} KB used`,
+    );
+  }
+
+  if (!checkBudget(requiredBytes)) {
+    runEvictionHandler(usage);
+    const usageAfter = getStorageUsage();
+    const availableAfter = usageAfter.estimatedTotalBytes - usageAfter.usedBytes;
+    if (requiredBytes > availableAfter) {
+      throw new StorageQuotaError(key, requiredBytes, availableAfter);
+    }
+  }
+
+  localStorage.setItem(key, serialised);
 }
 
 // ── DELETE ────────────────────────────────────────────────────────────────────
@@ -34,19 +81,27 @@ export function storageSet<T>(key: string, value: T): void {
  * Remove a single key from localStorage.
  */
 export function storageDelete(key: string): void {
-  // TODO: implement
-  void key;
+  localStorage.removeItem(key);
 }
 
 // ── LIST ──────────────────────────────────────────────────────────────────────
 
 /**
- * Return all localStorage keys matching the given prefix (e.g. 'act:').
+ * Return all localStorage keys that start with `prefix:`.
+ * Accepts either a bare prefix ('act') or a colon-suffixed prefix ('act:').
  */
 export function storageList(prefix: string): string[] {
-  // TODO: implement
-  void prefix;
-  return [];
+  const match = prefix.endsWith(':') ? prefix : `${prefix}:`;
+  const keys: string[] = [];
+  // Snapshot length before iterating — deletion would shift indices
+  const len = localStorage.length;
+  for (let i = 0; i < len; i++) {
+    const key = localStorage.key(i);
+    if (key !== null && key.startsWith(match)) {
+      keys.push(key);
+    }
+  }
+  return keys;
 }
 
 // ── CLEAR ─────────────────────────────────────────────────────────────────────
@@ -56,7 +111,34 @@ export function storageList(prefix: string): string[] {
  * Does NOT clear unrelated third-party keys.
  */
 export function storageClear(): void {
-  // TODO: implement — iterate storageList() for each known prefix + singleton keys
+  const singletonKeys = [STORAGE_KEY_SETTINGS, STORAGE_KEY_USER];
+  const prefixes = [
+    `${STORAGE_PREFIX_ACT}:`,
+    `${STORAGE_PREFIX_PLANNED_EVENT}:`,
+    `${STORAGE_PREFIX_EVENT}:`,
+    `${STORAGE_PREFIX_QUICK_ACTIONS}:`,
+    `${STORAGE_PREFIX_RESOURCE}:`,
+    `${STORAGE_PREFIX_TASK}:`,
+    `${STORAGE_PREFIX_TASK_TEMPLATE}:`,
+    `${STORAGE_PREFIX_BADGE}:`,
+    `${STORAGE_PREFIX_GEAR}:`,
+    `${STORAGE_PREFIX_USEABLE}:`,
+    `${STORAGE_PREFIX_ATTACHMENT}:`,
+    `${STORAGE_PREFIX_EXPERIENCE}:`,
+  ];
+
+  // Snapshot all keys first — removing items shifts localStorage indices
+  const allKeys: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key !== null) allKeys.push(key);
+  }
+
+  allKeys.forEach((key) => {
+    if (singletonKeys.includes(key) || prefixes.some((p) => key.startsWith(p))) {
+      localStorage.removeItem(key);
+    }
+  });
 }
 
 // ── ERROR TYPES ───────────────────────────────────────────────────────────────
