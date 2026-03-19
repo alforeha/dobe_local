@@ -57,34 +57,42 @@ export const useScheduleStore = create<ScheduleState & ScheduleActions>()((set) 
   ...initialState,
 
   setPlannedEvent: (_plannedEvent) => {
+    void _plannedEvent;
     // TODO: implement — upsert, persist to localStorage key plannedEvent:{uuid}
   },
 
   removePlannedEvent: (_id) => {
+    void _id;
     // TODO: implement
   },
 
   setActiveEvent: (_event) => {
+    void _event;
     // TODO: implement — upsert to activeEvents, persist to event:{uuid} or qa:{date}
   },
 
   archiveEvent: (_eventId) => {
+    void _eventId;
     // TODO: implement — move from activeEvents → historyEvents at rollover
   },
 
   setTask: (_task) => {
+    void _task;
     // TODO: implement — upsert, persist to localStorage key task:{uuid}
   },
 
   removeTask: (_taskId) => {
+    void _taskId;
     // TODO: implement
   },
 
   setTaskTemplate: (_key, _template) => {
+    void _key; void _template;
     // TODO: implement — persist to localStorage key taskTemplate:{uuid}
   },
 
   removeTaskTemplate: (_key) => {
+    void _key;
     // TODO: implement
   },
 

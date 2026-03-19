@@ -41,14 +41,17 @@ export const useSystemStore = create<SystemState & SystemActions>()((set) => ({
   ...initialState,
 
   setSettings: (_settings) => {
+    void _settings;
     // TODO: implement — persist to localStorage via storageLayer
   },
 
   setLastRollover: (_timestamp) => {
+    void _timestamp;
     // TODO: implement
   },
 
   setSessionStart: (_timestamp) => {
+    void _timestamp;
     // TODO: implement
   },
 

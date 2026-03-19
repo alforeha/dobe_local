@@ -61,10 +61,23 @@ export function checkBudget(requiredBytes: number): boolean {
 /**
  * Eviction strategy hook — called by storageSet when budget is critically low.
  * Default strategy: candidate = oldest history Event entries.
- * Override by replacing this reference before first write.
+ * Override by replacing this reference before first write:
+ *   import { setEvictionHandler } from './storageBudget';
+ *   setEvictionHandler(myFn);
  */
-export let onEvictionNeeded: (snapshot: StorageUsageSnapshot) => void = (_snapshot) => {
+let _evictionHandler: (snapshot: StorageUsageSnapshot) => void = (snapshot) => {
   // TODO: implement default eviction strategy
   // - Identify oldest Event refs in history
   // - Remove from localStorage + update useScheduleStore
+  void snapshot;
 };
+
+export function setEvictionHandler(
+  fn: (snapshot: StorageUsageSnapshot) => void,
+): void {
+  _evictionHandler = fn;
+}
+
+export function runEvictionHandler(snapshot: StorageUsageSnapshot): void {
+  _evictionHandler(snapshot);
+}

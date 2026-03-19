@@ -34,10 +34,12 @@ export const useProgressionStore = create<ProgressionState & ProgressionActions>
   ...initialState,
 
   setAct: (_act) => {
+    void _act;
     // TODO: implement — upsert to acts map, persist to localStorage key act:{uuid}
   },
 
   removeAct: (_actId) => {
+    void _actId;
     // TODO: implement — remove from acts map, remove from localStorage
   },
 

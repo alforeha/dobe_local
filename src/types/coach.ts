@@ -8,6 +8,10 @@
 // ─────────────────────────────────────────
 
 import type { TaskTemplate, RecurrenceRule, XpAward } from './taskTemplate';
+import type { StatGroupKey } from './user';
+
+// re-export so coach.ts consumers can use it without importing from user.ts
+export type { StatGroupKey };
 
 // ── ACHIEVEMENT LIBRARY ───────────────────────────────────────────────────────
 
@@ -48,8 +52,6 @@ export interface CommentLibrary {
 // ── RECOMMENDATIONS LIBRARY ───────────────────────────────────────────────────
 // Prebuilt TaskTemplates and PlannedEvents Coach can suggest or assign.
 // Organised by stat group.
-
-export type StatGroupKey = 'health' | 'strength' | 'agility' | 'defense' | 'charisma' | 'wisdom';
 
 export interface RecommendedTask {
   id: string;

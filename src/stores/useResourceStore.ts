@@ -59,42 +59,52 @@ export const useResourceStore = create<ResourceState & ResourceActions>()((set) 
   ...initialState,
 
   setResource: (_resource) => {
+    void _resource;
     // TODO: implement — upsert, persist to localStorage key resource:{uuid}
   },
 
   removeResource: (_id) => {
+    void _id;
     // TODO: implement
   },
 
   setBadge: (_badge) => {
+    void _badge;
     // TODO: implement — persist to localStorage key badge:{uuid}
   },
 
   removeBadge: (_id) => {
+    void _id;
     // TODO: implement
   },
 
   setGear: (_gear) => {
+    void _gear;
     // TODO: implement — persist to localStorage key gear:{uuid}
   },
 
   removeGear: (_id) => {
+    void _id;
     // TODO: implement
   },
 
   setUseable: (_useable) => {
+    void _useable;
     // TODO: implement — persist to localStorage key useable:{uuid}
   },
 
   removeUseable: (_id) => {
+    void _id;
     // TODO: implement
   },
 
   setAttachment: (_attachment) => {
+    void _attachment;
     // TODO: implement — persist to localStorage key attachment:{uuid}
   },
 
   removeAttachment: (_id) => {
+    void _id;
     // TODO: implement
   },
 
