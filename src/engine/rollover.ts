@@ -325,17 +325,19 @@ function step7_archiveEvents(rolloverDate: string): void {
     const event = scheduleStore.activeEvents[eventId];
     if (!event) continue;
 
-    // QuickActionsEvent — identified by presence of 'date' key (not 'startDate')
+    // QuickActionsEvent — identified by absence of 'startDate' (QA events are single-day)
     if (!('startDate' in event)) {
-      // Archive only previous-day QA events; today's QA is created in step 9
+      // Archive when the QA date is before rolloverDate (yesterday's QA)
       const qaDate = (event as { date: string }).date;
       if (qaDate < rolloverDate) {
         scheduleStore.archiveEvent(eventId);
       }
     } else {
-      // Regular Event — archive only if complete or skipped (preserve today's pending)
-      const e = event as { completionState: string };
-      if (e.completionState === 'complete' || e.completionState === 'skipped') {
+      // Regular Event — archive when endDate has passed (D50)
+      // Completion status is irrelevant: a completed multi-day event stays in
+      // activeEvents until its end date is in the past.
+      const endDate = (event as { endDate: string }).endDate;
+      if (endDate < rolloverDate) {
         scheduleStore.archiveEvent(eventId);
       }
     }
