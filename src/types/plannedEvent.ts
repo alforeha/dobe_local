@@ -52,7 +52,12 @@ export interface PlannedEvent {
   activeState: PlannedEventActiveState;
   /** D07 — full set of interchangeable TaskTemplate refs */
   taskPool: string[];
-  /** Current rotation pulled from pool — cursor tracking BUILD-time task */
+  /**
+   * Current rotation pulled from pool.
+   * Index into taskPool[] — advances and wraps at pool end (D47).
+   */
+  taskPoolCursor: number;
+  /** Current rotation pulled from pool — snapshot of templateRefs for the materialised day */
   taskList: string[];
   /** D08 — schedule conflict resolution mode */
   conflictMode: ConflictMode;

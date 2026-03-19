@@ -17,6 +17,12 @@ interface SystemState {
   lastRollover: string | null;
   /** ISO date of current session start */
   sessionStart: string | null;
+  /**
+   * Rollover resumability — the step number (1–9) that was in flight when the
+   * app last closed. null = no rollover in progress; 0 = rollover fully complete.
+   * On boot: if this is set (1–9), rollover resumes from that step.
+   */
+  rolloverStep: number | null;
 }
 
 // ── ACTIONS ───────────────────────────────────────────────────────────────────
@@ -25,6 +31,7 @@ interface SystemActions {
   setSettings: (settings: Settings) => void;
   setLastRollover: (timestamp: string) => void;
   setSessionStart: (timestamp: string) => void;
+  setRolloverStep: (step: number | null) => void;
   reset: () => void;
 }
 
@@ -34,6 +41,7 @@ const initialState: SystemState = {
   settings: null,
   lastRollover: null,
   sessionStart: null,
+  rolloverStep: null,
 };
 
 // ── STORE ─────────────────────────────────────────────────────────────────────
@@ -51,6 +59,8 @@ export const useSystemStore = create<SystemState & SystemActions>()(
       setLastRollover: (lastRollover) => set({ lastRollover }),
 
       setSessionStart: (sessionStart) => set({ sessionStart }),
+
+      setRolloverStep: (rolloverStep) => set({ rolloverStep }),
 
       reset: () => set(initialState),
     }),
