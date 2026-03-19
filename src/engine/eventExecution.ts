@@ -136,22 +136,25 @@ export function completeTask(
     }
 
     // Update task completion milestone counter
-    const user = userStore.user;
-    const updatedUser = {
-      ...user,
-      progression: {
-        ...user.progression,
-        stats: {
-          ...user.progression.stats,
-          milestones: {
-            ...user.progression.stats.milestones,
-            tasksCompleted: user.progression.stats.milestones.tasksCompleted + 1,
+    // Re-fetch fresh state — awardXP/awardStat above may have written new XP/stat values.
+    const freshUser = useUserStore.getState().user;
+    if (freshUser) {
+      const updatedUser = {
+        ...freshUser,
+        progression: {
+          ...freshUser.progression,
+          stats: {
+            ...freshUser.progression.stats,
+            milestones: {
+              ...freshUser.progression.stats.milestones,
+              tasksCompleted: freshUser.progression.stats.milestones.tasksCompleted + 1,
+            },
           },
         },
-      },
-    };
-    userStore.setUser(updatedUser);
-    storageSet('user', updatedUser);
+      };
+      userStore.setUser(updatedUser);
+      storageSet('user', updatedUser);
+    }
   }
 }
 

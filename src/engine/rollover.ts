@@ -317,17 +317,27 @@ function step6_fireMarkers(dueMarkers: DueMarker[]): void {
 
 // ── STEP 7 — Archive Events + move QuickActionsEvent ─────────────────────────
 
-function step7_archiveEvents(): void {
+function step7_archiveEvents(rolloverDate: string): void {
   const scheduleStore = useScheduleStore.getState();
   const eventIds = Object.keys(scheduleStore.activeEvents);
 
   for (const eventId of eventIds) {
-    scheduleStore.archiveEvent(eventId);
-    // Remove active event key, write to history is handled by archiveEvent in store
-    // For persistent history we need to keep the event — storageLayer key stays as event:{uuid}
-    // QA events carry qa- prefix
-    if (eventId.startsWith('qa-')) {
-      // QuickActionsEvent archived — storage key stays for history reads
+    const event = scheduleStore.activeEvents[eventId];
+    if (!event) continue;
+
+    // QuickActionsEvent — identified by presence of 'date' key (not 'startDate')
+    if (!('startDate' in event)) {
+      // Archive only previous-day QA events; today's QA is created in step 9
+      const qaDate = (event as { date: string }).date;
+      if (qaDate < rolloverDate) {
+        scheduleStore.archiveEvent(eventId);
+      }
+    } else {
+      // Regular Event — archive only if complete or skipped (preserve today's pending)
+      const e = event as { completionState: string };
+      if (e.completionState === 'complete' || e.completionState === 'skipped') {
+        scheduleStore.archiveEvent(eventId);
+      }
     }
   }
 }
@@ -459,7 +469,7 @@ export async function executeRollover(
   // Step 7 — archive events
   if (resumeFrom <= 7) {
     systemStore.setRolloverStep(7);
-    step7_archiveEvents();
+    step7_archiveEvents(rolloverDate);
   }
 
   // Step 8 — update recurrence
