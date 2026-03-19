@@ -111,7 +111,7 @@ export function storageList(prefix: string): string[] {
  * Does NOT clear unrelated third-party keys.
  */
 export function storageClear(): void {
-  const singletonKeys = [STORAGE_KEY_SETTINGS, STORAGE_KEY_USER];
+  const singletonKeys: string[] = [STORAGE_KEY_SETTINGS, STORAGE_KEY_USER];
   const prefixes = [
     `${STORAGE_PREFIX_ACT}:`,
     `${STORAGE_PREFIX_PLANNED_EVENT}:`,
