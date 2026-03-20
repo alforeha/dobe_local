@@ -15,6 +15,27 @@ export type { StatGroupKey };
 
 // ── ACHIEVEMENT LIBRARY ───────────────────────────────────────────────────────
 
+export type AchievementTriggerType =
+  | 'first.time'
+  | 'counter.threshold'
+  | 'streak.threshold'
+  | 'level.threshold'
+  | 'gold.threshold'
+  | 'combination';
+
+export interface AchievementThreshold {
+  /** Snapshot field to evaluate — e.g. 'tasksCompleted', 'level', 'gold' */
+  field: string;
+  /** Required minimum value */
+  value: number;
+  /** For per-stat achievements — which stat group's statPoints to check */
+  statGroup?: string;
+  /** For combination type — all six stat groups must meet value */
+  allStats?: boolean;
+  /** For stat depth achievements — any one stat group must meet value */
+  anyStatGroup?: boolean;
+}
+
 export interface AchievementDefinition {
   id: string;
   name: string;
@@ -23,10 +44,12 @@ export interface AchievementDefinition {
   icon: string;
   /** Sticker ref for BadgeBoard display */
   sticker: string;
-  /** Condition expression — BUILD-time task */
-  condition: Record<string, unknown>;
-  /** Gear id to drop on award (optional) */
-  gearReward: string | null;
+  triggerType: AchievementTriggerType;
+  threshold: AchievementThreshold;
+  /** Gear item id for badge-triggered Gear drop (optional) */
+  rewardRef: string | null;
+  /** true for gold tier achievements */
+  gold: boolean;
 }
 
 export interface AchievementLibrary {
@@ -37,10 +60,11 @@ export interface AchievementLibrary {
 // Keyed collection of comment copy Coach draws from via ribbet().
 // Tone variants per context entry.
 
-export type CoachTone = 'encouraging' | 'direct' | 'playful' | string;
+/** D-MVP08-T01 — locked tone enum */
+export type CoachTone = 'muted' | 'friendly' | 'militant';
 
 export interface CommentEntry {
-  /** Context key taxonomy — BUILD-time task */
+  /** Context key — from CommentLibrary context key enum (D-MVP08-CL01) */
   contextKey: string;
   variants: Record<CoachTone, string[]>;
 }
@@ -98,10 +122,37 @@ export interface CoachCharacter {
 
 export interface GearDefinition {
   id: string;
-  slot: string;
-  rarity: string;
+  /** Slot enum — head | body | hand | feet | accessory (D-MVP08-G01) */
+  slot: 'head' | 'body' | 'hand' | 'feet' | 'accessory';
+  /** Rarity enum — common | rare | epic | legendary (D-MVP08-G02) */
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  name: string;
+  description: string;
+  assetRef: string;
+  /** XP boost value applied when gear is equipped */
+  xpBoost: number;
+}
+
+export interface BadgeStickerModel {
+  achievementRef: string;
   assetRef: string;
 }
+
+export interface TalentTierEntry {
+  id: string;
+  tier: 1 | 2 | 3 | 4 | 5;
+  name: string;
+  description: string;
+  /** Flat stat point bonus added when tier is unlocked */
+  statBonus: number;
+  /** XP multiplier applied to this stat group's awards — null if no change */
+  xpMultiplier: number | null;
+  /** Talent points required to unlock this tier */
+  talentPointCost: number;
+}
+
+/** 5-tier enhancement array for one stat group */
+export type TalentTreeDefinition = TalentTierEntry[];
 
 export interface XpLevelThreshold {
   level: number;
@@ -117,7 +168,10 @@ export interface CharacterLibrary {
   avatarStates: AvatarState[];
   coachCharacters: CoachCharacter[];
   gearDefinitions: GearDefinition[];
-  /** RuneScape exponential curve thresholds (D43) — exact values BUILD-time task */
+  badgeStickerModels: BadgeStickerModel[];
+  /** 6 trees × 5 tiers — WoW-style talent catalogue (D43) */
+  talentTreeDefinitions: Record<string, TalentTreeDefinition>;
+  /** RuneScape exponential curve thresholds A=0.25, B=300, C=7 (D43, D49) */
   xpLevelThresholds: XpLevelThreshold[];
   slotTaxonomy: SlotTaxonomyVersion;
 }

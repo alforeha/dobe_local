@@ -12,14 +12,19 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { Task } from '../types/task';
 import type { Event } from '../types/event';
+import type { Quest } from '../types/act';
 import type { InputFields } from '../types/taskTemplate';
 import type { StatGroupKey } from '../types/user';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useUserStore } from '../stores/useUserStore';
+import { useProgressionStore } from '../stores/useProgressionStore';
 import { storageSet, storageKey } from '../storage';
 import { EVENT_MAX_ATTACHMENTS } from '../storage/storageBudget';
 import { awardXP, awardStat } from './awardPipeline';
-import { completeMilestone } from './markerEngine';
+import { completeMilestone, decodeQuestRef } from './markerEngine';
+import { checkAchievements } from '../coach/checkAchievements';
+import { awardBadge, checkQuestReward } from '../coach/rewardPipeline';
+import { pushRibbet } from '../coach/ribbet';
 
 // ── TASK RESULT SHAPE ─────────────────────────────────────────────────────────
 
@@ -93,8 +98,28 @@ export function completeTask(
 
   // Quest check-in hook: if this task was fired by a Marker, record the Milestone
   // and evaluate the Quest finish condition (D04).
+  let _questComplete = false;
+  let _completedQuest: Quest | undefined;
+
   if (updatedTask.questRef) {
     completeMilestone(updatedTask);
+
+    // Coach reactions for quest progress / completion
+    const parsedRef = decodeQuestRef(updatedTask.questRef);
+    if (parsedRef) {
+      const { actId, chainIndex, questIndex } = parsedRef;
+      const act = useProgressionStore.getState().acts[actId];
+      _completedQuest = act?.chains[chainIndex]?.quests[questIndex];
+      if (_completedQuest?.completionState === 'complete') {
+        _questComplete = true;
+        pushRibbet('quest.completed');
+      } else if (_completedQuest) {
+        pushRibbet('quest.progress', {
+          questPercent: _completedQuest.progressPercent,
+          xpGained: 0,
+        });
+      }
+    }
   }
 
   // Determine context for bonuses
@@ -162,6 +187,39 @@ export function completeTask(
       userStore.setUser(updatedUser);
       storageSet('user', updatedUser);
     }
+
+    // Quest completion processing — increment questsCompleted + deliver quest reward
+    if (_questComplete && _completedQuest) {
+      const userForQuest = useUserStore.getState().user;
+      if (userForQuest) {
+        const withQuestCount = {
+          ...userForQuest,
+          progression: {
+            ...userForQuest.progression,
+            stats: {
+              ...userForQuest.progression.stats,
+              milestones: {
+                ...userForQuest.progression.stats.milestones,
+                questsCompleted: userForQuest.progression.stats.milestones.questsCompleted + 1,
+              },
+            },
+          },
+        };
+        userStore.setUser(withQuestCount);
+        storageSet('user', withQuestCount);
+        checkQuestReward(_completedQuest, withQuestCount);
+      }
+    }
+
+    // Achievement check + badge awards after all state changes
+    const latestUser = useUserStore.getState().user;
+    if (latestUser) {
+      const newAchs = checkAchievements(latestUser);
+      let currentUser = latestUser;
+      for (const ach of newAchs) {
+        currentUser = awardBadge(ach, currentUser);
+      }
+    }
   }
 }
 
@@ -211,6 +269,36 @@ export function completeEvent(eventId: string): void {
 
   scheduleStore.setActiveEvent(updatedEvent);
   storageSet(storageKey.event(eventId), updatedEvent);
+
+  // Increment eventsCompleted milestone and trigger coach reactions
+  const userStoreRef = useUserStore.getState();
+  const eventUser = userStoreRef.user;
+  if (eventUser) {
+    const withEventCount = {
+      ...eventUser,
+      progression: {
+        ...eventUser.progression,
+        stats: {
+          ...eventUser.progression.stats,
+          milestones: {
+            ...eventUser.progression.stats.milestones,
+            eventsCompleted: eventUser.progression.stats.milestones.eventsCompleted + 1,
+          },
+        },
+      },
+    };
+    userStoreRef.setUser(withEventCount);
+    storageSet('user', withEventCount);
+    pushRibbet('event.completed');
+
+    // Achievement check + badge awards
+    const latestEventUser = useUserStore.getState().user ?? withEventCount;
+    const newAchs = checkAchievements(latestEventUser);
+    let currentUser = latestEventUser;
+    for (const ach of newAchs) {
+      currentUser = awardBadge(ach, currentUser);
+    }
+  }
 }
 
 // ── RECORD ATTACHMENT (D46) ───────────────────────────────────────────────────

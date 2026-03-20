@@ -29,6 +29,7 @@ export interface UserMilestones {
   streakBest: number;
   questsCompleted: number;
   tasksCompleted: number;
+  eventsCompleted: number;
 }
 
 // ── USER STATS ROOT ──────────────────────────────────────────────────────────

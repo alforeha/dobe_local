@@ -29,3 +29,14 @@ export {
   completeMilestone,
 } from './markerEngine';
 export type { FireMarkerParams } from './markerEngine';
+
+// ── COACH MODULE ──────────────────────────────────────────────────────────────
+
+export { ribbet, pushRibbet, flushRibbet, peekRibbet, clearRibbet } from '../coach/ribbet';
+export type { RibbetQueueEntry, DynamicValues } from '../coach/ribbet';
+
+export { checkAchievements } from '../coach/checkAchievements';
+
+export { awardBadge, awardGear, checkQuestReward, checkCoachDrops } from '../coach/rewardPipeline';
+
+export { commentLibrary, achievementLibrary, characterLibrary } from '../coach/index';

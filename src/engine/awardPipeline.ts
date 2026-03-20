@@ -16,6 +16,9 @@
 import type { StatGroupKey } from '../types/user';
 import { useUserStore } from '../stores/useUserStore';
 import { storageSet } from '../storage';
+import { checkAchievements } from '../coach/checkAchievements';
+import { awardBadge, checkCoachDrops } from '../coach/rewardPipeline';
+import { pushRibbet } from '../coach/ribbet';
 
 // ── XP CURVE PARAMETERS (D49) ────────────────────────────────────────────────
 
@@ -128,8 +131,22 @@ export function awardXP(
   storageSet('user', updatedUser);
 
   if (newLevel > oldLevel) {
-    // Level-up event — consumers can listen for store changes to detect this
     console.info(`[awardPipeline] Level up! ${oldLevel} → ${newLevel} (XP: ${newXP})`);
+    pushRibbet('level.up', { level: newLevel });
+
+    // Coach drops for milestone levels — re-fetch after setUser above
+    let levelUser = useUserStore.getState().user;
+    if (levelUser) {
+      levelUser = checkCoachDrops(levelUser, oldLevel, newLevel);
+
+      // Achievement check after drops
+      const postDropUser = useUserStore.getState().user ?? levelUser;
+      const newAchs = checkAchievements(postDropUser);
+      let currentUser = postDropUser;
+      for (const ach of newAchs) {
+        currentUser = awardBadge(ach, currentUser);
+      }
+    }
   }
 }
 

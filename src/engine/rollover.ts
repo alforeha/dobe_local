@@ -24,6 +24,7 @@ import { storageSet, storageKey } from '../storage';
 import { materialisePlannedEvent } from './materialise';
 import { fireMarker } from './markerEngine';
 import { evaluateMarkerCondition } from './questEngine';
+import { ribbet } from '../coach/ribbet';
 
 // ── DATE HELPERS ──────────────────────────────────────────────────────────────
 
@@ -309,7 +310,7 @@ function step9_coachReview(newDate: string): void {
   const user = userStore.user;
   if (user) {
     const feedEntry = {
-      commentBlock: `Rollover complete for ${newDate}. Ready to go!`,
+      commentBlock: ribbet(user),
       sourceType: 'rollover',
       timestamp: new Date().toISOString(),
     };
