@@ -431,10 +431,11 @@ async function main(): Promise<void> {
 
   // GTDList completion in same QA event
   useResourceStore.getState().setResource(resInventory as never);
+  const currentUser = useUserStore.getState().user as Record<string, unknown>;
   const userWithInvRef = {
-    ...useUserStore.getState().user as Record<string, unknown>,
+    ...currentUser,
     resources: {
-      ...(useUserStore.getState().user as Record<string, unknown>)?.resources as Record<string, unknown>,
+      ...(currentUser?.resources as Record<string, unknown>),
       inventory: ['res-inventory-1'],
     },
   };
