@@ -16,6 +16,7 @@ import { useScheduleStore } from '../stores/useScheduleStore';
 import { useUserStore } from '../stores/useUserStore';
 import { storageSet, storageKey } from '../storage';
 import { evaluateQuestSpecific, updateQuestProgress } from './questEngine';
+import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
 
 // ── QUESTREF ENCODING ─────────────────────────────────────────────────────────
 
@@ -148,6 +149,17 @@ export function fireMarker(params: FireMarkerParams): void {
     };
     userStore.setUser(updatedUser);
     storageSet('user', updatedUser);
+  }
+
+  // Feed entry for marker fire
+  const markerFeedUser = useUserStore.getState().user;
+  if (markerFeedUser) {
+    appendFeedEntry({
+      commentBlock: `Quest check-in ready`,
+      sourceType: FEED_SOURCE.MARKER_FIRE,
+      timestamp: new Date().toISOString(),
+      triggerRef: task.id,
+    }, markerFeedUser);
   }
 
   if (!act) return;

@@ -25,6 +25,7 @@ import { materialisePlannedEvent } from './materialise';
 import { fireMarker } from './markerEngine';
 import { evaluateMarkerCondition } from './questEngine';
 import { ribbet } from '../coach/ribbet';
+import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
 
 // ── DATE HELPERS ──────────────────────────────────────────────────────────────
 
@@ -309,21 +310,11 @@ function step9_coachReview(newDate: string): void {
   // Push a rollover feed entry if user exists
   const user = userStore.user;
   if (user) {
-    const feedEntry = {
+    appendFeedEntry({
       commentBlock: ribbet(user),
-      sourceType: 'rollover',
+      sourceType: FEED_SOURCE.ROLLOVER,
       timestamp: new Date().toISOString(),
-    };
-    const updatedUser = {
-      ...user,
-      feed: {
-        ...user.feed,
-        entries: [feedEntry, ...user.feed.entries],
-        unreadCount: user.feed.unreadCount + 1,
-      },
-    };
-    userStore.setUser(updatedUser);
-    storageSet('user', updatedUser);
+    }, user);
   }
 }
 

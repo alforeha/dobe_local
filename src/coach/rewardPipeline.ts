@@ -21,6 +21,7 @@ import { useResourceStore } from '../stores/useResourceStore';
 import { storageSet, storageKey } from '../storage';
 import { pushRibbet } from './ribbet';
 import { characterLibrary } from './index';
+import { appendFeedEntry, FEED_SOURCE } from '../engine/feedEngine';
 
 // ── AWARD BADGE ────────────────────────────────────────────────────────────────
 
@@ -68,6 +69,14 @@ export function awardBadge(achievementDef: AchievementDefinition, user: User): U
   storageSet(storageKey.badge(badgeId), badge);
 
   pushRibbet('badge.awarded', { itemName: achievementDef.name });
+
+  // Feed entry for badge award
+  appendFeedEntry({
+    commentBlock: `Badge earned: ${achievementDef.name}`,
+    sourceType: FEED_SOURCE.BADGE_AWARDED,
+    timestamp: new Date().toISOString(),
+    triggerRef: badgeId,
+  }, updatedUser);
 
   // Gear reward if the achievement carries a rewardRef
   if (achievementDef.rewardRef) {
@@ -133,6 +142,14 @@ export function awardGear(gearDefId: string, source: string, user: User): User {
   storageSet(storageKey.gear(gearId), gear);
 
   pushRibbet('gear.awarded', { itemName: gearDef.name });
+
+  // Feed entry for gear award
+  appendFeedEntry({
+    commentBlock: `Gear awarded: ${gearDef.name}`,
+    sourceType: FEED_SOURCE.GEAR_AWARDED,
+    timestamp: new Date().toISOString(),
+    triggerRef: gearId,
+  }, updatedUser);
 
   return updatedUser;
 }

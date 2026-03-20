@@ -30,6 +30,28 @@ export {
 } from './markerEngine';
 export type { FireMarkerParams } from './markerEngine';
 
+export { appendFeedEntry, getFeedEntries, clearFeedBefore, FEED_SOURCE } from './feedEngine';
+export type { FeedSource } from './feedEngine';
+
+export {
+  generateScheduledTasks,
+  generateGTDItems,
+  generateDocTasks_stub,
+  computeGTDList,
+  completeGTDItem,
+} from './resourceEngine';
+
+export {
+  addFavourite,
+  removeFavourite,
+  completeFavourite,
+  createShoppingList,
+  addShoppingItem,
+  removeShoppingItem,
+  completeShoppingItem,
+  completeShoppingList,
+} from './listsEngine';
+
 // ── COACH MODULE ──────────────────────────────────────────────────────────────
 
 export { ribbet, pushRibbet, flushRibbet, peekRibbet, clearRibbet } from '../coach/ribbet';

@@ -36,23 +36,37 @@ export interface ContactInfo {
 export interface ContactMeta {
   info: ContactInfo;
   customTag: string | null;
+  /** Group membership strings */
+  groups: string[];
+  /** Freetext notes */
+  notes: string;
 }
 
 /**
  * Home meta — generates: chore tasks (CHECK / CHECKLIST)
- * rooms[] is a BUILD-time task shape.
+ * rooms[] — each room has an explicit id for stable refs (D42).
+ * assignedTo supports a list of contact refs or the literal 'all'.
  */
 export interface HomeRoom {
+  id: string;
   name: string;
   icon: string | null;
-  assignedTo: string | null;
+  /** Contact Resource refs or the literal string 'all' */
+  assignedTo: string[] | 'all';
   linkedDocs: string[];
   linkedLayoutRef: string | null;
 }
 
 export interface HomeMeta {
-  address: string | null;
+  /** Contact Resource refs for household members */
+  memberContactRefs: string[];
   rooms: HomeRoom[];
+  /** Linked Inventory Resource ref */
+  linkedInventoryRef: string | null;
+  /** Lease, photos, and other Doc refs */
+  linkedDocs: string[];
+  /** [MULTI-USER] stub — null in LOCAL */
+  recurringTasksStub: null;
 }
 
 /**
@@ -63,60 +77,101 @@ export interface VehicleMeta {
   model: string | null;
   year: number | null;
   mileage: number | null;
+  /** Contact Resource refs for vehicle users */
+  memberContactRefs: string[];
+  /** Loan doc, photos, insurance refs */
   linkedDocs: string[];
+  /** [MULTI-USER] stub — null in LOCAL */
+  recurringTasksStub: null;
 }
 
 /**
  * Account meta — generates: transaction tasks (LOG)
- * kind discriminator distinguishes different account types.
- * linkedAccountRef for linked accounts (e.g. credit → checking).
+ * kind discriminator: bank | bill | income | debt | subscription | allowance (D42).
+ * linkedAccountRef for linked accounts (e.g. bill → bank).
  * pendingTransactions[] for shopping list → transaction flow.
  */
-export type AccountKind = 'checking' | 'savings' | 'credit' | 'investment' | 'cash' | string;
+export type AccountKind = 'bank' | 'bill' | 'income' | 'debt' | 'subscription' | 'allowance' | string;
 
 export type PendingTransactionStatus = 'pending' | 'assigned' | 'posted';
 
 export interface PendingTransaction {
-  itemRef: string; // Useable ref or free-text label
-  status: PendingTransactionStatus;
+  id: string;
+  date: string; // ISO date
+  description: string;
+  /** Shopping list item ref */
+  sourceRef: string | null;
   assignedAccountRef: string | null;
   amount: number | null;
-  note: string | null;
+  status: PendingTransactionStatus;
 }
 
 export interface AccountMeta {
   kind: AccountKind;
-  institution: string | null;
-  /** For linked accounts e.g. credit card linked to checking */
+  /** Points bill/income/allowance at a bank Account Resource */
   linkedAccountRef: string | null;
+  /** Optional — Home, Vehicle, or Contact context */
+  linkedResourceRef: string | null;
+  /** Lease, contract, loan doc refs */
+  linkedDocs: string[];
+  /** Running balance — user can override */
+  balance: number;
+  /** Audit trail on manual balance override */
+  balanceOverriddenAt: string | null; // ISO date
+  /** For bill, income, allowance — recurring schedule ref */
+  recurrenceRuleRef: string | null;
+  /** Expected recurring amount */
+  amount: number | null;
   pendingTransactions: PendingTransaction[];
-  /** RecurrenceRule refs for bills and paydays */
-  bills: string[];
-  paydays: string[];
+  /** Prebuilt TaskTemplate ref — generates transaction task */
+  transactionTaskRef: string | null;
 }
 
 /**
  * Inventory meta — generates: replenish tasks (COUNTER)
- * Supports any Resource as linkedResourceRef (container pattern).
+ * containers[] group items by physical location.
+ * items[] track Useable refs with quantity and optional container assignment.
  */
-export interface InventoryMeta {
-  /** Any Resource ref — for container pattern */
+export interface InventoryContainer {
+  id: string;
+  name: string;
+  icon: string | null;
+  /** Any Resource ref — Home/Vehicle/Contact for lending, null = standalone */
   linkedResourceRef: string | null;
-  /** Useable refs */
-  useables: string[];
+  notes: string | null;
+}
+
+export interface InventoryItem {
+  useableRef: string;
+  /** null = uncontained */
+  containerId: string | null;
+  quantity: number;
+}
+
+export interface InventoryMeta {
+  containers: InventoryContainer[];
+  items: InventoryItem[];
 }
 
 /**
- * Doc meta — generates: no task generation
- * walkthrough type for guided document review.
+ * Doc meta — generates: no task generation in LOCAL.
+ * progression{} is reserved for course docs — deferred (BUILD-time task).
  */
-export type DocType = 'walkthrough' | 'reference' | 'contract' | string;
+export type DocType = 'text' | 'pdf' | 'contract' | 'manual' | 'layout' | 'course' | 'walkthrough' | string;
 
 export interface DocMeta {
   docType: DocType;
-  fileRef: string | null;
-  expiryDate: string | null; // ISO date
+  /** Rich text — for 'text' type docs */
+  content: string;
+  /** For manuals, contracts, layouts — links to owning Resource */
   linkedResourceRef: string | null;
+  /** RecommendationsLibrary course ref — for 'course' type docs */
+  courseRef: string | null;
+  /** [BUILD-time] Locked progression state for course docs — stub null in LOCAL */
+  progression: null;
+  tags: string[];
+  createdAt: string; // ISO date
+  updatedAt: string; // ISO date
 }
 
 // ── META UNION ────────────────────────────────────────────────────────────────

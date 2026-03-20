@@ -78,9 +78,27 @@ export interface UserLists {
   shoppingLists: ShoppingList[];
 }
 
+export interface ShoppingItem {
+  /** uuid */
+  id: string;
+  /** Display name — may mirror a Useable name */
+  name: string;
+  /** Optional Useable Resource ref */
+  useableRef: string | null;
+  quantity: number | null;
+  unit: string | null;
+  /** Optional Account Resource ref — enables pending transaction flow on completion */
+  accountRef: string | null;
+  completed: boolean;
+  completedAt: string | null; // ISO date
+}
+
 export interface ShoppingList {
-  tag: string;
-  items: string[]; // Useable refs or free-text entries
+  /** uuid */
+  id: string;
+  /** List name / tag — e.g. "Groceries", "Hardware" */
+  name: string;
+  items: ShoppingItem[];
 }
 
 export interface UserResources {

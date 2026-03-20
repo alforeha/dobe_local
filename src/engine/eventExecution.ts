@@ -25,6 +25,7 @@ import { completeMilestone, decodeQuestRef } from './markerEngine';
 import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge, checkQuestReward } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
+import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
 
 // ── TASK RESULT SHAPE ─────────────────────────────────────────────────────────
 
@@ -298,6 +299,15 @@ export function completeEvent(eventId: string): void {
     for (const ach of newAchs) {
       currentUser = awardBadge(ach, currentUser);
     }
+
+    // Feed entry on event completion
+    const eventFeedUser = useUserStore.getState().user ?? currentUser;
+    appendFeedEntry({
+      commentBlock: `Completed: ${updatedEvent.name}`,
+      sourceType: FEED_SOURCE.EVENT_COMPLETE,
+      timestamp: new Date().toISOString(),
+      triggerRef: eventId,
+    }, eventFeedUser);
   }
 }
 

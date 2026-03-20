@@ -19,6 +19,7 @@ import { storageSet } from '../storage';
 import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge, checkCoachDrops } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
+import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
 
 // ── XP CURVE PARAMETERS (D49) ────────────────────────────────────────────────
 
@@ -146,6 +147,14 @@ export function awardXP(
       for (const ach of newAchs) {
         currentUser = awardBadge(ach, currentUser);
       }
+
+      // Feed entry for level-up
+      const levelFeedUser = useUserStore.getState().user ?? currentUser;
+      appendFeedEntry({
+        commentBlock: `Level up! Now level ${newLevel}`,
+        sourceType: FEED_SOURCE.LEVEL_UP,
+        timestamp: new Date().toISOString(),
+      }, levelFeedUser);
     }
   }
 }
