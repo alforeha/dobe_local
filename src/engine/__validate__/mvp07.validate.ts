@@ -454,7 +454,7 @@ async function main(): Promise<void> {
 
   const a03PostAct   = useProgressionStore.getState().acts[a03ActId]!;
   const a03PostQuest = a03PostAct.chains[0]!.quests[0]!;
-  const ms0          = a03PostQuest.milestones[0] as Record<string, unknown> | undefined;
+  const ms0          = a03PostQuest.milestones[0] as unknown as Record<string, unknown> | undefined;
 
   assert('A03.9 — Milestone appended to quest.milestones',  a03PostQuest.milestones.length === 1);
   assert('A03.10 — Milestone.questRef matches encoded ref',  ms0?.questRef === a03QuestRef);
@@ -485,7 +485,7 @@ async function main(): Promise<void> {
   fireMarker({ marker: a03bMarker, markerIndex: 0, questIndex: 0, chainIndex: 0, actId: a03bActId });
 
   const a03bTaskId = findTaskByQuestRef(encodeQuestRef(a03bActId, 0, 0));
-  completeTask(a03bTaskId!, 'evt-dummy', { resultFields: { score: 10 } });
+  completeTask(a03bTaskId!, 'evt-dummy', { resultFields: { score: 10 } as never });
 
   const a03bPostQuest = useProgressionStore.getState().acts[a03bActId]!.chains[0]!.quests[0]!;
   assert('A03.16 — Quest completes when evaluateQuestSpecific returns true',
@@ -617,7 +617,7 @@ async function main(): Promise<void> {
   assert('A04.C3.1 — xpThreshold Marker fires via rollover', !!c3TaskId);
 
   // Complete with numeric value = 75: progress = 75/100 = 75%
-  completeTask(c3TaskId!, 'evt-dummy', { resultFields: { value: 75 } });
+  completeTask(c3TaskId!, 'evt-dummy', { resultFields: { value: 75 } as never });
 
   const c3QuestPost = useProgressionStore.getState().acts[c3ActId]!.chains[0]!.quests[0]!;
   assert('A04.C3.2 — progressPercent = 75 (75/100 numeric result)',
