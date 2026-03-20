@@ -204,7 +204,7 @@ async function main(): Promise<void> {
 
   completeTask(taskId, eventId, { resultFields: {} });
 
-  const updatedUser = useUserStore.getState().user as Record<string, never>;
+  const updatedUser = useUserStore.getState().user as unknown as Record<string, never>;
   const statsA = (updatedUser?.progression as Record<string, never>)?.stats as Record<string, unknown>;
   const xpAfter = (statsA?.xp as number) ?? 0;
   const talentsA = statsA?.talents as Record<string, { statPoints: number }> | undefined;
@@ -258,7 +258,7 @@ async function main(): Promise<void> {
 
   completeTask('task-orphan', 'evt-orphan', { resultFields: {} });
 
-  const fbUser = useUserStore.getState().user as Record<string, never>;
+  const fbUser = useUserStore.getState().user as unknown as Record<string, never>;
   const fbStats = (fbUser?.progression as Record<string, never>)?.stats as Record<string, unknown>;
   const fbTalents = fbStats?.talents as Record<string, { statPoints: number }> | undefined;
   const wisdomPts = fbTalents?.wisdom?.statPoints ?? 0;

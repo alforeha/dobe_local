@@ -446,7 +446,7 @@ export function computeGTDList(user: User): Task[] {
   for (const resourceId of allResourceIds) {
     const resource = resourceStore.resources[resourceId];
     if (!resource) continue;
-    const generated = generateGTDItems(resource, user);
+    const generated = generateGTDItems(resource);
     for (const task of generated) {
       if (!generatedIds.has(task.id)) {
         generatedIds.add(task.id);

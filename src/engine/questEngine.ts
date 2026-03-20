@@ -85,7 +85,7 @@ export function evaluateQuestSpecific(quest: Quest, completedTask: Task): boolea
     const resource = useResourceStore.getState().resources[specific.resourceRef];
     if (!resource) return false;
     // Try meta first, then resource root
-    const metaVal = (resource.meta as Record<string, unknown>)[specific.resourceProperty];
+    const metaVal = (resource.meta as unknown as Record<string, unknown>)[specific.resourceProperty];
     if (typeof metaVal === 'number') return metaVal >= specific.targetValue;
     const rootVal = (resource as unknown as Record<string, unknown>)[specific.resourceProperty];
     if (typeof rootVal === 'number') return rootVal >= specific.targetValue;
@@ -156,7 +156,7 @@ export function deriveQuestProgress(quest: Quest): number {
   ) {
     const resource = useResourceStore.getState().resources[specific.resourceRef];
     if (!resource) return 0;
-    const val = (resource.meta as Record<string, unknown>)[specific.resourceProperty];
+    const val = (resource.meta as unknown as Record<string, unknown>)[specific.resourceProperty];
     if (typeof val === 'number') {
       return Math.min(100, Math.round((val / specific.targetValue) * 100));
     }
