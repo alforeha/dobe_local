@@ -1,3 +1,4 @@
+/// <reference types="node" />
 // ─────────────────────────────────────────
 // MVP06 VALIDATION SCRIPT
 // Run via: npx tsx src/engine/__validate__/mvp06.validate.ts
