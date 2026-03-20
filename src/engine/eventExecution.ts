@@ -19,6 +19,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { storageSet, storageKey } from '../storage';
 import { EVENT_MAX_ATTACHMENTS } from '../storage/storageBudget';
 import { awardXP, awardStat } from './awardPipeline';
+import { completeMilestone } from './markerEngine';
 
 // ── TASK RESULT SHAPE ─────────────────────────────────────────────────────────
 
@@ -89,6 +90,12 @@ export function completeTask(
 
   scheduleStore.setTask(updatedTask);
   storageSet(storageKey.task(taskId), updatedTask);
+
+  // Quest check-in hook: if this task was fired by a Marker, record the Milestone
+  // and evaluate the Quest finish condition (D04).
+  if (updatedTask.questRef) {
+    completeMilestone(updatedTask);
+  }
 
   // Determine context for bonuses
   const event = scheduleStore.activeEvents[eventId] ??

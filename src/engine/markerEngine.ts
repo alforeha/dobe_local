@@ -1,0 +1,298 @@
+// ─────────────────────────────────────────
+// MARKER ENGINE — quest check-in event creation and milestone recording
+//
+// encodeQuestRef / decodeQuestRef — pipe-separated composite key for array-indexed navigation
+// fireMarker()        — creates a check-in Task and snapshots marker state (D05)
+// completeMilestone() — records the Milestone, evaluates finish condition, updates progress
+// ─────────────────────────────────────────
+
+import { v4 as uuidv4 } from 'uuid';
+import type { Marker } from '../types/quest/Marker';
+import type { Milestone } from '../types/quest/Milestone';
+import type { RecurrenceRule } from '../types/taskTemplate';
+import type { Task } from '../types/task';
+import { useProgressionStore } from '../stores/useProgressionStore';
+import { useScheduleStore } from '../stores/useScheduleStore';
+import { useUserStore } from '../stores/useUserStore';
+import { storageSet, storageKey } from '../storage';
+import { evaluateQuestSpecific, updateQuestProgress } from './questEngine';
+
+// ── QUESTREF ENCODING ─────────────────────────────────────────────────────────
+
+const QUEST_REF_SEP = '|';
+
+/**
+ * Encode a Quest's position in the hierarchy as a composite string ref.
+ * Format: "${actId}|${chainIndex}|${questIndex}"
+ *
+ * actId is a UUID (hex/hyphen only) — no collision risk with QUEST_REF_SEP.
+ * Indices are 0-based integers matching the array positions in Act.chains[].quests[].
+ *
+ * NOTE: questRef remains stable as long as chain/quest order is not mutated
+ * while Tasks carrying this ref are still pending (D27).
+ */
+export function encodeQuestRef(actId: string, chainIndex: number, questIndex: number): string {
+  return `${actId}${QUEST_REF_SEP}${chainIndex}${QUEST_REF_SEP}${questIndex}`;
+}
+
+/**
+ * Decode a questRef string back into typed navigation components.
+ * Returns null when the input is malformed or indices are non-numeric.
+ */
+export function decodeQuestRef(
+  questRef: string,
+): { actId: string; chainIndex: number; questIndex: number } | null {
+  const parts = questRef.split(QUEST_REF_SEP);
+  if (parts.length !== 3) return null;
+  const [actId, ciStr, qiStr] = parts as [string, string, string];
+  const chainIndex = parseInt(ciStr, 10);
+  const questIndex = parseInt(qiStr, 10);
+  if (Number.isNaN(chainIndex) || Number.isNaN(questIndex)) return null;
+  return { actId, chainIndex, questIndex };
+}
+
+// ── COMPUTE NEXT FIRE DATE ────────────────────────────────────────────────────
+
+/**
+ * Advance a Marker's fire date from its lastFired date using the interval RecurrenceRule.
+ * Returns todayISO() when the Marker has no interval (xpThreshold markers).
+ * Used inside fireMarker to update marker.nextFire after each fire.
+ */
+function computeMarkerNextFire(marker: Marker): string {
+  const today = new Date().toISOString().slice(0, 10);
+  if (!marker.lastFired) return today;
+  const rule = marker.interval;
+  if (!rule) return today; // xpThreshold marker — no calendar anchor
+  const anchor = new Date(marker.lastFired + 'T00:00:00');
+  switch ((rule as RecurrenceRule).frequency) {
+    case 'daily':
+      anchor.setDate(anchor.getDate() + (rule.interval || 1));
+      break;
+    case 'weekly':
+      anchor.setDate(anchor.getDate() + 7 * (rule.interval || 1));
+      break;
+    case 'monthly':
+      anchor.setMonth(anchor.getMonth() + (rule.interval || 1));
+      break;
+    default:
+      break;
+  }
+  return anchor.toISOString().slice(0, 10);
+}
+
+// ── FIRE MARKER ───────────────────────────────────────────────────────────────
+
+export interface FireMarkerParams {
+  marker: Marker;
+  markerIndex: number;
+  questIndex: number;
+  chainIndex: number;
+  actId: string;
+}
+
+/**
+ * Fire a Marker: create a check-in Task and enqueue it in User.lists.gtdList.
+ *
+ * Steps performed:
+ *   1. Look up Quest to resolve resource context for the Task
+ *   2. Create a Task with questRef + actRef set for Milestone routing
+ *   3. Persist Task to scheduleStore + storage
+ *   4. Push Task ref to User.lists.gtdList
+ *   5. Snapshot xpAtLastFire + update marker state (lastFired, nextFire)
+ *   6. Persist Act to progressionStore + storage
+ *
+ * @param params  FireMarkerParams — marker + index triple + actId
+ */
+export function fireMarker(params: FireMarkerParams): void {
+  const { marker, markerIndex, questIndex, chainIndex, actId } = params;
+
+  const scheduleStore = useScheduleStore.getState();
+  const userStore = useUserStore.getState();
+  const progressionStore = useProgressionStore.getState();
+  const now = new Date().toISOString().slice(0, 10);
+
+  // Resolve the Quest to determine resource context
+  const act = progressionStore.acts[actId];
+  const quest = act?.chains[chainIndex]?.quests[questIndex];
+  const resourceRef =
+    quest?.specific.sourceType === 'resourceRef' ? (quest.specific.resourceRef ?? null) : null;
+
+  // Build check-in Task — questRef enables completeMilestone to route back here
+  const questRef = encodeQuestRef(actId, chainIndex, questIndex);
+  const task: Task = {
+    id: uuidv4(),
+    templateRef: marker.taskTemplateRef,
+    completionState: 'pending',
+    completedAt: null,
+    resultFields: {},
+    attachmentRef: null,
+    resourceRef,
+    location: null,
+    sharedWith: null,
+    questRef,
+    actRef: actId,
+  };
+
+  scheduleStore.setTask(task);
+  storageSet(storageKey.task(task.id), task);
+
+  // Enqueue in gtdList so the task surfaces for the user (D05)
+  const user = userStore.user;
+  if (user) {
+    const updatedUser = {
+      ...user,
+      lists: {
+        ...user.lists,
+        gtdList: [...user.lists.gtdList, task.id],
+      },
+    };
+    userStore.setUser(updatedUser);
+    storageSet('user', updatedUser);
+  }
+
+  if (!act) return;
+
+  // Snapshot current XP for delta computation (Q03 since-last-fired model)
+  const currentXp = userStore.user?.progression.stats.xp ?? 0;
+  const updatedAt = now;
+
+  const updatedAct = {
+    ...act,
+    chains: act.chains.map((chain, ci) => {
+      if (ci !== chainIndex) return chain;
+      return {
+        ...chain,
+        quests: chain.quests.map((q, qi) => {
+          if (qi !== questIndex) return q;
+          const updatedMarkers = q.timely.markers.map((m, mi) => {
+            if (mi !== markerIndex) return m;
+            const fired: Marker = {
+              ...m,
+              lastFired: updatedAt,
+              xpAtLastFire: m.conditionType === 'xpThreshold' ? currentXp : null,
+              nextFire: m.conditionType === 'interval'
+                ? computeMarkerNextFire({ ...m, lastFired: updatedAt })
+                : null,
+            };
+            return fired;
+          });
+          return { ...q, timely: { ...q.timely, markers: updatedMarkers } };
+        }),
+      };
+    }),
+  };
+
+  progressionStore.setAct(updatedAct);
+  storageSet(storageKey.act(actId), updatedAct);
+}
+
+// ── COMPLETE MILESTONE ────────────────────────────────────────────────────────
+
+/**
+ * Record a completed quest check-in Task as a Milestone and evaluate Quest finish.
+ *
+ * Called by eventExecution.completeTask() when updatedTask.questRef is set.
+ * The questRef on the task was stamped by fireMarker at creation time (D04).
+ *
+ * Steps performed:
+ *   1. Decode questRef → actId / chainIndex / questIndex
+ *   2. Look up the Quest (bail with warning if not found)
+ *   3. Capture milestone from task.resultFields + full TaskTemplate shape
+ *   4. Evaluate Quest finish condition via evaluateQuestSpecific()
+ *   5a. If complete → set Quest.completionState = 'complete', deactivate all markers
+ *   5b. If not complete → call updateQuestProgress() (derives progress + projectedFinish)
+ *   6. Persist updated Act to store + storage
+ *
+ * @param completedTask  The Task that was just completed (completionState must be 'complete')
+ */
+export function completeMilestone(completedTask: Task): void {
+  if (!completedTask.questRef) return;
+
+  const parsed = decodeQuestRef(completedTask.questRef);
+  if (!parsed) {
+    console.warn(
+      `[markerEngine] completeMilestone: malformed questRef "${completedTask.questRef}"`,
+    );
+    return;
+  }
+  const { actId, chainIndex, questIndex } = parsed;
+
+  const progressionStore = useProgressionStore.getState();
+  const scheduleStore = useScheduleStore.getState();
+
+  const act = progressionStore.acts[actId];
+  if (!act) {
+    console.warn(`[markerEngine] completeMilestone: Act "${actId}" not found`);
+    return;
+  }
+  const chain = act.chains[chainIndex];
+  if (!chain) {
+    console.warn(`[markerEngine] completeMilestone: chain[${chainIndex}] not found`);
+    return;
+  }
+  const quest = chain.quests[questIndex];
+  if (!quest) {
+    console.warn(`[markerEngine] completeMilestone: quest[${questIndex}] not found`);
+    return;
+  }
+  if (quest.completionState !== 'active') return;
+
+  // Resolve TaskTemplate shape — stored inline in Milestone for immutability (D03)
+  const template = scheduleStore.taskTemplates[completedTask.templateRef];
+  if (!template) {
+    console.warn(
+      `[markerEngine] completeMilestone: TaskTemplate "${completedTask.templateRef}" not in store (D34 — system templates not stored). Skipping Milestone.`,
+    );
+    return;
+  }
+
+  const milestone: Milestone = {
+    questRef: completedTask.questRef,
+    actRef: actId,
+    resourceRef: quest.specific.sourceType === 'resourceRef'
+      ? (quest.specific.resourceRef ?? null)
+      : null,
+    taskTemplateShape: template,
+    completedAt: completedTask.completedAt ?? new Date().toISOString(),
+    resultFields: completedTask.resultFields,
+  };
+
+  const isFinished = evaluateQuestSpecific(quest, completedTask);
+
+  const updatedAct = {
+    ...act,
+    chains: act.chains.map((c, ci) => {
+      if (ci !== chainIndex) return c;
+      return {
+        ...c,
+        quests: c.quests.map((q, qi) => {
+          if (qi !== questIndex) return q;
+          const withMilestone = {
+            ...q,
+            milestones: [...q.milestones, milestone],
+            progressPercent: isFinished ? 100 : q.progressPercent,
+            completionState: isFinished
+              ? ('complete' as const)
+              : (q.completionState as typeof q.completionState),
+            timely: isFinished
+              ? {
+                  ...q.timely,
+                  // Deactivate all markers on completion
+                  markers: q.timely.markers.map((m) => ({ ...m, activeState: false })),
+                }
+              : q.timely,
+          };
+          return withMilestone;
+        }),
+      };
+    }),
+  };
+
+  progressionStore.setAct(updatedAct);
+  storageSet(storageKey.act(actId), updatedAct);
+
+  // Derive and persist progressPercent + projectedFinish unless just completed
+  if (!isFinished) {
+    updateQuestProgress(actId, chainIndex, questIndex);
+  }
+}

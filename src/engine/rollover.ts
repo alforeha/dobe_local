@@ -13,10 +13,8 @@
 // On app boot: if lastRollover < today, trigger rollover before hydrating UI.
 // ─────────────────────────────────────────
 
-import { v4 as uuidv4 } from 'uuid';
 import type { PlannedEvent } from '../types/plannedEvent';
 import type { Event, QuickActionsEvent } from '../types/event';
-import type { Task } from '../types/task';
 import type { Marker } from '../types/act';
 import { useSystemStore } from '../stores/useSystemStore';
 import { useUserStore } from '../stores/useUserStore';
@@ -24,6 +22,8 @@ import { useScheduleStore } from '../stores/useScheduleStore';
 import { useProgressionStore } from '../stores/useProgressionStore';
 import { storageSet, storageKey } from '../storage';
 import { materialisePlannedEvent } from './materialise';
+import { fireMarker } from './markerEngine';
+import { evaluateMarkerCondition } from './questEngine';
 
 // ── DATE HELPERS ──────────────────────────────────────────────────────────────
 
@@ -113,30 +113,6 @@ function computeNextSeedDate(pe: PlannedEvent, afterDate: string): string {
   return pe.seedDate;
 }
 
-/**
- * Compute the next fire date for a Marker based on its recurrence interval.
- * Anchor is Marker.lastFired (or marker fires immediately if never fired).
- */
-function computeMarkerNextFire(marker: Marker): string {
-  if (!marker.lastFired) return todayISO();
-  const anchor = new Date(marker.lastFired + 'T00:00:00');
-  const rule = marker.interval;
-  switch (rule.frequency) {
-    case 'daily':
-      anchor.setDate(anchor.getDate() + (rule.interval || 1));
-      break;
-    case 'weekly':
-      anchor.setDate(anchor.getDate() + 7 * (rule.interval || 1));
-      break;
-    case 'monthly':
-      anchor.setMonth(anchor.getMonth() + (rule.interval || 1));
-      break;
-    default:
-      break;
-  }
-  return anchor.toISOString().slice(0, 10);
-}
-
 // ── STEP 1 — Identify due PlannedEvents ──────────────────────────────────────
 
 function step1_identifyDuePlannedEvents(rolloverDate: string): PlannedEvent[] {
@@ -221,6 +197,8 @@ interface DueMarker {
 
 function step5_evaluateMarkers(rolloverDate: string): DueMarker[] {
   const { acts } = useProgressionStore.getState();
+  // Snapshot current XP once for xpThreshold checks (Q03 since-last-fired)
+  const currentXp = useUserStore.getState().user?.progression.stats.xp ?? 0;
   const due: DueMarker[] = [];
 
   for (const act of Object.values(acts)) {
@@ -229,8 +207,16 @@ function step5_evaluateMarkers(rolloverDate: string): DueMarker[] {
         if (quest.completionState !== 'active') return;
         quest.timely.markers.forEach((marker, markerIndex) => {
           if (!marker.activeState) return;
-          if (isOnOrBefore(marker.nextFire, rolloverDate)) {
-            due.push({ marker, actId: act.id, chainIndex, questIndex, markerIndex });
+          if (marker.conditionType === 'interval') {
+            // Date-driven: fire when nextFire is on or before rolloverDate
+            if (marker.nextFire !== null && isOnOrBefore(marker.nextFire, rolloverDate)) {
+              due.push({ marker, actId: act.id, chainIndex, questIndex, markerIndex });
+            }
+          } else if (marker.conditionType === 'xpThreshold') {
+            // XP-driven: fire when qualifying XP delta since last fire meets threshold
+            if (evaluateMarkerCondition(marker, currentXp)) {
+              due.push({ marker, actId: act.id, chainIndex, questIndex, markerIndex });
+            }
           }
         });
       });
@@ -242,76 +228,14 @@ function step5_evaluateMarkers(rolloverDate: string): DueMarker[] {
 
 // ── STEP 6 — Fire Markers → Tasks ────────────────────────────────────────────
 
+/**
+ * Delegate each due Marker to markerEngine.fireMarker().
+ * fireMarker handles: Task creation with questRef/actRef, gtdList push,
+ * xpAtLastFire snapshot, marker state update, and Act persistence.
+ */
 function step6_fireMarkers(dueMarkers: DueMarker[]): void {
-  if (dueMarkers.length === 0) return;
-
-  const scheduleStore = useScheduleStore.getState();
-  const userStore = useUserStore.getState();
-  const progressionStore = useProgressionStore.getState();
-
-  for (const { marker, actId, chainIndex, questIndex, markerIndex } of dueMarkers) {
-    // Instantiate a Task for the marker's taskTemplate
-    const task: Task = {
-      id: uuidv4(),
-      templateRef: marker.taskTemplateRef,
-      completionState: 'pending',
-      completedAt: null,
-      resultFields: {},
-      attachmentRef: null,
-      resourceRef: null,
-      location: null,
-      sharedWith: null,
-    };
-
-    scheduleStore.setTask(task);
-    storageSet(storageKey.task(task.id), task);
-
-    // Push task ref to user's gtdList
-    const user = userStore.user;
-    if (user) {
-      const updatedUser = {
-        ...user,
-        lists: {
-          ...user.lists,
-          gtdList: [...user.lists.gtdList, task.id],
-        },
-      };
-      userStore.setUser(updatedUser);
-      storageSet('user', updatedUser);
-    }
-
-    // Update marker lastFired + nextFire on the Act
-    const act = progressionStore.acts[actId];
-    if (!act) continue;
-
-    const updatedAct = {
-      ...act,
-      chains: act.chains.map((chain, ci) => {
-        if (ci !== chainIndex) return chain;
-        return {
-          ...chain,
-          quests: chain.quests.map((quest, qi) => {
-            if (qi !== questIndex) return quest;
-            const updatedMarkers = quest.timely.markers.map((m, mi) => {
-              if (mi !== markerIndex) return m;
-              const now = todayISO();
-              return {
-                ...m,
-                lastFired: now,
-                nextFire: computeMarkerNextFire({ ...m, lastFired: now }),
-              };
-            });
-            return {
-              ...quest,
-              timely: { ...quest.timely, markers: updatedMarkers },
-            };
-          }),
-        };
-      }),
-    };
-
-    progressionStore.setAct(updatedAct);
-    storageSet(storageKey.act(actId), updatedAct);
+  for (const dueMarker of dueMarkers) {
+    fireMarker(dueMarker);
   }
 }
 

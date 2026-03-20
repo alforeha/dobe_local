@@ -64,6 +64,8 @@ function instantiateTask(templateRef: string): Task {
     resourceRef: null,
     location: null,
     sharedWith: null,
+    questRef: null,
+    actRef: null,
   };
 }
 

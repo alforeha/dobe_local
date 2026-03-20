@@ -43,4 +43,15 @@ export interface Task {
   location: TaskLocation | null;
   /** [MULTI-USER] stub — null in LOCAL */
   sharedWith: SharedWithStub;
+  /**
+   * Encoded quest navigation path: "${actId}|${chainIndex}|${questIndex}".
+   * Set by markerEngine.fireMarker() when this Task is a quest milestone check-in.
+   * null for regular schedule tasks.
+   */
+  questRef: string | null;
+  /**
+   * Act uuid — mirrors the actId encoded in questRef for explicit cross-reference.
+   * null for regular schedule tasks.
+   */
+  actRef: string | null;
 }

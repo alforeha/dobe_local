@@ -13,3 +13,19 @@ export type { TaskResult, AttachmentRecord } from './eventExecution';
 
 export { awardXP, awardStat, deriveLevelFromXP } from './awardPipeline';
 export type { XPMultipliers } from './awardPipeline';
+
+export {
+  evaluateQuestSpecific,
+  evaluateMarkerCondition,
+  computeProjectedFinish,
+  deriveQuestProgress,
+  updateQuestProgress,
+} from './questEngine';
+
+export {
+  encodeQuestRef,
+  decodeQuestRef,
+  fireMarker,
+  completeMilestone,
+} from './markerEngine';
+export type { FireMarkerParams } from './markerEngine';

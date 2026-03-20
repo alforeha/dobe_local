@@ -2,39 +2,25 @@
 // ACT — CORE
 // Top of the 4-level quest hierarchy: Act → Chain → Quest → Milestone.
 // Only Act has a uuid — Chain, Quest, Milestone are array-indexed (D27).
-// Contains nested Chain, Quest, Milestone, and Marker types.
+// MVP07: Quest SMARTER field shapes locked — imports from ./quest/ subdirectory.
 // ─────────────────────────────────────────
 
-import type { RecurrenceRule } from './taskTemplate';
+import type { QuestSpecific } from './quest/specific';
+import type { QuestMeasurable } from './quest/measurable';
+import type { QuestTimely } from './quest/timely';
+import type { QuestExigency } from './quest/exigency';
+import type { ActCommitment } from './quest/Act';
+import type { Milestone } from './quest/Milestone';
 
-// ── MARKER (lives inside Quest.timely) ────────────────────────────────────────
-
-export interface Marker {
-  /** Parent Quest ref */
-  questRef: string;
-  /** Recurrence shape (D37) — anchor is Marker.lastFired */
-  interval: RecurrenceRule;
-  /** Milestone TaskTemplate ref — instantiated when Marker fires */
-  taskTemplateRef: string;
-  /** Timestamp of last fire — serves as RecurrenceRule anchor */
-  lastFired: string | null; // ISO date
-  /** Computed from lastFired and interval */
-  nextFire: string; // ISO date
-  /** Fires for life of Quest unless Quest completes or is paused */
-  activeState: boolean;
-}
-
-// ── MILESTONE (array-indexed within Quest) ────────────────────────────────────
-
-export interface Milestone {
-  /** Parent Quest ref */
-  questRef: string;
-  /**
-   * Inherits full TaskTemplate property shape — BUILD-time task.
-   * Stored inline as a partial record here.
-   */
-  taskTemplateShape: Record<string, unknown>;
-}
+// Re-export quest subtypes so existing consumers (e.g. rollover.ts importing
+// Marker from '../types/act') continue to resolve without path changes.
+export type { QuestSourceType, QuestSpecific } from './quest/specific';
+export type { MarkerConditionType, Marker } from './quest/Marker';
+export type { QuestTimely } from './quest/timely';
+export type { Milestone } from './quest/Milestone';
+export type { QuestMeasurable } from './quest/measurable';
+export type { ExigencyOption, QuestExigency } from './quest/exigency';
+export type { ActCommitment } from './quest/Act';
 
 // ── QUEST (SMARTER framework — array-indexed within Chain) ───────────────────
 
@@ -46,27 +32,31 @@ export interface Quest {
   /** Ref to icon asset */
   icon: string;
   completionState: QuestCompletionState;
-  /** SMARTER — target count, end state, or resource value */
-  specific: Record<string, unknown>;
-  /** SMARTER — relevant task types that apply progress */
-  measurable: Record<string, unknown>;
-  /** SMARTER — prereq quests, 91-day feasibility check */
+  /** SMARTER S — end-state target value and sourceType evaluation routing (D01) */
+  specific: QuestSpecific;
+  /** SMARTER M — task types whose completions count toward progress (D02, Q02: flat list) */
+  measurable: QuestMeasurable;
+  /** SMARTER A — prereq quests, 91-day feasibility check — shape BUILD-time */
   attainable: Record<string, unknown>;
-  /** SMARTER — stat group, resource, or custom tag */
+  /** SMARTER R — stat group, resource, or custom tag — shape BUILD-time */
   relevant: Record<string, unknown>;
-  /** SMARTER — Marker generation rules. Marker objects live here */
-  timely: {
-    markers: Marker[];
-    [key: string]: unknown;
-  };
-  /** SMARTER — how missed Markers are handled (BUILD-time task) */
-  exigency: Record<string, unknown>;
-  /** SMARTER — reward grant and completion state handler */
+  /** SMARTER T — Marker configuration and container object (D05) */
+  timely: QuestTimely;
+  /** SMARTER E — stub shape for missed finish line handling (D06) */
+  exigency: QuestExigency;
+  /** SMARTER R — reward grant and completion state handler — shape BUILD-time */
   result: Record<string, unknown>;
-  /** Logged Milestone results — array-indexed */
+  /** Logged Milestone results — array-indexed (D04) */
   milestones: Milestone[];
   /** XP or item ref — granted on quest completion */
   questReward: string;
+  /**
+   * Cached progress percentage 0–100.
+   * Updated by questEngine.updateQuestProgress() after each Milestone completion.
+   * Derived from measured value vs targetValue (taskInput path) or
+   * resource property vs targetValue (resourceRef path).
+   */
+  progressPercent: number;
 }
 
 // ── CHAIN (WOOP framework — array-indexed within Act) ────────────────────────
@@ -115,11 +105,11 @@ export interface Act {
   owner: string;
   /** Array of Chain objects — array-indexed (D27) */
   chains: Chain[];
-  /** [MULTI-USER] stub — null in LOCAL */
+  /** [MULTI-USER] stub — null in LOCAL (D08) */
   accountability: AccountabilityStub;
-  /** Routine review tied to Act — BUILD-time task */
-  commitment: Record<string, unknown>;
-  /** Action on chain completion, gating logic for next Act — BUILD-time task */
+  /** ACTS C — trackedTaskRefs and routineRefs (D07, D08) */
+  commitment: ActCommitment;
+  /** ACTS T — gating logic stub — BUILD-time (D08) */
   toggle: Record<string, unknown>;
   completionState: ActCompletionState;
   /** [MULTI-USER] stub — null in LOCAL */
