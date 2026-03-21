@@ -1,4 +1,5 @@
 import { useScheduleStore } from '../../../stores/useScheduleStore';
+import { useShallow } from 'zustand/react/shallow';
 import { WeekEventCard } from './WeekEventCard';
 import { format, isSameDay } from '../../../utils/dateUtils';
 import type { Event, PlannedEvent } from '../../../types';
@@ -8,11 +9,11 @@ interface WeekDayBlockProps {
 }
 
 export function WeekDayBlock({ date }: WeekDayBlockProps) {
-  const { activeEvents, historyEvents, plannedEvents } = useScheduleStore((s) => ({
+  const { activeEvents, historyEvents, plannedEvents } = useScheduleStore(useShallow((s) => ({
     activeEvents: s.activeEvents,
     historyEvents: s.historyEvents,
     plannedEvents: s.plannedEvents,
-  }));
+  })));
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);

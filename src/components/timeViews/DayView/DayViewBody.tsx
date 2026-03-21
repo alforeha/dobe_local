@@ -1,4 +1,5 @@
 import { useScheduleStore } from '../../../stores/useScheduleStore';
+import { useShallow } from 'zustand/react/shallow';
 import { EventBlock } from './EventBlock';
 import { format, hourLabel, isSameDay } from '../../../utils/dateUtils';
 import type { Event, PlannedEvent } from '../../../types';
@@ -16,11 +17,11 @@ function parseHour(time: string): number {
 }
 
 export function DayViewBody({ date, onEventOpen }: DayViewBodyProps) {
-  const { activeEvents, historyEvents, plannedEvents } = useScheduleStore((s) => ({
+  const { activeEvents, historyEvents, plannedEvents } = useScheduleStore(useShallow((s) => ({
     activeEvents: s.activeEvents,
     historyEvents: s.historyEvents,
     plannedEvents: s.plannedEvents,
-  }));
+  })));
 
   const dateIso = format(date, 'iso');
   const today = new Date();
