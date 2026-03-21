@@ -3,22 +3,31 @@ import type { ShoppingItem } from '../../../../../../types/user';
 interface ShoppingItemBlockProps {
   item: ShoppingItem;
   onToggle: (itemId: string) => void;
+  onDelete: (itemId: string) => void;
 }
 
-export function ShoppingItemBlock({ item, onToggle }: ShoppingItemBlockProps) {
+export function ShoppingItemBlock({ item, onToggle, onDelete }: ShoppingItemBlockProps) {
   return (
-    <button
-      type="button"
-      onClick={() => onToggle(item.id)}
-      className={`w-full flex items-center gap-3 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-left transition-opacity ${
+    <div
+      className={`flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg transition-opacity ${
         item.completed ? 'opacity-50' : ''
       }`}
     >
-      <span className="text-base shrink-0">{item.completed ? '☑️' : '⬜'}</span>
+      {/* Toggle checkbox */}
+      <button
+        type="button"
+        aria-label={item.completed ? 'Mark incomplete' : 'Complete item'}
+        onClick={() => onToggle(item.id)}
+        className="shrink-0 text-base"
+      >
+        {item.completed ? '☑️' : '⬜'}
+      </button>
+
+      {/* Label */}
       <div className="flex-1 min-w-0">
         <p
           className={`text-sm truncate ${
-            item.completed ? 'line-through text-gray-400' : 'text-gray-700'
+            item.completed ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'
           }`}
         >
           {item.name}
@@ -30,6 +39,16 @@ export function ShoppingItemBlock({ item, onToggle }: ShoppingItemBlockProps) {
           </p>
         )}
       </div>
-    </button>
+
+      {/* Delete — single tap */}
+      <button
+        type="button"
+        aria-label="Delete item"
+        onClick={() => onDelete(item.id)}
+        className="shrink-0 text-gray-300 hover:text-red-400 dark:text-gray-600 dark:hover:text-red-400 transition-colors px-1"
+      >
+        ✕
+      </button>
+    </div>
   );
 }

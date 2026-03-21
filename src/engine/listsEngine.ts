@@ -352,6 +352,23 @@ export function completeShoppingList(listId: string, user: User): void {
   }
 }
 
+/**
+ * Delete a ShoppingList and all its items.
+ *
+ * @param listId  ShoppingList.id to remove
+ * @param user    Current User
+ */
+export function deleteShoppingList(listId: string, user: User): void {
+  const updated: User = {
+    ...user,
+    lists: {
+      ...user.lists,
+      shoppingLists: user.lists.shoppingLists.filter((l) => l.id !== listId),
+    },
+  };
+  persistUser(updated);
+}
+
 // ── MANUAL GTD LIST (MVP11 W19) ───────────────────────────────────────────────
 
 /**
