@@ -1,0 +1,224 @@
+[
+  {
+    "id": "f47a3b5e-1c2d-4e6f-8a9b-0c1d2e3f4a5b",
+    "name": "Morning check-in",
+    "description": "Mark the start of your day with a simple intentional check-in.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "mindfulness",
+    "inputFields": { "label": "Checked in?" },
+    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 25, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "a1b2c3d4-e5f6-4789-abcd-ef0123456789",
+    "name": "Daily water intake",
+    "description": "Track how many glasses of water you drink today.",
+    "icon": "counter",
+    "taskType": "COUNTER",
+    "secondaryTag": "health",
+    "inputFields": { "target": 8, "unit": "glasses", "step": 1 },
+    "xpAward": { "health": 25, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "b2c3d4e5-f6a7-4890-bcde-f01234567890",
+    "name": "Strength set",
+    "description": "Log a weighted resistance exercise by sets and reps.",
+    "icon": "sets_reps",
+    "taskType": "SETS_REPS",
+    "secondaryTag": "fitness",
+    "inputFields": { "sets": 3, "reps": 10, "weight": null, "weightUnit": "kg", "restAfter": 90, "dropSet": false },
+    "xpAward": { "health": 0, "strength": 60, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "c3d4e5f6-a7b8-4901-8def-012345678901",
+    "name": "Cardio circuit",
+    "description": "Complete a multi-exercise cardio circuit at your own pace.",
+    "icon": "circuit",
+    "taskType": "CIRCUIT",
+    "secondaryTag": "fitness",
+    "inputFields": {
+      "exercises": ["Jumping jacks", "Burpees", "High knees", "Mountain climbers"],
+      "rounds": 3,
+      "restBetweenRounds": 60
+    },
+    "xpAward": { "health": 0, "strength": 0, "agility": 65, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "d4e5f6a7-b8c9-4012-9ef0-123456789012",
+    "name": "Focused work block",
+    "description": "Dedicate an uninterrupted block of time to deep, focused work.",
+    "icon": "duration",
+    "taskType": "DURATION",
+    "secondaryTag": "work",
+    "inputFields": { "targetDuration": 1500, "unit": "seconds" },
+    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 40 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "e5f6a7b8-c9d0-4123-af01-234567890123",
+    "name": "Meditation timer",
+    "description": "Sit in stillness and let the timer guide a full meditation session.",
+    "icon": "timer",
+    "taskType": "TIMER",
+    "secondaryTag": "mindfulness",
+    "inputFields": { "countdownFrom": 600 },
+    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 25, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "f6a7b8c9-d0e1-4234-8012-345678901234",
+    "name": "Energy rating",
+    "description": "Rate your current energy level on a scale of 1 to 10.",
+    "icon": "rating",
+    "taskType": "RATING",
+    "secondaryTag": "health",
+    "inputFields": { "scale": 10, "label": "Energy level" },
+    "xpAward": { "health": 20, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "a7b8c9d0-e1f2-4345-a123-456789012345",
+    "name": "Journal entry",
+    "description": "Write a free-form journal entry to reflect on your day.",
+    "icon": "text",
+    "taskType": "TEXT",
+    "secondaryTag": "mindfulness",
+    "inputFields": { "prompt": "What's on your mind today?", "maxLength": null },
+    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 35, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "b8c9d0e1-f2a3-4456-b234-567890123456",
+    "name": "Weekly review",
+    "description": "Complete a structured end-of-week reflection across key life areas.",
+    "icon": "form",
+    "taskType": "FORM",
+    "secondaryTag": "admin",
+    "inputFields": {
+      "fields": [
+        { "key": "wins", "label": "Top 3 wins this week", "fieldType": "text" },
+        { "key": "challenges", "label": "Biggest challenge", "fieldType": "text" },
+        { "key": "habits_kept", "label": "Habits kept (%)", "fieldType": "number" },
+        { "key": "next_focus", "label": "Main focus next week", "fieldType": "text" },
+        { "key": "overall_rating", "label": "Overall week rating (1–10)", "fieldType": "number" }
+      ]
+    },
+    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 40 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "c9d0e1f2-a3b4-4567-8345-678901234567",
+    "name": "Meal quality check",
+    "description": "Rate how well your last meal aligned with your nutritional goals.",
+    "icon": "choice",
+    "taskType": "CHOICE",
+    "secondaryTag": "nutrition",
+    "inputFields": { "options": ["Excellent", "Good", "Okay", "Poor"], "multiSelect": false },
+    "xpAward": { "health": 20, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "d0e1f2a3-b4c5-4678-9456-789012345678",
+    "name": "Morning routine",
+    "description": "Work through your essential morning routine steps one by one.",
+    "icon": "checklist",
+    "taskType": "CHECKLIST",
+    "secondaryTag": "home",
+    "inputFields": {
+      "items": [
+        { "key": "make_bed", "label": "Make bed" },
+        { "key": "brush_teeth", "label": "Brush teeth" },
+        { "key": "shower", "label": "Shower" },
+        { "key": "get_dressed", "label": "Get dressed" },
+        { "key": "eat_breakfast", "label": "Eat breakfast" }
+      ]
+    },
+    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 30, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "e1f2a3b4-c5d6-4789-a567-890123456789",
+    "name": "Receipt scan",
+    "description": "Scan a receipt to log an expense for budget tracking.",
+    "icon": "scan",
+    "taskType": "SCAN",
+    "secondaryTag": "finance",
+    "inputFields": { "scanType": "receipt" },
+    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 35 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "f2a3b4c5-d6e7-4890-b678-901234567890",
+    "name": "Workout log",
+    "description": "Log the details of a completed workout session.",
+    "icon": "log",
+    "taskType": "LOG",
+    "secondaryTag": "fitness",
+    "inputFields": {
+      "fields": [
+        { "key": "exercise", "label": "Exercise name", "fieldType": "text" },
+        { "key": "sets", "label": "Sets completed", "fieldType": "number" },
+        { "key": "reps", "label": "Reps per set", "fieldType": "number" },
+        { "key": "weight_kg", "label": "Weight (kg)", "fieldType": "number" }
+      ]
+    },
+    "xpAward": { "health": 0, "strength": 55, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "a3b4c5d6-e7f8-4901-8789-012345678901",
+    "name": "Location check-in",
+    "description": "Pin your current location as a social or personal check-in moment.",
+    "icon": "location_point",
+    "taskType": "LOCATION_POINT",
+    "secondaryTag": "social",
+    "inputFields": { "label": "Where are you?", "captureAccuracy": true },
+    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 0, "charisma": 35, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "b4c5d6e7-f8a9-4012-9890-123456789012",
+    "name": "Walk route",
+    "description": "Record the GPS trail of a walk, run, or outdoor activity.",
+    "icon": "location_trail",
+    "taskType": "LOCATION_TRAIL",
+    "secondaryTag": "fitness",
+    "inputFields": { "label": "Route name", "captureInterval": 5 },
+    "xpAward": { "health": 0, "strength": 0, "agility": 60, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  }
+]

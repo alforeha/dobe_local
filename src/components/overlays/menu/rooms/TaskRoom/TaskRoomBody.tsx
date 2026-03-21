@@ -21,6 +21,7 @@ export function TaskRoomBody({ templates }: TaskRoomBodyProps) {
           name={t.name}
           taskType={t.taskType}
           secondaryTag={t.secondaryTag}
+          xpTotal={Object.values(t.xpAward).reduce((a, b) => a + b, 0)}
         />
       ))}
     </div>

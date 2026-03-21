@@ -192,6 +192,8 @@ export interface XpAward {
 // ── TASK TEMPLATE ROOT ────────────────────────────────────────────────────────
 
 export interface TaskTemplate {
+  /** Identifier used only on prebuilt templates (app bundle). Not present on user custom templates. */
+  id?: string;
   name: string;
   description: string;
   /** Ref to icon asset */
