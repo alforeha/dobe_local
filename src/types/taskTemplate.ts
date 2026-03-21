@@ -165,13 +165,16 @@ export type InputFields =
 // User-defined tags deferred to a future chapter.
 
 export type TaskSecondaryTag =
-  | 'health'
-  | 'fitness'
-  | 'home'
-  | 'finance'
-  | 'learning'
-  | 'social'
-  | 'admin';
+  | 'fitness'      // exercise, training, sport (strength + agility stat group)
+  | 'nutrition'    // food, diet, meal prep
+  | 'health'       // medical, body checks, wellbeing
+  | 'mindfulness'  // meditation, mental health, self-care (defense stat group)
+  | 'home'         // housekeeping, maintenance, errands
+  | 'finance'      // budgeting, bills, saving
+  | 'admin'        // scheduling, paperwork, organisation
+  | 'learning'     // study, courses, reading (wisdom stat group)
+  | 'social'       // relationships, family, friends (charisma stat group)
+  | 'work';        // career, professional tasks
 
 // ── XP AWARD ─────────────────────────────────────────────────────────────────
 // Partial StatGroup record — values sum to total XP awarded (D43).
