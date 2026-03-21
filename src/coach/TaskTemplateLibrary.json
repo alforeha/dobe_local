@@ -1,6 +1,19 @@
 [
   {
     "id": "f47a3b5e-1c2d-4e6f-8a9b-0c1d2e3f4a5b",
+    "name": "Morning check-in",
+    "description": "Mark the start of your day with a simple intentional check-in.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "mindfulness",
+    "inputFields": { "label": "Checked in?" },
+    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 25, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "c0ffee01-dead-4bee-f00d-a1b2c3d4e5f6",
     "name": "Drink water",
     "description": "Log a glass of water — repeat throughout the day to hit your hydration goal.",
     "icon": "check",
