@@ -9,14 +9,14 @@
           "Boost window: morning."
         ],
         "friendly": [
-          "Rise and shine! Your early bird boost is live — go get those tasks done!",
-          "Good morning! The morning boost window is open. Let's make it count!",
-          "Morning energy is yours! Bonus XP is on the table right now."
+          "Ribbit! Morning boost is live — early tasks, bonus XP. Let's get it. 🐸",
+          "The early window is open. Your morning tasks earn more. Go.",
+          "Up early? The pond rewards it. Morning boost is on. 🐸"
         ],
         "militant": [
-          "0600. Move. Morning boost is live. No excuses.",
-          "Early bird window open. Task this. Now.",
-          "Up and running. Morning boost active — capitalize or lose it."
+          "0600. Move. Morning boost is live.",
+          "Early window open. Don't waste it.",
+          "Morning boost active. Capitalize. Now."
         ]
       }
     },
@@ -29,9 +29,9 @@
           "Boost window: evening."
         ],
         "friendly": [
-          "Evening session! Your night owl boost is live — still plenty of time to make it count!",
-          "The night owl clock is ticking! Bonus XP for your late-session push.",
-          "Evening energy — boost window is live. Let's get after it!"
+          "Night owl bonus is live. Still time to get those tasks in. 🐸",
+          "Late session open — the pond doesn't sleep. Bonus XP for evening tasks.",
+          "Evening mode. The boost window is yours. Ribbit! 🐸"
         ],
         "militant": [
           "Night owl window open. No wasted time.",
@@ -45,18 +45,18 @@
       "variants": {
         "muted": [
           "Active quest in progress.",
-          "Quest underway.",
-          "Quest progress ongoing."
+          "Quest running. Check your progress.",
+          "Quest underway. Tasks contribute to goal."
         ],
         "friendly": [
-          "You've got a quest in motion — every task gets you closer!",
-          "Keep chipping away at that quest — progress is progress!",
-          "Quest is live! Each task you finish moves that needle."
+          "Your quest is calling. Every task you finish moves that bar closer to 100. 🐸",
+          "Quest mode active — the frog is watching your progress. Keep stacking tasks.",
+          "Ribbit! Live quest. Cross those tasks off and watch the needle move. 🐸"
         ],
         "militant": [
-          "Quest is live. Every completed task counts. Get moving.",
-          "Active quest. Don't let it stall.",
-          "Quest in flight. Close it out."
+          "Quest is live. Every completed task counts. Don't let it stall.",
+          "Active quest. Close tasks. Move the needle.",
+          "Quest in flight. No idle time. Execute."
         ]
       }
     },
@@ -65,18 +65,18 @@
       "variants": {
         "muted": [
           "Recent activity logged.",
-          "Activity recorded.",
-          "Session activity noted."
+          "Tasks completed this session.",
+          "Session active."
         ],
         "friendly": [
-          "Nice recent activity! You're building momentum!",
-          "You've been busy — keep that going!",
-          "Great to see you keeping things moving. Stay consistent."
+          "You've been putting in the work — it shows. Keep it up. 🐸",
+          "Active session. The pond is taking notes. Don't slow down now.",
+          "Tasks done, stats rising. This is how it's done. 🐸"
         ],
         "militant": [
-          "Recent activity noted. Don't lose the pace.",
-          "You moved. Good. Keep moving.",
-          "Activity logged. Capitalize on this momentum."
+          "Good output this session. Don't stop here.",
+          "Work logged. Maintain the pace.",
+          "Recent tasks recorded. Keep going."
         ]
       }
     },
@@ -89,9 +89,9 @@
           "Active streak noted."
         ],
         "friendly": [
-          "Streak is alive! Every day you show up counts!",
-          "You're on a roll — protect that streak today.",
-          "Day after day — this is how progress is made!"
+          "Streak active — every day you show up matters. Protect it. 🐸",
+          "Consistent. That's the word. Your streak is proof. Keep going.",
+          "Day after day, the frog notices. Your streak is still going. 🐸"
         ],
         "militant": [
           "Streak is live. Protect it. Today counts.",
@@ -174,9 +174,9 @@
           "The finish date came and went — use the exigency options to get back on track!"
         ],
         "militant": [
-          "Deadline missed. Not acceptable. Pick an option and continue the mission.",
-          "Finish line passed. No time for excuses. Extend or recommit. Move.",
-          "You slipped the deadline. Reassess and relaunch. Stalling is not an option."
+          "Deadline passed. Pick an option and keep the quest alive.",
+          "Finish line slipped. Reassess and relaunch — quitting isn't on the menu.",
+          "Missed the date. Not the end. Select an exigency and move forward."
         ]
       }
     },
@@ -203,21 +203,9 @@
     {
       "contextKey": "event.completed",
       "variants": {
-        "muted": [
-          "Event complete.",
-          "Event closed.",
-          "Session complete."
-        ],
-        "friendly": [
-          "Event complete! Every task done — that's how it's done!",
-          "Full clean-up! All tasks finished. Excellent work!",
-          "Event wrapped up perfectly! You got everything done!"
-        ],
-        "militant": [
-          "Event complete. Clean sweep. That's how you do it.",
-          "All tasks done. Event closed. No loose ends.",
-          "Completed event. Total execution. Continue."
-        ]
+        "muted": [],
+        "friendly": [],
+        "militant": []
       }
     },
     {
@@ -229,14 +217,14 @@
           "New level: {{level}}."
         ],
         "friendly": [
-          "LEVEL {{level}}! You're growing! Look at you go!",
-          "Level {{level}} unlocked! Your progress is showing!",
-          "LEVEL UP! Welcome to level {{level}}!"
+          "Level {{level}}! Ribbit — you leveled up! The pond is cheering. 🐸",
+          "LEVEL {{level}} unlocked. Every task, every day. This one is earned.",
+          "Level {{level}}. Look how far you've come. Keep going. 🐸"
         ],
         "militant": [
-          "Level {{level}}. You earned it. Keep climbing.",
-          "LEVEL {{level}}. Forward.",
-          "Threshold crossed. Level {{level}}. Maintain the pace."
+          "Level {{level}}. You earned it. Maintain the standard.",
+          "LEVEL {{level}}. Threshold crossed. Set your next target.",
+          "New level: {{level}}. Baseline raised. Move on."
         ]
       }
     },
@@ -284,19 +272,19 @@
       "contextKey": "streak.broken",
       "variants": {
         "muted": [
-          "Streak ended.",
-          "Streak reset to zero.",
-          "Streak lost."
+          "Streak ended. Today is day one.",
+          "Streak reset. Fresh start.",
+          "Streak count cleared. New run begins."
         ],
         "friendly": [
-          "The streak broke — it happens! Start fresh today and build it back!",
-          "Oops! Streak over — but you did great while it lasted! Today is day one!",
-          "Streaks break, but you don't. Reset and go again!"
+          "The streak broke — that's okay. The frog has seen it before. Today is day one again. 🐸",
+          "Streaks bend before they break — and then they restart. You've done it before. Do it again.",
+          "Yesterday's streak is done. Today's is just getting started. Ribbit. 🐸"
         ],
         "militant": [
-          "Streak broken. That's a setback. Reset. Start over. No excuses this time.",
-          "Streak's gone. Learn from it. Start fresh today.",
-          "You missed. Acknowledge it. Move forward. No dwelling."
+          "Streak lost. Acknowledge it. Start the new one today.",
+          "Reset. The new streak begins now.",
+          "Missed. Noted. Move on. Day one starts here."
         ]
       }
     },
@@ -345,18 +333,18 @@
       "variants": {
         "muted": [
           "Talent tier unlocked.",
-          "Talent tree updated.",
-          "Tier advancement recorded."
+          "New ability available.",
+          "Talent tree advanced."
         ],
         "friendly": [
-          "Talent tier unlocked! Your abilities are growing!",
-          "New talent tier! Every unlock makes you stronger!",
-          "Talent advancement! Look at those skills developing!"
+          "Talent tier unlocked! You've grown into something new. Check your abilities. 🐸",
+          "New tier, new tools. The frog is impressed — go see what you've unlocked. 🐸",
+          "Ability unlocked! This is what leveling up looks like. Put it to use."
         ],
         "militant": [
-          "Talent tier unlocked. Enhancement active. Use it.",
-          "New tier unlocked. You're stronger now. Act like it.",
-          "Tier advancement logged. Deploy your new capability."
+          "Talent tier unlocked. New capability active. Deploy it.",
+          "Enhancement acquired. You're stronger now. Act like it.",
+          "Tier advanced. New tools in hand. Use them."
         ]
       }
     },

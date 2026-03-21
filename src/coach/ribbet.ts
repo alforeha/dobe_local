@@ -32,7 +32,7 @@ export type DynamicValues = Record<string, string | number>;
 function resolveTokens(template: string, values: DynamicValues): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => {
     const val = values[key];
-    return val !== undefined ? String(val) : `{{${key}}}`;
+    return val !== undefined ? String(val) : '';
   });
 }
 
