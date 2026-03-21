@@ -159,6 +159,20 @@ export type InputFields =
   | LocationPointInputFields
   | LocationTrailInputFields;
 
+// ── SECONDARY TAG ────────────────────────────────────────────────────────────
+// Fixed enum for grouping and filtering in the TASK room.
+// Enum values are BUILD-time content decisions — extend at BUILD time.
+// User-defined tags deferred to a future chapter.
+
+export type TaskSecondaryTag =
+  | 'health'
+  | 'fitness'
+  | 'home'
+  | 'finance'
+  | 'learning'
+  | 'social'
+  | 'admin';
+
 // ── XP AWARD ─────────────────────────────────────────────────────────────────
 // Partial StatGroup record — values sum to total XP awarded (D43).
 // Custom template default: +5 to assigned stat group.
@@ -190,4 +204,6 @@ export interface TaskTemplate {
   media: string | null;
   /** Optional Useable refs — items required for completion */
   items: string[];
+  /** Optional category tag for grouping and filtering in TASK room. Enum values BUILD-time. */
+  secondaryTag: TaskSecondaryTag | null;
 }
