@@ -40,7 +40,7 @@ export function ActBlock({ act, onEdit }: ActBlockProps) {
           ✏️
         </button>
       </div>
-      {expanded && <ActBlockExpanded chains={act.chains} />}
+      {expanded && <ActBlockExpanded act={act} />}
     </div>
   );
 }
