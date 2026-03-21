@@ -6,13 +6,17 @@ interface TaskBlockProps {
   taskType: TaskType;
   secondaryTag: TaskSecondaryTag | null;
   xpTotal: number;
+  /** true = user custom template; false = prebuilt read-only */
+  isCustom: boolean;
+  /** Called when user taps the edit button. Only provided for custom templates. */
+  onEdit?: () => void;
 }
 
-export function TaskBlock({ name, taskType, secondaryTag, xpTotal }: TaskBlockProps) {
+export function TaskBlock({ name, taskType, secondaryTag, xpTotal, isCustom, onEdit }: TaskBlockProps) {
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg">
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-gray-800 truncate">{name}</p>
+        <p className="text-sm text-gray-800 dark:text-gray-200 truncate">{name}</p>
         <div className="flex items-center gap-1.5 mt-0.5">
           <span className="text-xs text-gray-400">{taskType}</span>
           {secondaryTag && (
@@ -23,8 +27,24 @@ export function TaskBlock({ name, taskType, secondaryTag, xpTotal }: TaskBlockPr
         </div>
       </div>
       <span className="text-xs font-medium text-amber-500 shrink-0">+{xpTotal} XP</span>
-      {/* BUILD-TIME: quick-complete, edit, favourite actions */}
-      <button type="button" className="text-gray-300 text-sm shrink-0">•••</button>
+      {isCustom ? (
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label="Edit task template"
+          className="text-xs text-gray-400 hover:text-purple-500 shrink-0 transition-colors px-1"
+        >
+          Edit
+        </button>
+      ) : (
+        <span
+          title="Prebuilt templates are read-only"
+          className="text-xs text-gray-300 shrink-0 select-none cursor-default px-1"
+          aria-label="Prebuilt template — read-only"
+        >
+          •••
+        </span>
+      )}
     </div>
   );
 }

@@ -3,14 +3,19 @@ type TaskTab = 'stat' | 'resource';
 interface TaskRoomHeaderProps {
   activeTab: TaskTab;
   onTabChange: (tab: TaskTab) => void;
+  onAdd: () => void;
 }
 
-export function TaskRoomHeader({ activeTab, onTabChange }: TaskRoomHeaderProps) {
+export function TaskRoomHeader({ activeTab, onTabChange, onAdd }: TaskRoomHeaderProps) {
   return (
     <div className="px-4 pt-4 pb-2 border-b border-gray-100 dark:border-gray-700">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-gray-800">Tasks</h2>
-        <button type="button" className="text-xs text-blue-500 font-medium">
+        <button
+          type="button"
+          onClick={onAdd}
+          className="text-xs text-blue-500 font-medium hover:text-blue-700 transition-colors"
+        >
           + Add Task
         </button>
       </div>
