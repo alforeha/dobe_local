@@ -55,12 +55,16 @@ export type TaskType =
 
 export interface CheckInputFields {
   label: string;
+  /** Result capture — optional note on completion */
+  note?: string | null;
 }
 
 export interface CounterInputFields {
   target: number;
   unit: string;
   step: number;
+  /** Result capture — achieved count on completion */
+  count?: number;
 }
 
 export interface SetsRepsInputFields {
@@ -93,11 +97,15 @@ export interface TimerInputFields {
 export interface RatingInputFields {
   scale: number; // e.g. 5 or 10
   label: string;
+  /** Result capture — selected rating value */
+  value?: number;
 }
 
 export interface TextInputFields {
   prompt: string;
   maxLength: number | null;
+  /** Result capture — entered text */
+  value?: string;
 }
 
 export interface FormField {
@@ -113,15 +121,21 @@ export interface FormInputFields {
 export interface ChoiceInputFields {
   options: string[];
   multiSelect: boolean;
+  /** Result capture — selected option(s) */
+  selected?: string[];
 }
 
 export interface ChecklistItem {
   key: string;
   label: string;
+  /** Result capture — whether this item was checked on completion */
+  checked?: boolean;
 }
 
 export interface ChecklistInputFields {
   items: ChecklistItem[];
+  /** If true, all items must be checked to auto-complete. Default: false (explicit complete allowed) */
+  requireAll?: boolean;
 }
 
 export interface ScanInputFields {
@@ -129,7 +143,16 @@ export interface ScanInputFields {
 }
 
 export interface LogInputFields {
-  fields: FormField[];
+  /** Prompt shown to the user — null for open-ended log entry */
+  prompt: string | null;
+  /** Result capture — freetext entry value */
+  value?: string;
+  /** Result capture — associated Resource ref (enables +2 defense bonus context) */
+  resourceRef?: string | null;
+  /** Result capture — numeric amount (e.g. dose, distance, cost) */
+  amount?: number | null;
+  /** Unit label for amount (e.g. mg, km, $) */
+  unit?: string | null;
 }
 
 export interface LocationPointInputFields {

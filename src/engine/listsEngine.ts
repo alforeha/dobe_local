@@ -97,6 +97,7 @@ export function completeFavourite(taskTemplateRef: string, user: User): void {
     sharedWith: null,
     questRef: null,
     actRef: null,
+    secondaryTag: null,
   };
 
   scheduleStore.setTask(task);

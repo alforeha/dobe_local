@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useScheduleStore } from '../../../stores/useScheduleStore';
 import { EventOverlayHeader } from './EventOverlayHeader';
 import { TaskBlock } from './TaskBlock';
@@ -13,6 +13,7 @@ interface EventOverlayProps {
 export function EventOverlay({ eventId, onClose }: EventOverlayProps) {
   const activeEvents = useScheduleStore((s) => s.activeEvents);
   const historyEvents = useScheduleStore((s) => s.historyEvents);
+  const tasks = useScheduleStore((s) => s.tasks);
 
   const event = (activeEvents[eventId] ?? historyEvents[eventId]) as Event | undefined;
 
@@ -20,6 +21,17 @@ export function EventOverlay({ eventId, onClose }: EventOverlayProps) {
     event?.tasks?.[0] ?? null
   );
   const [playMode, setPlayMode] = useState(false);
+
+  const handleTaskComplete = useCallback(() => {
+    if (!playMode || !event) return;
+    const currentIndex = event.tasks.indexOf(selectedTaskId ?? '');
+    const nextPending = event.tasks
+      .slice(currentIndex + 1)
+      .find((id) => tasks[id]?.completionState !== 'complete');
+    if (nextPending) {
+      setSelectedTaskId(nextPending);
+    }
+  }, [playMode, event, selectedTaskId, tasks]);
 
   if (!event) {
     return (
@@ -44,7 +56,12 @@ export function EventOverlay({ eventId, onClose }: EventOverlayProps) {
       <div className="flex-1 overflow-hidden flex flex-col">
         {/* Task block */}
         <div className="shrink-0 border-b border-gray-200 p-3">
-          <TaskBlock taskId={selectedTaskId} />
+          <TaskBlock
+            taskId={selectedTaskId}
+            eventId={eventId}
+            playMode={playMode}
+            onTaskComplete={handleTaskComplete}
+          />
         </div>
 
         {/* Event task table */}

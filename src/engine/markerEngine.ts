@@ -132,6 +132,7 @@ export function fireMarker(params: FireMarkerParams): void {
     sharedWith: null,
     questRef,
     actRef: actId,
+    secondaryTag: null,
   };
 
   scheduleStore.setTask(task);

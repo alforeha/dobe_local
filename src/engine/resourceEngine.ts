@@ -350,6 +350,7 @@ function _genContactGTD(resource: Resource): Task[] {
     sharedWith: null,
     questRef: null,
     actRef: null,
+    secondaryTag: null,
   };
   return [task];
 }
@@ -374,6 +375,7 @@ function _genAccountGTD(resource: Resource): Task[] {
     sharedWith: null,
     questRef: null,
     actRef: null,
+    secondaryTag: null,
   }));
 }
 
@@ -397,6 +399,7 @@ function _genInventoryGTD(resource: Resource): Task[] {
     sharedWith: null,
     questRef: null,
     actRef: null,
+    secondaryTag: null,
   }));
 }
 

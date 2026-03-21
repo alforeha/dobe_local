@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { PlannedEvent } from '../types/plannedEvent';
 import type { Event } from '../types/event';
 import type { Task } from '../types/task';
-import type { TaskTemplate } from '../types/taskTemplate';
+import type { TaskTemplate, TaskSecondaryTag } from '../types/taskTemplate';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { storageSet, storageKey } from '../storage';
 
@@ -53,7 +53,7 @@ export function advanceCursor(pe: PlannedEvent): {
  * Create a bare Task instance from a TaskTemplate.
  * Caller is responsible for persisting it.
  */
-function instantiateTask(templateRef: string): Task {
+function instantiateTask(templateRef: string, secondaryTag: TaskSecondaryTag | null): Task {
   return {
     id: uuidv4(),
     templateRef,
@@ -66,6 +66,7 @@ function instantiateTask(templateRef: string): Task {
     sharedWith: null,
     questRef: null,
     actRef: null,
+    secondaryTag,
   };
 }
 
@@ -97,7 +98,8 @@ export function materialisePlannedEvent(
     // Validate the template exists — skip gracefully if missing (e.g. deleted template)
     const templateExists = templateRef in taskTemplates;
     if (templateExists) {
-      tasks.push(instantiateTask(templateRef));
+      const tmpl = taskTemplates[templateRef];
+      tasks.push(instantiateTask(templateRef, tmpl.secondaryTag ?? null));
     } else {
       console.warn(
         `[materialise] TaskTemplate "${templateRef}" not found in store — task skipped for PlannedEvent "${pe.id}"`,

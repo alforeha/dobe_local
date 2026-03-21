@@ -5,7 +5,7 @@
 // UUID needed for undo and quest logging.
 // ─────────────────────────────────────────
 
-import type { InputFields } from './taskTemplate';
+import type { InputFields, TaskSecondaryTag } from './taskTemplate';
 
 // ── LOCATION ─────────────────────────────────────────────────────────────────
 
@@ -54,4 +54,9 @@ export interface Task {
    * null for regular schedule tasks.
    */
   actRef: string | null;
+  /**
+   * Secondary tag copied from the TaskTemplate at materialisation.
+   * Cached here so the display layer can show the tag without a template lookup.
+   */
+  secondaryTag: TaskSecondaryTag | null;
 }
