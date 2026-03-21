@@ -3,13 +3,13 @@ import { PlannedEventBlock } from './PlannedEventBlock';
 
 interface ScheduleRoomBodyProps {
   events: PlannedEvent[];
-  onEdit: (routine: PlannedEvent) => void;
+  onEdit: (event: PlannedEvent) => void;
 }
 
 export function ScheduleRoomBody({ events, onEdit }: ScheduleRoomBodyProps) {
   if (events.length === 0) {
     return (
-      <p className="text-center text-gray-400 text-sm py-10">No routines yet.</p>
+      <p className="text-center text-gray-400 text-sm py-10">No events or routines yet.</p>
     );
   }
 

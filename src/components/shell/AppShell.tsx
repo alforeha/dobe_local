@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSystemStore } from '../../stores/useSystemStore';
+import { useScheduleStore } from '../../stores/useScheduleStore';
 import { Header } from './Header';
 import { Body } from './Body';
 import { Footer } from './Footer';
@@ -8,6 +9,7 @@ import { EventOverlay } from '../overlays/event/EventOverlay';
 import { CoachOverlay } from '../overlays/coach/CoachOverlay';
 import { ProfileOverlay } from '../overlays/profile/ProfileOverlay';
 import { MenuOverlay } from '../overlays/menu/MenuOverlay';
+import { OneOffEventPopup } from '../overlays/menu/rooms/ScheduleRoom/OneOffEventPopup';
 import type { TimeView } from '../timeViews/TimeViewContainer';
 
 export type ActiveOverlay = 'event' | 'coach' | 'profile' | 'menu' | null;
@@ -16,11 +18,13 @@ export function AppShell() {
   const [activeView, setActiveView] = useState<TimeView>('day');
   const [overlay, setOverlay] = useState<ActiveOverlay>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [editPlannedId, setEditPlannedId] = useState<string | null>(null);
   const [weekViewSeed, setWeekViewSeed] = useState<Date | null>(null);
   const [overlayClosing, setOverlayClosing] = useState(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const mode = useSystemStore((s) => s.settings?.displayPreferences?.mode ?? 'dark');
+  const plannedEvents = useScheduleStore((s) => s.plannedEvents);
 
   useEffect(() => {
     if (mode === 'dark') {
@@ -76,6 +80,7 @@ export function AppShell() {
         onEventOpen={openEventOverlay}
         onWeekSelect={handleWeekSelect}
         weekViewSeed={weekViewSeed}
+        onEditPlanned={(id) => setEditPlannedId(id)}
       />
       <Footer
         activeView={activeView}
@@ -107,6 +112,14 @@ export function AppShell() {
         <SlideUpOverlay closing={overlayClosing} onBackdropClick={requestClose}>
           <MenuOverlay onClose={requestClose} />
         </SlideUpOverlay>
+      )}
+
+      {/* One-off event edit popup — opened by tapping a future planned event block in DayView */}
+      {editPlannedId && (
+        <OneOffEventPopup
+          editEvent={plannedEvents[editPlannedId] ?? null}
+          onClose={() => setEditPlannedId(null)}
+        />
       )}
     </div>
   );

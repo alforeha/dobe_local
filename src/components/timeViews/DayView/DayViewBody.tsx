@@ -2,11 +2,14 @@ import { useScheduleStore } from '../../../stores/useScheduleStore';
 import { useShallow } from 'zustand/react/shallow';
 import { EventBlock } from './EventBlock';
 import { format, hourLabel, isSameDay } from '../../../utils/dateUtils';
+import { isOneOffEvent } from '../../../utils/isOneOffEvent';
 import type { Event, PlannedEvent } from '../../../types';
 
 interface DayViewBodyProps {
   date: Date;
   onEventOpen: (eventId: string) => void;
+  /** Optional — opens OneOffEventPopup for future one-off planned events */
+  onEditPlanned?: (plannedId: string) => void;
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -16,7 +19,7 @@ function parseHour(time: string): number {
   return parseInt(time.split(':')[0], 10);
 }
 
-export function DayViewBody({ date, onEventOpen }: DayViewBodyProps) {
+export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyProps) {
   const { activeEvents, historyEvents, plannedEvents } = useScheduleStore(useShallow((s) => ({
     activeEvents: s.activeEvents,
     historyEvents: s.historyEvents,
@@ -77,9 +80,20 @@ export function DayViewBody({ date, onEventOpen }: DayViewBodyProps) {
 
               {/* Event blocks — overlapping events offset horizontally per UI-05 */}
               {hourEvents.map((ev, idx) => {
-                const isInteractive = isPast || isToday;
-                const isPlanned = !('startDate' in ev);
+                const isRealEvent = 'startDate' in ev;
+                const isPlanned = !isRealEvent;
                 const eventId = ev.id;
+                // Past/today real events open the EventOverlay
+                // Future one-off planned events open OneOffEventPopup if callback provided
+                const plannedEv = isPlanned ? (ev as PlannedEvent) : null;
+                const isFutureOneOff =
+                  isFuture && plannedEv !== null && isOneOffEvent(plannedEv) && !!onEditPlanned;
+                const isInteractive = (!isPlanned && (isPast || isToday)) || isFutureOneOff;
+                const handleOpen = isInteractive
+                  ? isFutureOneOff
+                    ? () => onEditPlanned!(eventId)
+                    : () => onEventOpen(eventId)
+                  : undefined;
                 return (
                   <EventBlock
                     key={eventId}
@@ -92,7 +106,7 @@ export function DayViewBody({ date, onEventOpen }: DayViewBodyProps) {
                     taskComplete={0}
                     offsetIndex={idx}
                     interactive={isInteractive}
-                    onOpen={isInteractive ? () => onEventOpen(eventId) : undefined}
+                    onOpen={handleOpen}
                   />
                 );
               })}

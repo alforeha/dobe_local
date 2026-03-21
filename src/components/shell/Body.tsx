@@ -6,9 +6,10 @@ interface BodyProps {
   onEventOpen: (eventId: string) => void;
   onWeekSelect?: (weekStart: Date) => void;
   weekViewSeed?: Date | null;
+  onEditPlanned?: (plannedId: string) => void;
 }
 
-export function Body({ activeView, onEventOpen, onWeekSelect, weekViewSeed }: BodyProps) {
+export function Body({ activeView, onEventOpen, onWeekSelect, weekViewSeed, onEditPlanned }: BodyProps) {
   return (
     <main className="flex-1 overflow-hidden">
       <TimeViewContainer
@@ -16,6 +17,7 @@ export function Body({ activeView, onEventOpen, onWeekSelect, weekViewSeed }: Bo
         onEventOpen={onEventOpen}
         onWeekSelect={onWeekSelect}
         weekViewSeed={weekViewSeed}
+        onEditPlanned={onEditPlanned}
       />
     </main>
   );

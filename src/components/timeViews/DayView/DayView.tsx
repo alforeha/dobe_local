@@ -4,9 +4,10 @@ import { DayViewBody } from './DayViewBody';
 
 interface DayViewProps {
   onEventOpen: (eventId: string) => void;
+  onEditPlanned?: (plannedId: string) => void;
 }
 
-export function DayView({ onEventOpen }: DayViewProps) {
+export function DayView({ onEventOpen, onEditPlanned }: DayViewProps) {
   const [currentDate, setCurrentDate] = useState(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -41,7 +42,7 @@ export function DayView({ onEventOpen }: DayViewProps) {
         onForward={goForward}
         onToday={goToday}
       />
-      <DayViewBody date={currentDate} onEventOpen={onEventOpen} />
+      <DayViewBody date={currentDate} onEventOpen={onEventOpen} onEditPlanned={onEditPlanned} />
     </div>
   );
 }

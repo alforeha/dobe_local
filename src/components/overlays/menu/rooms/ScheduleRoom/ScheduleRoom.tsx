@@ -5,13 +5,17 @@ import { ScheduleRoomSubHeader } from './ScheduleRoomSubHeader';
 import { ScheduleRoomBody } from './ScheduleRoomBody';
 import { LeaguesTabStub } from './LeaguesTabStub';
 import { RoutinePopup } from './RoutinePopup';
+import { OneOffEventPopup } from './OneOffEventPopup';
+import { isOneOffEvent } from '../../../../../utils/isOneOffEvent';
 import type { PlannedEvent } from '../../../../../types';
 
 type ScheduleTab = 'routines' | 'leagues';
 
 type PopupState =
-  | { mode: 'add' }
-  | { mode: 'edit'; routine: PlannedEvent }
+  | { mode: 'add-routine' }
+  | { mode: 'edit-routine'; routine: PlannedEvent }
+  | { mode: 'add-event' }
+  | { mode: 'edit-event'; event: PlannedEvent }
   | null;
 
 export function ScheduleRoom() {
@@ -25,8 +29,12 @@ export function ScheduleRoom() {
     ? allEvents.filter((e) => e.name.toLowerCase().includes(filter.toLowerCase()))
     : allEvents;
 
-  function handleEdit(routine: PlannedEvent) {
-    setPopup({ mode: 'edit', routine });
+  function handleEdit(event: PlannedEvent) {
+    if (isOneOffEvent(event)) {
+      setPopup({ mode: 'edit-event', event });
+    } else {
+      setPopup({ mode: 'edit-routine', routine: event });
+    }
   }
 
   return (
@@ -37,15 +45,23 @@ export function ScheduleRoom() {
           <ScheduleRoomSubHeader
             filterValue={filter}
             onFilterChange={setFilter}
-            onAdd={() => setPopup({ mode: 'add' })}
+            onAddRoutine={() => setPopup({ mode: 'add-routine' })}
+            onAddEvent={() => setPopup({ mode: 'add-event' })}
           />
           <ScheduleRoomBody events={filtered} onEdit={handleEdit} />
         </>
       )}
       {tab === 'leagues' && <LeaguesTabStub />}
-      {popup && (
+
+      {(popup?.mode === 'add-routine' || popup?.mode === 'edit-routine') && (
         <RoutinePopup
-          editRoutine={popup.mode === 'edit' ? popup.routine : null}
+          editRoutine={popup.mode === 'edit-routine' ? popup.routine : null}
+          onClose={() => setPopup(null)}
+        />
+      )}
+      {(popup?.mode === 'add-event' || popup?.mode === 'edit-event') && (
+        <OneOffEventPopup
+          editEvent={popup.mode === 'edit-event' ? popup.event : null}
           onClose={() => setPopup(null)}
         />
       )}

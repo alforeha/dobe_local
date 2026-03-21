@@ -27,6 +27,10 @@ interface UserActions {
   addTaskTemplateRef: (id: string) => void;
   /** Remove a custom TaskTemplate UUID ref from User.lists.taskLibrary (D34) */
   removeTaskTemplateRef: (id: string) => void;
+  /** Add a PlannedEvent ref to User.schedule.planned[] — one-off events (W18) */
+  addPlannedRef: (id: string) => void;
+  /** Remove a PlannedEvent ref from User.schedule.planned[] — one-off events (W18) */
+  removePlannedRef: (id: string) => void;
   /** Add a PlannedEvent ref to User.schedule.routines[] (D36) */
   addRoutineRef: (id: string) => void;
   /** Remove a PlannedEvent ref from User.schedule.routines[] (D36) */
@@ -115,6 +119,38 @@ export const useUserStore = create<UserState & UserActions>()(
                   lists: {
                     ...state.user.lists,
                     taskLibrary: state.user.lists.taskLibrary.filter((ref) => ref !== id),
+                  },
+                },
+              }
+            : {},
+        ),
+
+      addPlannedRef: (id) =>
+        set((state) =>
+          state.user
+            ? {
+                user: {
+                  ...state.user,
+                  schedule: {
+                    ...state.user.schedule,
+                    planned: state.user.schedule.planned.includes(id)
+                      ? state.user.schedule.planned
+                      : [...state.user.schedule.planned, id],
+                  },
+                },
+              }
+            : {},
+        ),
+
+      removePlannedRef: (id) =>
+        set((state) =>
+          state.user
+            ? {
+                user: {
+                  ...state.user,
+                  schedule: {
+                    ...state.user.schedule,
+                    planned: state.user.schedule.planned.filter((ref) => ref !== id),
                   },
                 },
               }
