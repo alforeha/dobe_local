@@ -11,6 +11,8 @@ export interface FeedEntry {
   timestamp: string; // ISO date
   /** Optional ref to the triggering object */
   triggerRef?: string;
+  /** Whether the user has read this entry — false / undefined = unread */
+  read?: boolean;
 }
 
 /** [MULTI-USER] stub — null in LOCAL */

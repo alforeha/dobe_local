@@ -3,6 +3,10 @@
 /* Enable class-based dark mode for Tailwind v4 dark: utilities */
 @variant dark (&:where(.dark, .dark *));
 
+/* Restore pointer cursor on buttons — stripped by Tailwind preflight */
+button {
+  cursor: pointer;
+}
 :root {
   height: 100%;
 

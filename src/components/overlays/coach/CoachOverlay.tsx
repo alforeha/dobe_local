@@ -17,8 +17,14 @@ interface CoachOverlayProps {
 }
 
 export function CoachOverlay({ onClose, onOpenEvent, onNavigateToDayView }: CoachOverlayProps) {
-  const feed = useUserStore((s) => s.user?.feed);
-  const hasFeedContent = (feed?.entries?.length ?? 0) > 0;
+  // Select stable primitives to avoid new-reference churn from array selectors
+  const unreadCount = useUserStore(
+    (s) => s.user?.feed.entries.filter((e) => !e.read).length ?? 0,
+  );
+  const hasFeedContent = useUserStore(
+    (s) => (s.user?.feed.entries.length ?? 0) > 0,
+  );
+  const userLevel = useUserStore((s) => s.user?.progression.stats.level ?? 0);
 
   const [activeRoom, setActiveRoom] = useState<CoachRoom>(
     hasFeedContent ? 'feed' : 'recommendations'
@@ -39,7 +45,7 @@ export function CoachOverlay({ onClose, onOpenEvent, onNavigateToDayView }: Coac
       <CoachOverlayHeader
         onClose={onClose}
         onFeedNav={() => setActiveRoom('feed')}
-        unreadCount={feed?.unreadCount ?? 0}
+        unreadCount={unreadCount}
       />
 
       {/* Room content */}
@@ -56,7 +62,11 @@ export function CoachOverlay({ onClose, onOpenEvent, onNavigateToDayView }: Coac
         {activeRoom === 'leaderboard' && <LeaderboardRoom />}
       </div>
 
-      <CoachOverlayFooter activeRoom={activeRoom} onNav={setActiveRoom} />
+      <CoachOverlayFooter
+        activeRoom={activeRoom}
+        onNav={setActiveRoom}
+        userLevel={userLevel}
+      />
     </div>
   );
 }
