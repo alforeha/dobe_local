@@ -4,8 +4,12 @@ import { WeekExplorerSubHeader } from './WeekExplorerSubHeader';
 import { WeekExplorerBody } from './WeekExplorerBody';
 import { getPrevMonday, addDays } from '../../../utils/dateUtils';
 
+interface WeekExplorerProps {
+  onWeekSelect?: (weekStart: Date) => void;
+}
+
 /** 57-week rolling window explorer. Seed date defaults to today. */
-export function WeekExplorer() {
+export function WeekExplorer({ onWeekSelect }: WeekExplorerProps) {
   // Seed date — user can shift the entire window (UI-07)
   const [seedDate, setSeedDate] = useState(() => {
     const d = new Date();
@@ -25,7 +29,7 @@ export function WeekExplorer() {
         onSeedChange={setSeedDate}
       />
       <WeekExplorerSubHeader />
-      <WeekExplorerBody seedDate={seedDate} windowStart={windowStart} />
+      <WeekExplorerBody seedDate={seedDate} windowStart={windowStart} onWeekSelect={onWeekSelect} />
     </div>
   );
 }

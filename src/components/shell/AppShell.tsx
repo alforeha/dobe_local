@@ -14,6 +14,12 @@ export function AppShell() {
   const [activeView, setActiveView] = useState<TimeView>('day');
   const [overlay, setOverlay] = useState<ActiveOverlay>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [weekViewSeed, setWeekViewSeed] = useState<Date | null>(null);
+
+  const handleWeekSelect = (weekStart: Date) => {
+    setWeekViewSeed(weekStart);
+    setActiveView('week');
+  };
 
   const openEventOverlay = (eventId: string) => {
     setSelectedEventId(eventId);
@@ -36,6 +42,8 @@ export function AppShell() {
       <Body
         activeView={activeView}
         onEventOpen={openEventOverlay}
+        onWeekSelect={handleWeekSelect}
+        weekViewSeed={weekViewSeed}
       />
       <Footer
         activeView={activeView}

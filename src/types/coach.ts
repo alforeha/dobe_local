@@ -105,7 +105,8 @@ export interface RecommendationsLibrary {
 
 export interface AvatarState {
   /** e.g. 'seed' | 'sprout' | 'sapling' | 'tree' */
-  stateKey: string;
+  id: string;
+  label: string;
   xpThreshold: number;
   assetRef: string;
 }
@@ -113,9 +114,11 @@ export interface AvatarState {
 export interface CoachCharacter {
   id: string;
   name: string;
+  tagline: string;
+  catchphrase: string;
   assetRef: string;
-  /** Holiday overlay refs — BUILD-time task */
-  holidayOverlays: Record<string, string>;
+  /** Holiday overlay refs — BUILD-time task (optional until populated) */
+  holidayOverlays?: Record<string, string>;
   /** true = default frog character */
   isDefault: boolean;
 }

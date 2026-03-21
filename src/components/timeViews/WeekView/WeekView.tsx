@@ -3,8 +3,12 @@ import { WeekViewHeader } from './WeekViewHeader';
 import { WeekViewBody } from './WeekViewBody';
 import { getPrevMonday, addDays } from '../../../utils/dateUtils';
 
-export function WeekView() {
-  const [weekStart, setWeekStart] = useState(() => getPrevMonday(new Date()));
+interface WeekViewProps {
+  initialWeekStart?: Date;
+}
+
+export function WeekView({ initialWeekStart }: WeekViewProps) {
+  const [weekStart, setWeekStart] = useState(() => getPrevMonday(initialWeekStart ?? new Date()));
 
   const goBack = () => setWeekStart((d) => addDays(d, -7));
   const goForward = () => setWeekStart((d) => addDays(d, 7));

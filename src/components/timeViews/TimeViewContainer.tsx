@@ -7,15 +7,17 @@ export type TimeView = 'day' | 'week' | 'explorer';
 interface TimeViewContainerProps {
   activeView: TimeView;
   onEventOpen: (eventId: string) => void;
+  onWeekSelect?: (weekStart: Date) => void;
+  weekViewSeed?: Date | null;
 }
 
 /** Single source of truth for active time view. Footer TimeViewTabs dispatches to AppShell which passes here. */
-export function TimeViewContainer({ activeView, onEventOpen }: TimeViewContainerProps) {
+export function TimeViewContainer({ activeView, onEventOpen, onWeekSelect, weekViewSeed }: TimeViewContainerProps) {
   return (
     <div className="h-full overflow-hidden">
       {activeView === 'day' && <DayView onEventOpen={onEventOpen} />}
-      {activeView === 'week' && <WeekView />}
-      {activeView === 'explorer' && <WeekExplorer />}
+      {activeView === 'week' && <WeekView initialWeekStart={weekViewSeed ?? undefined} />}
+      {activeView === 'explorer' && <WeekExplorer onWeekSelect={onWeekSelect} />}
     </div>
   );
 }
