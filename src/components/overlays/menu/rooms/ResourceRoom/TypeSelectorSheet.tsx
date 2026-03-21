@@ -14,12 +14,12 @@ interface TypeOption {
 }
 
 const TYPES: TypeOption[] = [
-  { type: 'contact',   icon: '👤', label: 'Contact',   available: true  },
-  { type: 'home',      icon: '🏠', label: 'Home',      available: false },
-  { type: 'vehicle',   icon: '🚗', label: 'Vehicle',   available: false },
-  { type: 'account',   icon: '💳', label: 'Account',   available: false },
-  { type: 'inventory', icon: '📦', label: 'Inventory', available: false },
-  { type: 'doc',       icon: '📄', label: 'Doc',       available: false },
+  { type: 'contact',   icon: '👤', label: 'Contact',   available: true },
+  { type: 'home',      icon: '🏠', label: 'Home',      available: true },
+  { type: 'vehicle',   icon: '🚗', label: 'Vehicle',   available: true },
+  { type: 'account',   icon: '💳', label: 'Account',   available: true },
+  { type: 'inventory', icon: '📦', label: 'Inventory', available: true },
+  { type: 'doc',       icon: '📄', label: 'Doc',       available: true },
 ];
 
 interface TypeSelectorSheetProps {

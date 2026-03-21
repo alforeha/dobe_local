@@ -14,7 +14,7 @@
 // ─────────────────────────────────────────
 
 import { v4 as uuidv4 } from 'uuid';
-import type { Resource, ContactMeta, AccountMeta, InventoryMeta } from '../types/resource';
+import type { Resource, ContactMeta, AccountMeta, InventoryMeta, VehicleMeta, DocMeta } from '../types/resource';
 import type { PlannedEvent } from '../types/plannedEvent';
 import type { Task } from '../types/task';
 import type { TaskTemplate } from '../types/taskTemplate';
@@ -49,6 +49,17 @@ function daysUntilAnnual(isoDate: string): number | null {
     candidate.setFullYear(thisYear + 1);
   }
   return Math.round((candidate.getTime() - today.getTime()) / 86_400_000);
+}
+
+/**
+ * Days until an absolute future date (not annualised).
+ * Returns null if date is not parseable. Negative = in the past.
+ */
+function daysUntilDate(isoDate: string): number | null {
+  const today = new Date(todayISO() + 'T00:00:00');
+  const target = new Date(isoDate.slice(0, 10) + 'T00:00:00');
+  if (isNaN(target.getTime())) return null;
+  return Math.round((target.getTime() - today.getTime()) / 86_400_000);
 }
 
 /**
@@ -125,10 +136,11 @@ export function generateScheduledTasks(resource: Resource): PlannedEvent[] {
       created.push(..._genInventorySchedule(resource));
       break;
     case 'home':
+      created.push(..._genHomeSchedule(resource));
+      break;
     case 'vehicle':
     case 'doc':
-      // Home + Vehicle — recurring tasks deferred to MULTI-USER stub
-      // Doc — course progression deferred (BUILD-time task)
+      // Vehicle + Doc — no scheduled PlannedEvents (GTD-only triggers)
       break;
   }
 
@@ -299,8 +311,13 @@ export function generateGTDItems(resource: Resource): Task[] {
       created.push(..._genInventoryGTD(resource));
       break;
     case 'home':
+      created.push(..._genHomeGTD(resource));
+      break;
     case 'vehicle':
+      created.push(..._genVehicleGTD(resource));
+      break;
     case 'doc':
+      created.push(..._genDocGTD(resource));
       break;
   }
 
@@ -357,42 +374,76 @@ function _genContactGTD(resource: Resource): Task[] {
 
 function _genAccountGTD(resource: Resource): Task[] {
   const meta = resource.meta as AccountMeta;
+  const tasks: Task[] = [];
+
+  // Pending transactions
   const pendingOnes = meta.pendingTransactions.filter((t) => t.status === 'pending');
-  if (pendingOnes.length === 0) return [];
+  if (pendingOnes.length > 0) {
+    const templateKey = `resource-task:${resource.id}:transaction`;
+    ensureTemplate(templateKey, `${resource.name} — Transaction`, 'LOG', { defense: 5 });
+    for (const _ of pendingOnes) {
+      void _;
+      tasks.push({
+        id: uuidv4(),
+        templateRef: templateKey,
+        completionState: 'pending',
+        completedAt: null,
+        resultFields: {},
+        attachmentRef: null,
+        resourceRef: resource.id,
+        location: null,
+        sharedWith: null,
+        questRef: null,
+        actRef: null,
+        secondaryTag: null,
+      });
+    }
+  }
 
-  const templateKey = `resource-task:${resource.id}:transaction`;
-  ensureTemplate(templateKey, `${resource.name} — Transaction`, 'LOG', { defense: 5 });
+  // W25: Payment due within 7 days
+  if (meta.dueDate) {
+    const d = daysUntilDate(meta.dueDate);
+    if (d !== null && d >= 0 && d <= 7) {
+      const label = meta.institution
+        ? `Payment due: ${meta.institution}`
+        : `Payment due: ${resource.name}`;
+      const templateKey = `resource-task:${resource.id}:payment-due`;
+      ensureTemplate(templateKey, label, 'CHECK', { defense: 8 });
+      tasks.push({
+        id: uuidv4(),
+        templateRef: templateKey,
+        completionState: 'pending',
+        completedAt: null,
+        resultFields: {},
+        attachmentRef: null,
+        resourceRef: resource.id,
+        location: null,
+        sharedWith: null,
+        questRef: null,
+        actRef: null,
+        secondaryTag: null,
+      });
+    }
+  }
 
-  return pendingOnes.map(() => ({
-    id: uuidv4(),
-    templateRef: templateKey,
-    completionState: 'pending' as const,
-    completedAt: null,
-    resultFields: {},
-    attachmentRef: null,
-    resourceRef: resource.id,
-    location: null,
-    sharedWith: null,
-    questRef: null,
-    actRef: null,
-    secondaryTag: null,
-  }));
+  return tasks;
 }
 
 function _genInventoryGTD(resource: Resource): Task[] {
   const meta = resource.meta as InventoryMeta;
-  const lowStock = meta.items.filter((item) => item.quantity <= 0);
+  const threshold = meta.lowStockThreshold ?? 0;
+  const lowStock = meta.items.filter((item) => item.quantity <= threshold);
   if (lowStock.length === 0) return [];
 
   const templateKey = `resource-task:${resource.id}:replenish`;
   ensureTemplate(templateKey, `${resource.name} — Replenish`, 'COUNTER', { defense: 5 });
 
-  return lowStock.map(() => ({
+  return lowStock.map((item) => ({
     id: uuidv4(),
     templateRef: templateKey,
     completionState: 'pending' as const,
     completedAt: null,
-    resultFields: {},
+    resultFields: { itemName: item.name ?? item.useableRef },
     attachmentRef: null,
     resourceRef: resource.id,
     location: null,
@@ -410,6 +461,137 @@ function _genInventoryGTD(resource: Resource): Task[] {
 export function generateDocTasks_stub(): void {
   // Deferred: Course Doc progression shape not yet decided.
   // Implementation pending BUILD-time task.
+}
+
+// ── HOME / VEHICLE / DOC GTD + SCHEDULE HANDLERS — W23–W27 ——————————————
+
+/** W23: Monthly home maintenance check PlannedEvent. */
+function _genHomeSchedule(resource: Resource): PlannedEvent[] {
+  const templateKey = `resource-task:${resource.id}:home-maintenance`;
+  ensureTemplate(templateKey, `${resource.name} — Maintenance Check`, 'CHECKLIST', { defense: 5 });
+
+  const pe: PlannedEvent = {
+    id: uuidv4(),
+    name: `${resource.name} — Maintenance Check`,
+    description: `Monthly home maintenance check for ${resource.name}`,
+    icon: 'home',
+    color: '#10b981',
+    seedDate: todayISO(),
+    dieDate: null,
+    recurrenceInterval: {
+      frequency: 'monthly',
+      days: [],
+      interval: 1,
+      endsOn: null,
+      customCondition: null,
+    },
+    activeState: 'active',
+    taskPool: [templateKey],
+    taskPoolCursor: 0,
+    taskList: [templateKey],
+    conflictMode: 'concurrent',
+    startTime: '09:00',
+    endTime: '09:30',
+    location: null,
+    sharedWith: null,
+    pushReminder: null,
+  };
+
+  return [pe];
+}
+
+/** W23: No GTD items from HomeMeta in LOCAL v1. */
+function _genHomeGTD(_resource: Resource): Task[] {
+  return [];
+}
+
+/** W24: GTD items for vehicle — insurance expiry (≤30d) + service date (≤14d). */
+function _genVehicleGTD(resource: Resource): Task[] {
+  const meta = resource.meta as VehicleMeta;
+  const tasks: Task[] = [];
+
+  if (meta.insuranceExpiry) {
+    const d = daysUntilDate(meta.insuranceExpiry);
+    if (d !== null && d >= 0 && d <= 30) {
+      const templateKey = `resource-task:${resource.id}:insurance`;
+      ensureTemplate(
+        templateKey,
+        `${resource.name} — Insurance Renewal`,
+        'CHECK',
+        { defense: 10 },
+      );
+      tasks.push({
+        id: uuidv4(),
+        templateRef: templateKey,
+        completionState: 'pending',
+        completedAt: null,
+        resultFields: {},
+        attachmentRef: null,
+        resourceRef: resource.id,
+        location: null,
+        sharedWith: null,
+        questRef: null,
+        actRef: null,
+        secondaryTag: null,
+      });
+    }
+  }
+
+  if (meta.serviceNextDate) {
+    const d = daysUntilDate(meta.serviceNextDate);
+    if (d !== null && d >= 0 && d <= 14) {
+      const templateKey = `resource-task:${resource.id}:service`;
+      ensureTemplate(
+        templateKey,
+        `${resource.name} — Service Due`,
+        'CHECK',
+        { defense: 8 },
+      );
+      tasks.push({
+        id: uuidv4(),
+        templateRef: templateKey,
+        completionState: 'pending',
+        completedAt: null,
+        resultFields: {},
+        attachmentRef: null,
+        resourceRef: resource.id,
+        location: null,
+        sharedWith: null,
+        questRef: null,
+        actRef: null,
+        secondaryTag: null,
+      });
+    }
+  }
+
+  return tasks;
+}
+
+/** W27: GTD item for doc expiry within 30 days. */
+function _genDocGTD(resource: Resource): Task[] {
+  const meta = resource.meta as DocMeta;
+  if (!meta.expiryDate) return [];
+
+  const d = daysUntilDate(meta.expiryDate);
+  if (d === null || d < 0 || d > 30) return [];
+
+  const templateKey = `resource-task:${resource.id}:expiry`;
+  ensureTemplate(templateKey, `${resource.name} — Expiry`, 'CHECK', { defense: 8 });
+
+  return [{
+    id: uuidv4(),
+    templateRef: templateKey,
+    completionState: 'pending',
+    completedAt: null,
+    resultFields: {},
+    attachmentRef: null,
+    resourceRef: resource.id,
+    location: null,
+    sharedWith: null,
+    questRef: null,
+    actRef: null,
+    secondaryTag: null,
+  }];
 }
 
 // ── COMPUTE GTD LIST ──────────────────────────────────────────────────────────

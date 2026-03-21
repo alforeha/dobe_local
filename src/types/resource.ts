@@ -69,6 +69,10 @@ export interface HomeMeta {
   linkedDocs: string[];
   /** [MULTI-USER] stub — null in LOCAL */
   recurringTasksStub: null;
+  /** Physical address — W23 */
+  address?: string;
+  /** Freetext notes — W23 */
+  notes?: string;
 }
 
 /**
@@ -85,6 +89,14 @@ export interface VehicleMeta {
   linkedDocs: string[];
   /** [MULTI-USER] stub — null in LOCAL */
   recurringTasksStub: null;
+  /** License plate — W24 */
+  licensePlate?: string | null;
+  /** ISO date — GTD item within 30 days — W24 */
+  insuranceExpiry?: string | null;
+  /** ISO date — GTD item within 14 days — W24 */
+  serviceNextDate?: string | null;
+  /** Freetext notes — W24 */
+  notes?: string;
 }
 
 /**
@@ -127,6 +139,14 @@ export interface AccountMeta {
   pendingTransactions: PendingTransaction[];
   /** Prebuilt TaskTemplate ref — generates transaction task */
   transactionTaskRef: string | null;
+  /** Institution name — W25 */
+  institution?: string | null;
+  /** Display nickname — W25 */
+  accountNickname?: string | null;
+  /** ISO date — payment due — GTD item within 7 days — W25 */
+  dueDate?: string | null;
+  /** Freetext notes — W25 */
+  notes?: string;
 }
 
 /**
@@ -148,11 +168,23 @@ export interface InventoryItem {
   /** null = uncontained */
   containerId: string | null;
   quantity: number;
+  /** Display name for LOCAL v1 (useableRef not resolved in-app) — W26 */
+  name?: string;
+  /** Unit label e.g. 'kg', 'units' — W26 */
+  unit?: string | null;
+  /** Linked Resource ref — W26 */
+  linkedResourceRef?: string | null;
 }
 
 export interface InventoryMeta {
   containers: InventoryContainer[];
   items: InventoryItem[];
+  /** Category label e.g. 'Kitchen', 'Tools' — W26 */
+  category?: string;
+  /** Items at or below this quantity trigger a GTD item — W26 */
+  lowStockThreshold?: number | null;
+  /** Freetext notes — W26 */
+  notes?: string;
 }
 
 /**
@@ -174,6 +206,14 @@ export interface DocMeta {
   tags: string[];
   createdAt: string; // ISO date
   updatedAt: string; // ISO date
+  /** External link — W27 */
+  url?: string | null;
+  /** ISO date — GTD item within 30 days — W27 */
+  expiryDate?: string | null;
+  /** Walkthrough mode — W27 */
+  walkthroughType?: 'linear' | 'checklist' | 'none';
+  /** Freetext notes — W27 */
+  notes?: string;
 }
 
 // ── META UNION ────────────────────────────────────────────────────────────────
