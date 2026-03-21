@@ -90,6 +90,7 @@ function ensureTemplate(
     cooldown: null,
     media: null,
     items: [],
+    secondaryTag: null,
   };
 
   scheduleStore.setTaskTemplate(key, template);
