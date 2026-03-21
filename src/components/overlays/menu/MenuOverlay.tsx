@@ -18,7 +18,7 @@ export function MenuOverlay({ onClose }: MenuOverlayProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex">
+    <div className="flex h-full">
       <MenuOverlayNav
         activeRoom={activeRoom}
         onNavigate={handleNavigate}

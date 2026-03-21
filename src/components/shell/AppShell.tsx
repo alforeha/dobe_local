@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSystemStore } from '../../stores/useSystemStore';
 import { Header } from './Header';
 import { Body } from './Body';
 import { Footer } from './Footer';
+import { SlideUpOverlay } from '../overlays/SlideUpOverlay';
 import { EventOverlay } from '../overlays/event/EventOverlay';
 import { CoachOverlay } from '../overlays/coach/CoachOverlay';
 import { ProfileOverlay } from '../overlays/profile/ProfileOverlay';
@@ -16,6 +17,8 @@ export function AppShell() {
   const [overlay, setOverlay] = useState<ActiveOverlay>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [weekViewSeed, setWeekViewSeed] = useState<Date | null>(null);
+  const [overlayClosing, setOverlayClosing] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const mode = useSystemStore((s) => s.settings?.displayPreferences?.mode ?? 'dark');
 
@@ -33,13 +36,31 @@ export function AppShell() {
   };
 
   const openEventOverlay = (eventId: string) => {
+    // Cancel any in-flight close animation before switching overlays.
+    if (closeTimerRef.current !== null) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setOverlayClosing(false);
     setSelectedEventId(eventId);
     setOverlay('event');
   };
 
+  /** Immediately tears down the overlay (used internally after animation). */
   const closeOverlay = () => {
     setOverlay(null);
     setSelectedEventId(null);
+    setOverlayClosing(false);
+  };
+
+  /** Triggers the slide-down exit animation, then tears down after 230 ms. */
+  const requestClose = () => {
+    if (closeTimerRef.current !== null) return; // already closing
+    setOverlayClosing(true);
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null;
+      closeOverlay();
+    }, 230);
   };
 
   const navigateToDayView = (_date: string) => {
@@ -64,17 +85,29 @@ export function AppShell() {
       />
 
       {overlay === 'event' && selectedEventId && (
-        <EventOverlay eventId={selectedEventId} onClose={closeOverlay} />
+        <SlideUpOverlay closing={overlayClosing} onBackdropClick={requestClose}>
+          <EventOverlay eventId={selectedEventId} onClose={requestClose} />
+        </SlideUpOverlay>
       )}
       {overlay === 'coach' && (
-        <CoachOverlay
-          onClose={closeOverlay}
-          onOpenEvent={openEventOverlay}
-          onNavigateToDayView={navigateToDayView}
-        />
+        <SlideUpOverlay closing={overlayClosing} onBackdropClick={requestClose}>
+          <CoachOverlay
+            onClose={requestClose}
+            onOpenEvent={openEventOverlay}
+            onNavigateToDayView={navigateToDayView}
+          />
+        </SlideUpOverlay>
       )}
-      {overlay === 'profile' && <ProfileOverlay onClose={closeOverlay} />}
-      {overlay === 'menu' && <MenuOverlay onClose={closeOverlay} />}
+      {overlay === 'profile' && (
+        <SlideUpOverlay closing={overlayClosing} onBackdropClick={requestClose}>
+          <ProfileOverlay onClose={requestClose} />
+        </SlideUpOverlay>
+      )}
+      {overlay === 'menu' && (
+        <SlideUpOverlay closing={overlayClosing} onBackdropClick={requestClose}>
+          <MenuOverlay onClose={requestClose} />
+        </SlideUpOverlay>
+      )}
     </div>
   );
 }

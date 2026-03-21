@@ -18,7 +18,7 @@ export function ProfileOverlay({ onClose }: ProfileOverlayProps) {
   const [activeRoom, setActiveRoom] = useState<ProfileRoom>('stats');
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-white dark:bg-gray-900">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Close button */}
       <button
         type="button"
