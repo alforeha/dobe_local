@@ -88,6 +88,8 @@ export interface CircuitInputFields {
 export interface DurationInputFields {
   targetDuration: number; // seconds
   unit: 'seconds' | 'minutes' | 'hours';
+  /** Result capture — actual duration achieved in seconds */
+  actualDuration?: number;
 }
 
 export interface TimerInputFields {
@@ -112,6 +114,8 @@ export interface FormField {
   key: string;
   label: string;
   fieldType: 'text' | 'number' | 'boolean' | 'date';
+  /** Result capture — value entered for this field */
+  value?: string | number | boolean | null;
 }
 
 export interface FormInputFields {
@@ -140,6 +144,8 @@ export interface ChecklistInputFields {
 
 export interface ScanInputFields {
   scanType: 'barcode' | 'qr' | string;
+  /** Result capture — manually entered or scanned value */
+  scannedValue?: string;
 }
 
 export interface LogInputFields {
@@ -158,11 +164,25 @@ export interface LogInputFields {
 export interface LocationPointInputFields {
   label: string;
   captureAccuracy: boolean;
+  /** Result capture */
+  lat?: number;
+  lng?: number;
+  accuracy?: number;
+}
+
+export interface Waypoint {
+  lat: number;
+  lng: number;
+  /** ISO timestamp */
+  timestamp: string;
+  accuracy?: number;
 }
 
 export interface LocationTrailInputFields {
   label: string;
   captureInterval: number | null; // seconds, null = manual
+  /** Result capture — collected waypoints */
+  waypoints?: Waypoint[];
 }
 
 export type InputFields =

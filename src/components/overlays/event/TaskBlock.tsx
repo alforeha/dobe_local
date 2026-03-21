@@ -1,6 +1,6 @@
 import { useScheduleStore } from '../../../stores/useScheduleStore';
 import { completeTask } from '../../../engine/eventExecution';
-import type { TaskType, InputFields, CheckInputFields, CounterInputFields, RatingInputFields, TextInputFields, ChoiceInputFields, ChecklistInputFields, LogInputFields } from '../../../types/taskTemplate';
+import type { TaskType, InputFields, CheckInputFields, CounterInputFields, RatingInputFields, TextInputFields, ChoiceInputFields, ChecklistInputFields, LogInputFields, SetsRepsInputFields, CircuitInputFields, DurationInputFields, TimerInputFields, FormInputFields, ScanInputFields, LocationPointInputFields, LocationTrailInputFields } from '../../../types/taskTemplate';
 import { CheckInput } from './inputs/CheckInput';
 import { CounterInput } from './inputs/CounterInput';
 import { RatingInput } from './inputs/RatingInput';
@@ -8,6 +8,14 @@ import { TextInput } from './inputs/TextInput';
 import { ChoiceInput } from './inputs/ChoiceInput';
 import { ChecklistInput } from './inputs/ChecklistInput';
 import { LogInput } from './inputs/LogInput';
+import { SetsRepsInput } from './inputs/SetsRepsInput';
+import { CircuitInput } from './inputs/CircuitInput';
+import { DurationInput } from './inputs/DurationInput';
+import { TimerInput } from './inputs/TimerInput';
+import { FormInput } from './inputs/FormInput';
+import { ScanInput } from './inputs/ScanInput';
+import { LocationPointInput } from './inputs/LocationPointInput';
+import { LocationTrailInput } from './inputs/LocationTrailInput';
 
 interface TaskBlockProps {
   taskId: string | null;
@@ -163,6 +171,70 @@ function TaskTypeInput({ taskType, template, task, onComplete }: TaskTypeInputPr
           inputFields={template.inputFields as LogInputFields}
           task={task}
           onComplete={onComplete as (r: Partial<LogInputFields>) => void}
+        />
+      );
+    case 'SETS_REPS':
+      return (
+        <SetsRepsInput
+          inputFields={template.inputFields as SetsRepsInputFields}
+          task={task}
+          onComplete={onComplete as (r: Partial<SetsRepsInputFields>) => void}
+        />
+      );
+    case 'CIRCUIT':
+      return (
+        <CircuitInput
+          inputFields={template.inputFields as CircuitInputFields}
+          task={task}
+          onComplete={onComplete as (r: Partial<CircuitInputFields>) => void}
+        />
+      );
+    case 'DURATION':
+      return (
+        <DurationInput
+          inputFields={template.inputFields as DurationInputFields}
+          task={task}
+          onComplete={onComplete as (r: Partial<DurationInputFields>) => void}
+        />
+      );
+    case 'TIMER':
+      return (
+        <TimerInput
+          inputFields={template.inputFields as TimerInputFields}
+          task={task}
+          onComplete={onComplete as (r: Partial<TimerInputFields>) => void}
+        />
+      );
+    case 'FORM':
+      return (
+        <FormInput
+          inputFields={template.inputFields as FormInputFields}
+          task={task}
+          onComplete={onComplete as (r: Partial<FormInputFields>) => void}
+        />
+      );
+    case 'SCAN':
+      return (
+        <ScanInput
+          inputFields={template.inputFields as ScanInputFields}
+          task={task}
+          onComplete={onComplete as (r: Partial<ScanInputFields>) => void}
+        />
+      );
+    case 'LOCATION_POINT':
+      return (
+        <LocationPointInput
+          inputFields={template.inputFields as LocationPointInputFields}
+          task={task}
+          onComplete={onComplete as (r: Partial<LocationPointInputFields>) => void}
+        />
+      );
+    case 'LOCATION_TRAIL':
+      return (
+        <LocationTrailInput
+          inputFields={template.inputFields as LocationTrailInputFields}
+          task={task}
+          onComplete={onComplete as (r: Partial<LocationTrailInputFields>) => void}
         />
       );
     default:
