@@ -9,13 +9,14 @@ export function StatRow() {
   const talents = user?.progression?.stats?.talents;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex w-full items-center justify-between">
       {STAT_KEYS.map((key) => (
         <StatIcon
           key={key}
           stat={key}
           value={talents?.[key]?.statPoints ?? 0}
           size="sm"
+          showLabel={false}
         />
       ))}
     </div>

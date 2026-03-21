@@ -50,10 +50,10 @@ export function Header({ onProfileOpen }: HeaderProps) {
   };
 
   return (
-    <header className="relative flex shrink-0 items-center gap-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2">
+    <header className="relative flex shrink-0 items-stretch gap-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2">
       <ProfileNavButton onOpen={onProfileOpen} />
 
-      <div className="flex flex-1 flex-col gap-0.5">
+      <div className="flex flex-1 flex-col gap-1 min-w-0">
         <XPBar
           displayName={user?.system?.displayName ?? '—'}
           level={level}

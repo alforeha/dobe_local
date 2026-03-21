@@ -9,6 +9,15 @@ const STAT_LABELS: Record<StatGroupKey, string> = {
   wisdom: 'WIS',
 };
 
+const STAT_ICONS: Record<StatGroupKey, string> = {
+  health: '❤️',
+  strength: '⚔️',
+  agility: '⚡',
+  defense: '🛡️',
+  charisma: '💬',
+  wisdom: '📖',
+};
+
 const STAT_COLORS: Record<StatGroupKey, string> = {
   health: 'text-red-500',
   strength: 'text-orange-500',
@@ -22,10 +31,12 @@ interface StatIconProps {
   stat: StatGroupKey;
   value: number;
   size?: 'sm' | 'md';
+  /** When false, renders emoji icon instead of text abbreviation (for compact header row) */
+  showLabel?: boolean;
   onClick?: () => void;
 }
 
-export function StatIcon({ stat, value, size = 'sm', onClick }: StatIconProps) {
+export function StatIcon({ stat, value, size = 'sm', showLabel = true, onClick }: StatIconProps) {
   const label = STAT_LABELS[stat];
   const color = STAT_COLORS[stat];
   const textSize = size === 'md' ? 'text-sm' : 'text-xs';
@@ -38,8 +49,12 @@ export function StatIcon({ stat, value, size = 'sm', onClick }: StatIconProps) {
       onClick={onClick}
       className={`flex flex-col items-center leading-none ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
     >
-      <span className={`${textSize} font-medium ${color}`}>{label}</span>
-      <span className={`${valueSize} text-gray-800`}>{value}</span>
+      {showLabel ? (
+        <span className={`${textSize} font-medium ${color}`}>{label}</span>
+      ) : (
+        <span className="text-sm leading-none">{STAT_ICONS[stat]}</span>
+      )}
+      <span className={`${valueSize} text-gray-800 dark:text-gray-100`}>{value}</span>
     </button>
   );
 }
