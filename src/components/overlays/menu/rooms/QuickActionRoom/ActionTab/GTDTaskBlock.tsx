@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { Task } from '../../../../../../types';
+import { useUserStore } from '../../../../../../stores/useUserStore';
+import { completeGTDItem } from '../../../../../../engine/resourceEngine';
 
 interface GTDTaskBlockProps {
   task: Task;
@@ -7,7 +9,14 @@ interface GTDTaskBlockProps {
 }
 
 export function GTDTaskBlock({ task, templateName }: GTDTaskBlockProps) {
+  const user = useUserStore((s) => s.user);
   const [confirming, setConfirming] = useState(false);
+
+  function handleConfirmComplete() {
+    if (!user) return;
+    completeGTDItem(task.id, user);
+    setConfirming(false);
+  }
 
   return (
     <div className="flex items-center gap-3 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg">
@@ -16,7 +25,7 @@ export function GTDTaskBlock({ task, templateName }: GTDTaskBlockProps) {
           task.completionState === 'complete' ? 'bg-green-400' : 'bg-gray-300'
         }`}
       />
-      <span className="flex-1 text-sm text-gray-700 truncate">{templateName}</span>
+      <span className="flex-1 text-sm text-gray-700 dark:text-gray-200 truncate">{templateName}</span>
       {confirming ? (
         <div className="flex gap-1 shrink-0">
           <button
@@ -28,8 +37,8 @@ export function GTDTaskBlock({ task, templateName }: GTDTaskBlockProps) {
           </button>
           <button
             type="button"
-            onClick={() => setConfirming(false)}
-            className="text-xs text-white px-1.5 py-0.5 rounded bg-green-500"
+            onClick={handleConfirmComplete}
+            className="text-xs text-white px-1.5 py-0.5 rounded bg-green-500 hover:bg-green-600"
           >
             ✓
           </button>

@@ -8,6 +8,7 @@ import type { Avatar } from './avatar';
 import type { BadgeBoard } from './badgeBoard';
 import type { Equipment } from './equipment';
 import type { Feed } from './feed';
+import type { GTDItem } from './task';
 
 // ── AUTH (STUB) ────────────────────────────────────────────────────────────────
 
@@ -72,10 +73,12 @@ export interface UserLists {
   taskLibrary: string[];
   /** TaskTemplate refs */
   favouritesList: string[];
-  /** Task refs (D05) */
+  /** Task refs (D05) — system/resource/quest-generated */
   gtdList: string[];
   /** Tagged item lists */
   shoppingLists: ShoppingList[];
+  /** Manual GTD items — user-created (MVP11 W19) */
+  manualGtdList: GTDItem[];
 }
 
 export interface ShoppingItem {

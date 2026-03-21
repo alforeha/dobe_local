@@ -50,6 +50,9 @@ export {
   removeShoppingItem,
   completeShoppingItem,
   completeShoppingList,
+  addManualGTDItem,
+  removeManualGTDItem,
+  completeManualGTDItem,
 } from './listsEngine';
 
 // ── COACH MODULE ──────────────────────────────────────────────────────────────

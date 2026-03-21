@@ -75,7 +75,7 @@ function makeUser(xp = 0): Record<string, unknown> {
     goals:     { habitats: [], adventures: [] },
     schedule:  { planned: [], routines: [] },
     events:    { active: [], history: [] },
-    lists:     { taskLibrary: [], favouritesList: [], gtdList: [], shoppingLists: [] },
+    lists:     { taskLibrary: [], favouritesList: [], gtdList: [], shoppingLists: [], manualGtdList: [] },
     resources: { homes: [], vehicles: [], contacts: [], accounts: [], inventory: [], docs: [] },
     feed:      { entries: [], unreadCount: 0, sharedActivityEntries: null },
     publicProfile: null,

@@ -60,3 +60,28 @@ export interface Task {
    */
   secondaryTag: TaskSecondaryTag | null;
 }
+
+// ── MANUAL GTD ITEM (MVP11 W19) ───────────────────────────────────────────────
+
+/**
+ * Manual GTD item — user-created via the Quick Action room add popup.
+ * Stored in User.lists.manualGtdList[].
+ *
+ * Distinct from system-generated Tasks in gtdList (resource / quest / marker).
+ * isManual: true acts as the discriminant flag.
+ */
+export interface GTDItem {
+  /** uuid */
+  id: string;
+  title: string;
+  note: string | null;
+  /** Optional ref to a Resource the user chose to link this item to */
+  resourceRef: string | null;
+  /** ISO date — null if no due date set */
+  dueDate: string | null;
+  /** Always true — distinguishes manual GTDItems from system Task refs in gtdList */
+  isManual: true;
+  completionState: 'pending' | 'complete';
+  /** ISO datetime — null when pending */
+  completedAt: string | null;
+}

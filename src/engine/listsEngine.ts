@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────
-// LISTS ENGINE — FavouritesList + ShoppingLists
+// LISTS ENGINE — FavouritesList + ShoppingLists + Manual GTD
 //
 // FavouritesList — TaskTemplate refs. completeFavourite() fires a one-shot Task
 //   completion into today's QuickActionsEvent (per D10) and triggers coach.
@@ -7,11 +7,15 @@
 // ShoppingLists — CRUD for named lists + structured items.
 //   completeShoppingItem() → if item.accountRef is set, writes a PendingTransaction
 //   to the linked Account Resource (D42 shopping list → transaction flow).
+//
+// Manual GTD — user-created GTD items (MVP11 W19).
+//   addManualGTDItem() / removeManualGTDItem() / completeManualGTDItem()
 // ─────────────────────────────────────────
 
 import { v4 as uuidv4 } from 'uuid';
 import type { User, ShoppingList, ShoppingItem } from '../types/user';
 import type { Task } from '../types/task';
+import type { GTDItem } from '../types/task';
 import type { QuickActionsEvent } from '../types/event';
 import type { Resource } from '../types/resource';
 import type { AccountMeta, PendingTransaction } from '../types/resource';
@@ -346,4 +350,131 @@ export function completeShoppingList(listId: string, user: User): void {
       _writePendingTransaction(item, target_itemRef(item));
     }
   }
+}
+
+// ── MANUAL GTD LIST (MVP11 W19) ───────────────────────────────────────────────
+
+/**
+ * Add a manual GTD item to User.lists.manualGtdList.
+ *
+ * @param fields  Item fields (title required; note, resourceRef, dueDate optional)
+ * @param user    Current User
+ * @returns The created GTDItem
+ */
+export function addManualGTDItem(
+  fields: { title: string; note: string | null; resourceRef: string | null; dueDate: string | null },
+  user: User,
+): GTDItem {
+  const item: GTDItem = {
+    id: uuidv4(),
+    title: fields.title,
+    note: fields.note,
+    resourceRef: fields.resourceRef,
+    dueDate: fields.dueDate,
+    isManual: true,
+    completionState: 'pending',
+    completedAt: null,
+  };
+  const updated: User = {
+    ...user,
+    lists: {
+      ...user.lists,
+      manualGtdList: [...user.lists.manualGtdList, item],
+    },
+  };
+  persistUser(updated);
+  return item;
+}
+
+/**
+ * Remove a manual GTD item from User.lists.manualGtdList.
+ * Single-tap delete — no confirm needed (lightweight items).
+ *
+ * @param itemId  GTDItem.id to remove
+ * @param user    Current User
+ */
+export function removeManualGTDItem(itemId: string, user: User): void {
+  const updated: User = {
+    ...user,
+    lists: {
+      ...user.lists,
+      manualGtdList: user.lists.manualGtdList.filter((i) => i.id !== itemId),
+    },
+  };
+  persistUser(updated);
+}
+
+/**
+ * Complete a manual GTD item:
+ *   - Removes it from manualGtdList
+ *   - Creates a stub Task and writes it to today's QuickActionsEvent
+ *   - Awards XP (+5 wisdom) and fires a ribbet
+ *
+ * @param itemId  GTDItem.id to complete
+ * @param user    Current User
+ */
+export function completeManualGTDItem(itemId: string, user: User): void {
+  const item = user.lists.manualGtdList.find((i) => i.id === itemId);
+  if (!item || item.completionState !== 'pending') return;
+
+  const now = new Date().toISOString();
+  const today = now.slice(0, 10);
+
+  // Create a stub Task representing this completion for the QA event record
+  const task: Task = {
+    id: uuidv4(),
+    templateRef: `manual-gtd:${itemId}`,
+    completionState: 'complete',
+    completedAt: now,
+    resultFields: {},
+    attachmentRef: null,
+    resourceRef: item.resourceRef,
+    location: null,
+    sharedWith: null,
+    questRef: null,
+    actRef: null,
+    secondaryTag: null,
+  };
+
+  const scheduleStore = useScheduleStore.getState();
+  scheduleStore.setTask(task);
+  storageSet(storageKey.task(task.id), task);
+
+  // Remove from manualGtdList
+  const updated: User = {
+    ...user,
+    lists: {
+      ...user.lists,
+      manualGtdList: user.lists.manualGtdList.filter((i) => i.id !== itemId),
+    },
+  };
+  persistUser(updated);
+
+  // Write to today's QuickActionsEvent
+  const qaId = `qa-${today}`;
+  const qa = scheduleStore.activeEvents[qaId] as QuickActionsEvent | undefined;
+  if (qa) {
+    const updatedQa: QuickActionsEvent = {
+      ...qa,
+      completions: [...qa.completions, { taskRef: task.id, completedAt: now }],
+    };
+    scheduleStore.setActiveEvent(updatedQa);
+    storageSet(storageKey.quickActions(today), updatedQa);
+  }
+
+  // XP award — +5 wisdom for manual GTD completion
+  awardXP(user.system.id, 5);
+  awardStat(user.system.id, 'wisdom', 5);
+
+  // Achievement check
+  const latestUser = useUserStore.getState().user;
+  if (latestUser) {
+    const newAchs = checkAchievements(latestUser);
+    let currentUser = latestUser;
+    for (const ach of newAchs) {
+      currentUser = awardBadge(ach, currentUser);
+    }
+  }
+
+  pushRibbet('gtd.complete');
 }
