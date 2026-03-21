@@ -23,7 +23,7 @@ function CornerButton({ positionClass, icon, label, onClick }: CornerButtonProps
   return (
     <button
       type="button"
-      className={`absolute ${positionClass} flex h-11 w-11 items-center justify-center rounded-full bg-white dark:bg-gray-700 shadow-md text-xl hover:scale-105 transition-transform`}
+      className={`absolute ${positionClass} flex h-20 w-20 items-center justify-center rounded-full bg-white dark:bg-gray-700 shadow-md text-3xl hover:scale-105 transition-transform`}
       onClick={onClick}
       aria-label={label}
     >
@@ -56,9 +56,9 @@ export function ProfileTopSection({ onNav }: ProfileTopSectionProps) {
         label="Preferences"
         onClick={() => onNav('preferences')}
       />
-      {/* Top-right: lock → Storage */}
+      {/* Top-right: lock → Storage — offset below close button */}
       <CornerButton
-        positionClass="top-3 right-3"
+        positionClass="top-14 right-3"
         icon="🔒"
         label="Storage"
         onClick={() => onNav('storage')}
