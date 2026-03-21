@@ -1,5 +1,5 @@
-import { useScheduleStore } from '../../../../../stores/useScheduleStore';
-import type { Event } from '../../../../../types/event';
+import { useScheduleStore } from '../../../../stores/useScheduleStore';
+import type { Event } from '../../../../types/event';
 
 interface ReviewingStatSurfaceProps {
   onNavigateToDayView: (date: string) => void;

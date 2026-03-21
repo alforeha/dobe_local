@@ -1,6 +1,6 @@
-import { useScheduleStore } from '../../../../../stores/useScheduleStore';
-import type { Event } from '../../../../../types/event';
-import type { PlannedEvent } from '../../../../../types/plannedEvent';
+import { useScheduleStore } from '../../../../stores/useScheduleStore';
+import type { Event } from '../../../../types/event';
+import type { PlannedEvent } from '../../../../types/plannedEvent';
 
 interface TrackingEventRowProps {
   id: string;
