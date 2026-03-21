@@ -333,7 +333,7 @@ function _genContactGTD(resource: Resource): Task[] {
   if (!meta.info?.birthday) return [];
 
   const days = daysUntilAnnual(meta.info.birthday);
-  if (days === null || days > 30) return [];
+  if (days === null || days > 14) return [];
 
   const templateKey = `resource-task:${resource.id}:birthday`;
   ensureTemplate(templateKey, `${resource.name} — Birthday`, 'CHECK', { wisdom: 5 });

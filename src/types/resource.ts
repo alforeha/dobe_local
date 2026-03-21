@@ -40,6 +40,8 @@ export interface ContactMeta {
   groups: string[];
   /** Freetext notes */
   notes: string;
+  /** Optional refs to related resources, e.g. a Home resource */
+  linkedResourceRefs?: string[];
 }
 
 /**
