@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSystemStore } from '../../stores/useSystemStore';
 import { Header } from './Header';
 import { Body } from './Body';
 import { Footer } from './Footer';
@@ -15,6 +16,16 @@ export function AppShell() {
   const [overlay, setOverlay] = useState<ActiveOverlay>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [weekViewSeed, setWeekViewSeed] = useState<Date | null>(null);
+
+  const mode = useSystemStore((s) => s.settings?.displayPreferences?.mode ?? 'dark');
+
+  useEffect(() => {
+    if (mode === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [mode]);
 
   const handleWeekSelect = (weekStart: Date) => {
     setWeekViewSeed(weekStart);
@@ -37,7 +48,7 @@ export function AppShell() {
   };
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-gray-50">
+    <div className="flex h-dvh flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
       <Header onProfileOpen={() => setOverlay('profile')} />
       <Body
         activeView={activeView}

@@ -10,7 +10,7 @@ export function GTDTaskBlock({ task, templateName }: GTDTaskBlockProps) {
   const [confirming, setConfirming] = useState(false);
 
   return (
-    <div className="flex items-center gap-3 px-3 py-2 bg-white border border-gray-100 rounded-lg">
+    <div className="flex items-center gap-3 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg">
       <span
         className={`w-2 h-2 rounded-full shrink-0 ${
           task.completionState === 'complete' ? 'bg-green-400' : 'bg-gray-300'
@@ -22,7 +22,7 @@ export function GTDTaskBlock({ task, templateName }: GTDTaskBlockProps) {
           <button
             type="button"
             onClick={() => setConfirming(false)}
-            className="text-xs text-gray-400 px-1.5 py-0.5 rounded bg-gray-100"
+            className="text-xs text-gray-400 px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700"
           >
             ✕
           </button>

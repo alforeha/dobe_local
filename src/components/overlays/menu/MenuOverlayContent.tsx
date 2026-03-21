@@ -13,7 +13,7 @@ interface MenuOverlayContentProps {
 
 export function MenuOverlayContent({ activeRoom }: MenuOverlayContentProps) {
   return (
-    <div className="flex-1 overflow-hidden bg-white">
+    <div className="flex-1 overflow-hidden bg-white dark:bg-gray-900">
       {activeRoom === 'world' && <WorldRoom />}
       {activeRoom === 'goal' && <GoalRoom />}
       {activeRoom === 'task' && <TaskRoom />}

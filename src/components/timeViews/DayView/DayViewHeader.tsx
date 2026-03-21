@@ -11,7 +11,7 @@ export function DayViewHeader({ date, onBack, onForward, onToday }: DayViewHeade
   const isToday = format(date, 'iso') === format(new Date(), 'iso');
 
   return (
-    <div className="flex shrink-0 items-center border-b border-gray-200 bg-white px-3 py-2">
+    <div className="flex shrink-0 items-center border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2">
       {/* Back */}
       <button
         type="button"

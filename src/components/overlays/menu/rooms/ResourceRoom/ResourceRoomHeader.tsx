@@ -25,7 +25,7 @@ interface ResourceRoomHeaderProps {
 
 export function ResourceRoomHeader({ activeType, onTypeChange }: ResourceRoomHeaderProps) {
   return (
-    <div className="px-4 pt-4 pb-2 border-b border-gray-100">
+    <div className="px-4 pt-4 pb-2 border-b border-gray-100 dark:border-gray-700">
       <h2 className="text-base font-semibold text-gray-800 mb-2">Resources</h2>
       <div className="flex gap-1 overflow-x-auto">
         {RESOURCE_TYPES.map((type) => (
@@ -36,7 +36,7 @@ export function ResourceRoomHeader({ activeType, onTypeChange }: ResourceRoomHea
             className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg shrink-0 transition-colors ${
               activeType === type
                 ? 'bg-blue-500 text-white'
-                : 'text-gray-500 hover:bg-gray-100'
+                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <span className="text-base">{TYPE_ICONS[type]}</span>

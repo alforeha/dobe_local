@@ -10,7 +10,7 @@ export function QuickActionRoomHeader({
   onTabChange,
 }: QuickActionRoomHeaderProps) {
   return (
-    <div className="px-4 pt-4 pb-2 border-b border-gray-100">
+    <div className="px-4 pt-4 pb-2 border-b border-gray-100 dark:border-gray-700">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-gray-800">Quick Actions</h2>
         <button type="button" className="text-xs text-blue-500 font-medium">
@@ -26,7 +26,7 @@ export function QuickActionRoomHeader({
             className={`text-sm px-3 py-1 rounded-full transition-colors ${
               activeTab === tab
                 ? 'bg-blue-500 text-white'
-                : 'text-gray-500 hover:bg-gray-100'
+                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             {tab === 'action' ? 'Action' : 'Shopping'}

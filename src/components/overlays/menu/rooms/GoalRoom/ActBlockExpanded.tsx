@@ -20,7 +20,7 @@ export function ActBlockExpanded({ chains }: ActBlockExpandedProps) {
           key={i}
           type="button"
           onClick={() => setOpenChain(chain)}
-          className="w-full flex items-center gap-2 text-left px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100"
+          className="w-full flex items-center gap-2 text-left px-2 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
         >
           <span className="text-base">{chain.icon || '⛓️'}</span>
           <span className="flex-1 text-sm text-gray-700 truncate">{chain.name}</span>

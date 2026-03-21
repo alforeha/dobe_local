@@ -35,7 +35,7 @@ export function CoachOverlay({ onClose, onOpenEvent, onNavigateToDayView }: Coac
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-white">
+    <div className="fixed inset-0 z-40 flex flex-col bg-white dark:bg-gray-900">
       <CoachOverlayHeader
         onClose={onClose}
         onFeedNav={() => setActiveRoom('feed')}

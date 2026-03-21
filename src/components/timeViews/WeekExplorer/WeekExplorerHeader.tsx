@@ -14,7 +14,7 @@ export function WeekExplorerHeader({ seedDate, windowStart, windowEnd, onSeedCha
   };
 
   return (
-    <div className="flex shrink-0 items-center justify-between border-b border-gray-200 bg-white px-3 py-2">
+    <div className="flex shrink-0 items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2">
       {/* Left */}
       <div className="flex flex-col">
         <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">57 Week Explorer</span>

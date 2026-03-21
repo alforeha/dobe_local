@@ -11,7 +11,7 @@ export function EventOverlayHeader({ event, onClose }: EventOverlayHeaderProps) 
   const endDateTime = `${event.endDate} ${event.endTime}`;
 
   return (
-    <div className="flex shrink-0 items-start justify-between border-b border-gray-200 px-4 py-3">
+    <div className="flex shrink-0 items-start justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3">
       <div className="flex flex-col gap-0.5">
         <h2 className="text-base font-bold text-gray-900">{event.name}</h2>
         <p className="text-xs text-gray-500">
@@ -24,7 +24,7 @@ export function EventOverlayHeader({ event, onClose }: EventOverlayHeaderProps) 
         type="button"
         aria-label="Close event"
         onClick={onClose}
-        className="rounded-full p-1 text-gray-500 hover:bg-gray-100"
+        className="rounded-full p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
       >
         ✕
       </button>

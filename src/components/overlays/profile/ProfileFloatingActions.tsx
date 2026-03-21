@@ -14,7 +14,7 @@ function Fab({ label, icon, onClick }: FabProps) {
       onClick={onClick}
       aria-label={label}
     >
-      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-md text-xl">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-gray-700 shadow-md text-xl">
         {icon}
       </span>
       <span className="text-xs text-gray-500">{label}</span>

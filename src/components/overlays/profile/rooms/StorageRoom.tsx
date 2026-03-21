@@ -19,7 +19,7 @@ export function StorageRoom() {
         <p className="text-xs text-gray-400">Local device storage (read-only)</p>
       </div>
       <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
-        <div className="flex items-center justify-between px-4 py-3 bg-gray-50">
+        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800">
           <span className="text-sm font-semibold text-gray-700">Total</span>
           <span className="text-sm text-gray-600">{fmtKB(totalBytes)}</span>
         </div>

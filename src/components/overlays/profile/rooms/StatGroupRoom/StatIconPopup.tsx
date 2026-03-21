@@ -11,7 +11,7 @@ interface StatIconPopupProps {
 
 export function StatIconPopup({ stat, talentData, talentPoints, onClose }: StatIconPopupProps) {
   return (
-    <div className="absolute z-10 left-0 top-full mt-1 rounded-lg bg-white p-4 shadow-lg min-w-[200px]">
+    <div className="absolute z-10 left-0 top-full mt-1 rounded-lg bg-white dark:bg-gray-800 p-4 shadow-lg min-w-[200px]">
       <div className="flex items-center justify-between mb-3">
         <StatIcon stat={stat} value={talentData.statPoints} size="md" />
         <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>

@@ -24,7 +24,7 @@ export function EventOverlay({ eventId, onClose }: EventOverlayProps) {
   if (!event) {
     return (
       <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50">
-        <div className="rounded-xl bg-white p-6 shadow-xl">
+        <div className="rounded-xl bg-white dark:bg-gray-800 p-6 shadow-xl">
           <p className="text-gray-500">Event not found.</p>
           <button type="button" onClick={onClose} className="mt-4 text-sm text-purple-600">Close</button>
         </div>
@@ -36,7 +36,7 @@ export function EventOverlay({ eventId, onClose }: EventOverlayProps) {
 
   return (
     <div
-      className="fixed inset-0 z-40 flex flex-col bg-white"
+      className="fixed inset-0 z-40 flex flex-col bg-white dark:bg-gray-900"
       style={{ borderTop: `4px solid ${color}` }}
     >
       <EventOverlayHeader event={event} onClose={onClose} />

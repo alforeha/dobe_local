@@ -35,7 +35,7 @@ export function EventTaskTable({
       />
 
       {/* Table header */}
-      <div className="flex shrink-0 border-b border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500">
+      <div className="flex shrink-0 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
         <span className="flex-1">Task</span>
         <span className="w-20 text-center">Type</span>
         <span className="w-16 text-right">State</span>

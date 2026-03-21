@@ -12,8 +12,8 @@ export function TalentTierSlot({ tier, stat: _stat, unlocked }: TalentTierSlotPr
     <div
       className={`rounded-lg border p-4 ${
         unlocked
-          ? 'border-indigo-300 bg-indigo-50'
-          : 'border-gray-200 bg-gray-50 opacity-50'
+          ? 'border-indigo-300 bg-indigo-50 dark:bg-indigo-900/20'
+          : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 opacity-50'
       }`}
     >
       <p className="text-sm font-semibold text-gray-700">Tier {tier}</p>

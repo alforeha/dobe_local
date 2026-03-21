@@ -76,7 +76,7 @@ function ReviewingIncompleteList({ onOpenEvent }: ReviewingIncompleteListProps) 
           <li key={ev.id}>
             <button
               type="button"
-              className="w-full text-left px-4 py-3 hover:bg-gray-50"
+              className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800"
               onClick={() => onOpenEvent(ev.id)}
             >
               <p className="text-sm text-gray-800">{ev.name}</p>

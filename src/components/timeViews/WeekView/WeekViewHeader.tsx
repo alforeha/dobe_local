@@ -10,7 +10,7 @@ interface WeekViewHeaderProps {
 export function WeekViewHeader({ weekStart, onBack, onForward, onThisWeek }: WeekViewHeaderProps) {
   const weekEnd = addDays(weekStart, 6);
   return (
-    <div className="flex shrink-0 items-center border-b border-gray-200 bg-white px-3 py-2">
+    <div className="flex shrink-0 items-center border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2">
       <button type="button" aria-label="Previous week" onClick={onBack} className="p-1 text-gray-500">‹</button>
       <button
         type="button"

@@ -13,7 +13,7 @@ interface FooterProps {
 
 export function Footer({ activeView, onViewChange, onCoachOpen, onMenuOpen }: FooterProps) {
   return (
-    <footer className="shrink-0 border-t border-gray-200 bg-white">
+    <footer className="shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
       {/* Top row: time view nav */}
       <TimeViewTabs activeView={activeView} onViewChange={onViewChange} />
       {/* Bottom row: coach + ambient comment + menu */}

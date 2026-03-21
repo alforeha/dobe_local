@@ -8,7 +8,7 @@ interface ResourceBlockExpandedProps {
 export function ResourceBlockExpanded({ resource, onClose }: ResourceBlockExpandedProps) {
   return (
     <div className="px-3 pb-3">
-      <div className="bg-gray-50 rounded-lg p-3">
+      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xl shrink-0">{resource.icon || '📦'}</span>
           <span className="flex-1 text-sm font-medium text-gray-800 truncate">

@@ -16,7 +16,7 @@ export function TaskBlock({ taskId }: TaskBlockProps) {
 
   if (!taskId) {
     return (
-      <div className="flex min-h-16 items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50">
+      <div className="flex min-h-16 items-center justify-center rounded-lg border border-dashed border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
         <p className="text-xs text-gray-400">Select a task to begin</p>
       </div>
     );
@@ -27,7 +27,7 @@ export function TaskBlock({ taskId }: TaskBlockProps) {
   const taskType: TaskType = template?.taskType ?? 'CHECK';
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-3">
+    <div className="rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-3">
       <div className="mb-2 flex items-center justify-between">
         <span className="text-sm font-semibold text-gray-800">{template?.name ?? 'Unknown task'}</span>
         <span className="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700">
@@ -62,7 +62,7 @@ function TaskTypeInputStub({ taskType }: { taskType: TaskType }) {
   };
 
   return (
-    <div className="rounded bg-gray-50 px-3 py-2">
+    <div className="rounded bg-gray-50 dark:bg-gray-700 px-3 py-2">
       <p className="text-xs text-gray-400 italic">{stubs[taskType]}</p>
     </div>
   );

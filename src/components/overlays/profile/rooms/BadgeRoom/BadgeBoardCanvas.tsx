@@ -9,7 +9,7 @@ export function BadgeBoardCanvas() {
   const badges = useUserStore((s) => s.user?.progression.badgeBoard.pinned) ?? [];
 
   return (
-    <div className="relative flex-1 min-h-48 bg-gray-50 rounded border border-dashed border-gray-300">
+    <div className="relative flex-1 min-h-48 bg-gray-50 dark:bg-gray-800 rounded border border-dashed border-gray-300 dark:border-gray-600">
       {badges.length === 0 ? (
         <p className="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
           No badges placed yet

@@ -29,7 +29,7 @@ export function CoachOverlayFooter({ activeRoom, onNav, userLevel = 0 }: CoachOv
   const visibleRooms = ROOMS.filter((r) => r.room !== 'leaderboard' || showLeaderboard);
 
   return (
-    <nav className="shrink-0 flex border-t border-gray-200 bg-white">
+    <nav className="shrink-0 flex border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
       {visibleRooms.map(({ room, label }) => (
         <button
           key={room}

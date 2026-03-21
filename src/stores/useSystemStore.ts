@@ -32,6 +32,7 @@ interface SystemActions {
   setLastRollover: (timestamp: string) => void;
   setSessionStart: (timestamp: string) => void;
   setRolloverStep: (step: number | null) => void;
+  setThemeMode: (mode: 'light' | 'dark') => void;
   reset: () => void;
 }
 
@@ -61,6 +62,29 @@ export const useSystemStore = create<SystemState & SystemActions>()(
       setSessionStart: (sessionStart) => set({ sessionStart }),
 
       setRolloverStep: (rolloverStep) => set({ rolloverStep }),
+
+      setThemeMode: (mode) =>
+        set((state) => {
+          const current = state.settings;
+          if (current) {
+            return {
+              settings: {
+                ...current,
+                displayPreferences: { ...current.displayPreferences, mode },
+              },
+            };
+          }
+          return {
+            settings: {
+              timePreferences: { dayStart: '06:00', weekStart: 'mon' },
+              coachPreferences: { tone: 'friendly', trackingSettings: {}, character: 'default' },
+              displayPreferences: { mode, theme: 'default' },
+              socialPreferences: null,
+              notificationPreferences: null,
+              storagePreferences: null,
+            },
+          };
+        }),
 
       reset: () => set(initialState),
     }),

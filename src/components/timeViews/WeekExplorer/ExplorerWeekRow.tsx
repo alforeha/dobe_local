@@ -12,7 +12,7 @@ export function ExplorerWeekRow({ weekStart, onSelect }: ExplorerWeekRowProps) {
 
   return (
     <div
-      className="flex border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+      className="flex border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
       role="button"
       tabIndex={0}
       onClick={onSelect}

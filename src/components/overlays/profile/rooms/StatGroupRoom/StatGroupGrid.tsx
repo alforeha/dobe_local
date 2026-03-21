@@ -38,7 +38,7 @@ function StatCube({ date, stat, active }: CubeProps) {
     <div className="relative">
       <button
         type="button"
-        className={`h-4 w-4 rounded-sm ${active ? 'bg-indigo-400' : 'bg-gray-200'} hover:ring-1 hover:ring-indigo-400`}
+        className={`h-4 w-4 rounded-sm ${active ? 'bg-indigo-400' : 'bg-gray-200 dark:bg-gray-600'} hover:ring-1 hover:ring-indigo-400`}
         onClick={() => setOpen((v) => !v)}
         aria-label={`${stat} ${date}`}
       />

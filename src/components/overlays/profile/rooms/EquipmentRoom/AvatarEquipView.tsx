@@ -11,7 +11,7 @@ export function AvatarEquipView() {
   return (
     <div className="flex h-full gap-4">
       {/* Slot display */}
-      <div className="w-1/2 rounded bg-gray-50 p-3">
+      <div className="w-1/2 rounded bg-gray-50 dark:bg-gray-800 p-3">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Equipped</p>
         {slots.length === 0 ? (
           <p className="text-sm text-gray-400">No gear equipped</p>
@@ -29,7 +29,7 @@ export function AvatarEquipView() {
       </div>
 
       {/* Gear list */}
-      <div className="flex-1 overflow-y-auto rounded bg-gray-50 p-3">
+      <div className="flex-1 overflow-y-auto rounded bg-gray-50 dark:bg-gray-800 p-3">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Gear</p>
         <p className="text-sm text-gray-400">CharacterLibrary resolution — BUILD-time</p>
       </div>

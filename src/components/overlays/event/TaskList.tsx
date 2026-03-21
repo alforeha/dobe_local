@@ -37,8 +37,8 @@ export function TaskList({ taskIds, selectedTaskId, onSelect }: TaskListProps) {
             key={id}
             type="button"
             onClick={() => onSelect(id)}
-            className={`flex w-full items-center px-3 py-2 text-left border-b border-gray-100 hover:bg-gray-50 transition-colors
-              ${isSelected ? 'bg-purple-50' : ''}`}
+            className={`flex w-full items-center px-3 py-2 text-left border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors
+              ${isSelected ? 'bg-purple-50 dark:bg-purple-900/20' : ''}`}
           >
             <span className="flex-1 text-sm text-gray-800 truncate">{template?.name ?? id}</span>
             <span className="w-20 text-center text-xs text-gray-500">{template?.taskType ?? '—'}</span>

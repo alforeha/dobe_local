@@ -10,7 +10,7 @@ export function FavouriteTaskBlock({ templateKey: _templateKey, template }: Favo
   const [confirming, setConfirming] = useState(false);
 
   return (
-    <div className="flex items-center gap-3 px-3 py-2 bg-white border border-gray-100 rounded-lg">
+    <div className="flex items-center gap-3 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg">
       <span className="text-base shrink-0">{template.icon || '⭐'}</span>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-gray-700 truncate">{template.name}</p>
@@ -21,7 +21,7 @@ export function FavouriteTaskBlock({ templateKey: _templateKey, template }: Favo
           <button
             type="button"
             onClick={() => setConfirming(false)}
-            className="text-xs text-gray-400 px-1.5 py-0.5 rounded bg-gray-100"
+            className="text-xs text-gray-400 px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700"
           >
             ✕
           </button>

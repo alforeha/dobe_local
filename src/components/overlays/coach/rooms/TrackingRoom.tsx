@@ -14,7 +14,7 @@ function TrackingEventRow({ name, time, color, onOpen }: TrackingEventRowProps) 
   return (
     <button
       type="button"
-      className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-start gap-3"
+      className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-start gap-3"
       onClick={onOpen}
     >
       <span

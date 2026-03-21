@@ -10,7 +10,7 @@ export function ShoppingItemBlock({ item, onToggle }: ShoppingItemBlockProps) {
     <button
       type="button"
       onClick={() => onToggle(item.id)}
-      className={`w-full flex items-center gap-3 px-3 py-2 bg-white border border-gray-100 rounded-lg text-left transition-opacity ${
+      className={`w-full flex items-center gap-3 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-left transition-opacity ${
         item.completed ? 'opacity-50' : ''
       }`}
     >
