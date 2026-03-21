@@ -8,7 +8,7 @@ export function CoachNavButton({ onOpen }: CoachNavButtonProps) {
       type="button"
       aria-label="Open coach"
       onClick={onOpen}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-100 text-base hover:bg-green-200 transition-colors"
+      className="flex h-full w-full items-center justify-center text-xl bg-green-50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
     >
       🐸
     </button>

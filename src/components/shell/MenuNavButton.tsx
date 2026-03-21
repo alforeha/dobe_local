@@ -8,7 +8,7 @@ export function MenuNavButton({ onOpen }: MenuNavButtonProps) {
       type="button"
       aria-label="Open menu"
       onClick={onOpen}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-base hover:bg-gray-200 transition-colors"
+      className="flex h-full w-full items-center justify-center text-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
     >
       ☰
     </button>
