@@ -6,7 +6,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, UserStats, Avatar, BadgeBoard, Equipment, Feed } from '../types';
+import type { User, UserStats, Avatar, BadgeBoard, Equipment, Feed, ActHabitat } from '../types';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 
@@ -31,6 +31,10 @@ interface UserActions {
   addRoutineRef: (id: string) => void;
   /** Remove a PlannedEvent ref from User.schedule.routines[] (D36) */
   removeRoutineRef: (id: string) => void;
+  /** Add an Act ref to User.goals.habitats or User.goals.adventures (W17) */
+  addActRef: (id: string, habitat: ActHabitat) => void;
+  /** Remove an Act ref from goals arrays — checks both lists (W17) */
+  removeActRef: (id: string) => void;
   reset: () => void;
 }
 
@@ -148,6 +152,38 @@ export const useUserStore = create<UserState & UserActions>()(
               }
             : {},
         ),
+
+      addActRef: (id, habitat) =>
+        set((state) => {
+          if (!state.user) return {};
+          const goals = state.user.goals;
+          const list = habitat === 'habitats' ? goals.habitats : goals.adventures;
+          if (list.includes(id)) return {};
+          return {
+            user: {
+              ...state.user,
+              goals: {
+                ...goals,
+                [habitat]: [...list, id],
+              },
+            },
+          };
+        }),
+
+      removeActRef: (id) =>
+        set((state) => {
+          if (!state.user) return {};
+          const goals = state.user.goals;
+          return {
+            user: {
+              ...state.user,
+              goals: {
+                habitats: goals.habitats.filter((ref) => ref !== id),
+                adventures: goals.adventures.filter((ref) => ref !== id),
+              },
+            },
+          };
+        }),
 
       reset: () => set(initialState),
     }),

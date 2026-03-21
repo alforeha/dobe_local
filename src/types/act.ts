@@ -94,6 +94,8 @@ export type AccountabilityStub = null;
 /** [MULTI-USER] stub — null in LOCAL */
 export type SharedContactsStub = null;
 
+export type ActHabitat = 'habitats' | 'adventures';
+
 export interface Act {
   /** uuid — only Act gets a uuid in the quest hierarchy (D27) */
   id: string;
@@ -103,6 +105,8 @@ export interface Act {
   icon: string;
   /** user ref | coach ref — distinguishes habitat (user) from adventure (Coach) */
   owner: string;
+  /** Which GOAL room tab this Act appears under (W17) */
+  habitat?: ActHabitat;
   /** Array of Chain objects — array-indexed (D27) */
   chains: Chain[];
   /** [MULTI-USER] stub — null in LOCAL (D08) */
