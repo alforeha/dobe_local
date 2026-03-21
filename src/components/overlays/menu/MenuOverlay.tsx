@@ -19,6 +19,7 @@ export function MenuOverlay({ onClose }: MenuOverlayProps) {
 
   return (
     <div className="flex h-full">
+      <MenuOverlayContent activeRoom={activeRoom} />
       <MenuOverlayNav
         activeRoom={activeRoom}
         onNavigate={handleNavigate}
@@ -26,7 +27,6 @@ export function MenuOverlay({ onClose }: MenuOverlayProps) {
         collapsed={navCollapsed}
         onToggleCollapse={() => setNavCollapsed((c) => !c)}
       />
-      <MenuOverlayContent activeRoom={activeRoom} />
     </div>
   );
 }
