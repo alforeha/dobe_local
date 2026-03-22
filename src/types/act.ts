@@ -80,6 +80,8 @@ export interface Chain {
   chainReward: string;
   /** Array of Quest objects — array-indexed (D27) */
   quests: Quest[];
+  /** DQ5 stub — adaptive quests injected by Coach (future) */
+  adaptiveQuests?: Quest[];
   /** Cached derived state */
   completionState: ChainCompletionState;
 }

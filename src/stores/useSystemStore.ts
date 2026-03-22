@@ -23,6 +23,11 @@ interface SystemState {
    * On boot: if this is set (1–9), rollover resumes from that step.
    */
   rolloverStep: number | null;
+  /**
+   * Set false when first-run seeding completes. Set true by the Onboarding
+   * Adventure quest on completion (W30). null means value not yet initialised.
+   */
+  onboardingComplete: boolean | null;
 }
 
 // ── ACTIONS ───────────────────────────────────────────────────────────────────
@@ -33,6 +38,7 @@ interface SystemActions {
   setSessionStart: (timestamp: string) => void;
   setRolloverStep: (step: number | null) => void;
   setThemeMode: (mode: 'light' | 'dark') => void;
+  setOnboardingComplete: (complete: boolean) => void;
   reset: () => void;
 }
 
@@ -43,6 +49,7 @@ const initialState: SystemState = {
   lastRollover: null,
   sessionStart: null,
   rolloverStep: null,
+  onboardingComplete: null,
 };
 
 // ── STORE ─────────────────────────────────────────────────────────────────────
@@ -62,6 +69,8 @@ export const useSystemStore = create<SystemState & SystemActions>()(
       setSessionStart: (sessionStart) => set({ sessionStart }),
 
       setRolloverStep: (rolloverStep) => set({ rolloverStep }),
+
+      setOnboardingComplete: (onboardingComplete) => set({ onboardingComplete }),
 
       setThemeMode: (mode) =>
         set((state) => {

@@ -102,10 +102,10 @@ export function LuckyDiceSection() {
           storageSet(storageKey.quickActions(today), updatedQa);
         }
 
-        // Award XP: result * 15 agility + base 2 quick actions bonus
-        const xpAmount = result * 15 + 2;
+        // Award XP: result * 10 agility (range 10–60 XP)
+        const xpAmount = result * 10;
         awardXP(user.system.id, xpAmount);
-        awardStat(user.system.id, 'agility', result + 2);
+        awardStat(user.system.id, 'agility', result);
       }
     }, 80);
   }, [rolling, todayRoll, user, today, qaId, scheduleStore]);

@@ -689,6 +689,7 @@ export function makeDailyChain(actId: string, chainIdx: number, date: string): C
       makeDailyLogQuest(actId, chainIdx),
       makeDailyClearDeckQuest(actId, chainIdx),
     ],
+    adaptiveQuests: [],
     completionState: 'active',
   };
 }
