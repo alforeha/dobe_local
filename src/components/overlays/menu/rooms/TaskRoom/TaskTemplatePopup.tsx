@@ -36,6 +36,7 @@ const TASK_TYPES: TaskType[] = [
   'LOG',
   'LOCATION_POINT',
   'LOCATION_TRAIL',
+  'ROLL',
 ];
 
 const TASK_TYPE_LABELS: Record<TaskType, string> = {
@@ -54,6 +55,7 @@ const TASK_TYPE_LABELS: Record<TaskType, string> = {
   LOG: 'Log (open entry)',
   LOCATION_POINT: 'Location Point (pin drop)',
   LOCATION_TRAIL: 'Location Trail (route track)',
+  ROLL: 'Roll (system dice — D78)',
 };
 
 const SECONDARY_TAGS: TaskSecondaryTag[] = [
@@ -113,6 +115,8 @@ function defaultInputFields(taskType: TaskType): InputFields {
       return { label: 'Mark location', captureAccuracy: true };
     case 'LOCATION_TRAIL':
       return { label: 'Record trail', captureInterval: null };
+    case 'ROLL':
+      return { sides: 6 };
   }
 }
 

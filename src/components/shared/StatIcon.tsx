@@ -41,20 +41,35 @@ export function StatIcon({ stat, value, size = 'sm', showLabel = true, onClick }
   const color = STAT_COLORS[stat];
   const textSize = size === 'md' ? 'text-sm' : 'text-xs';
   const valueSize = size === 'md' ? 'text-base font-bold' : 'text-xs font-semibold';
+  const sharedClass = `flex flex-col items-center leading-none ${onClick ? 'cursor-pointer' : 'cursor-default'}`;
 
-  return (
-    <button
-      type="button"
-      aria-label={`${label}: ${value}`}
-      onClick={onClick}
-      className={`flex flex-col items-center leading-none ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
-    >
+  const inner = (
+    <>
       {showLabel ? (
         <span className={`${textSize} font-medium ${color}`}>{label}</span>
       ) : (
         <span className="text-sm leading-none">{STAT_ICONS[stat]}</span>
       )}
       <span className={`${valueSize} text-gray-800 dark:text-gray-100`}>{value}</span>
-    </button>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        aria-label={`${label}: ${value}`}
+        onClick={onClick}
+        className={sharedClass}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return (
+    <div aria-label={`${label}: ${value}`} className={sharedClass}>
+      {inner}
+    </div>
   );
 }

@@ -234,13 +234,8 @@ export async function seedTestDataset(): Promise<TestDatasetResult> {
     };
 
     // Archive directly into historyEvents
-    useScheduleStore.setState((state: never) => ({
-      ...(state as Record<string, unknown>),
-      historyEvents: {
-        ...((state as { historyEvents: Record<string, unknown> }).historyEvents),
-        [evId]: histEvent,
-      },
-    }));
+    const currentHistory = useScheduleStore.getState().historyEvents;
+    useScheduleStore.setState({ historyEvents: { ...currentHistory, [evId]: histEvent } } as never);
     storageSet(`event:${evId}`, histEvent);
 
     eventCount++;
@@ -276,7 +271,6 @@ export async function seedTestDataset(): Promise<TestDatasetResult> {
         commentBlock: `Feed entry ${i + 1} — ${feedSourceTypes[i]}`,
         sourceType: feedSourceTypes[i],
         timestamp: new Date(feedBaseTs + i * (86_400_000 * 2)).toISOString(),
-        triggerRef: null,
       },
       currentUser,
     );

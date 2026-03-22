@@ -21,9 +21,10 @@ export function TaskRoom() {
   const prebuiltEntries = taskTemplateLibrary.map(
     (t): [string, TaskTemplate, boolean] => [t.id ?? t.name, t, false],
   );
-  const userEntries = Object.entries(taskTemplates).map(
-    ([k, t]): [string, TaskTemplate, boolean] => [k, t, true],
-  );
+  const prebuiltIds = new Set(prebuiltEntries.map(([k]) => k));
+  const userEntries = Object.entries(taskTemplates)
+    .filter(([k]) => !prebuiltIds.has(k))
+    .map(([k, t]): [string, TaskTemplate, boolean] => [k, t, true]);
   // Prebuilt templates shown first in Stat Tasks tab; resource tab deferred (BUILD-TIME)
   const filtered: [string, TaskTemplate, boolean][] =
     tab === 'stat' ? [...prebuiltEntries, ...userEntries] : [];

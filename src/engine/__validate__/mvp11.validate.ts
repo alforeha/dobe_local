@@ -715,13 +715,8 @@ async function main(): Promise<void> {
       coAttendees: null,
     };
     // Archive directly into historyEvents
-    useScheduleStore.setState((state: never) => ({
-      ...(state as Record<string, unknown>),
-      historyEvents: {
-        ...((state as { historyEvents: Record<string, unknown> }).historyEvents),
-        [evId]: histEvent,
-      },
-    }));
+    const currentHistory = useScheduleStore.getState().historyEvents;
+    useScheduleStore.setState({ historyEvents: { ...currentHistory, [evId]: histEvent } } as never);
     storageSet(`event:${evId}`, histEvent);
     eventCount++;
   }
@@ -754,7 +749,6 @@ async function main(): Promise<void> {
         commentBlock: `Dataset feed entry ${i + 1} — ${feedSourceTypes[i]}`,
         sourceType: feedSourceTypes[i],
         timestamp: new Date(baseTs + i * 86_400_000).toISOString(),
-        triggerRef: null,
       },
       currentDsUser,
     );
