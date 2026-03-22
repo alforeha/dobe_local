@@ -11,7 +11,7 @@ import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { useUserStore } from '../../../../../stores/useUserStore';
 import { taskTemplateLibrary } from '../../../../../coach';
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
-import { storageSet, storageDelete, storageKey } from '../../../../../storage';
+import { storageDelete, storageKey } from '../../../../../storage';
 import type { PlannedEvent, ConflictMode } from '../../../../../types/plannedEvent';
 import type { RecurrenceFrequency, Weekday } from '../../../../../types/taskTemplate';
 
@@ -185,7 +185,6 @@ export function RoutinePopup({ editRoutine, onClose }: RoutinePopupProps) {
         endTime,
       };
       setPlannedEvent(updated);
-      storageSet(storageKey.plannedEvent(updated.id), updated);
     } else {
       const id = uuidv4();
       const newRoutine: PlannedEvent = {
@@ -210,7 +209,6 @@ export function RoutinePopup({ editRoutine, onClose }: RoutinePopupProps) {
       };
 
       setPlannedEvent(newRoutine);
-      storageSet(storageKey.plannedEvent(id), newRoutine);
       addRoutineRef(id);
 
       // D14 — same-day creation triggers immediate materialisation

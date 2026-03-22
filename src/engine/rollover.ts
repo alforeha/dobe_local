@@ -20,7 +20,6 @@ import { useSystemStore } from '../stores/useSystemStore';
 import { useUserStore } from '../stores/useUserStore';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useProgressionStore } from '../stores/useProgressionStore';
-import { storageSet, storageKey } from '../storage';
 import { materialisePlannedEvent } from './materialise';
 import { fireMarker } from './markerEngine';
 import { evaluateMarkerCondition, evaluateTaskCountMarker } from './questEngine';
@@ -291,7 +290,6 @@ function step8_updateRecurrence(resolved: PlannedEvent[], rolloverDate: string):
     if (nextSeed !== pe.seedDate) {
       const updatedPe: PlannedEvent = { ...pe, seedDate: nextSeed };
       scheduleStore.setPlannedEvent(updatedPe);
-      storageSet(storageKey.plannedEvent(updatedPe.id), updatedPe);
     }
   }
 }
@@ -314,7 +312,6 @@ function step9_coachReview(newDate: string): void {
   };
 
   scheduleStore.setActiveEvent(qa);
-  storageSet(storageKey.quickActions(newDate), qa);
 
   // Push a rollover feed entry if user exists
   const user = userStore.user;

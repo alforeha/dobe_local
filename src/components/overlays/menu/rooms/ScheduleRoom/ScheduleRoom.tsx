@@ -24,7 +24,7 @@ export function ScheduleRoom() {
   const [popup, setPopup] = useState<PopupState>(null);
   const plannedEvents = useScheduleStore((s) => s.plannedEvents);
 
-  const allEvents = Object.values(plannedEvents);
+  const allEvents = Object.values(plannedEvents).filter((e) => !isOneOffEvent(e));
   const filtered = filter
     ? allEvents.filter((e) => e.name.toLowerCase().includes(filter.toLowerCase()))
     : allEvents;

@@ -2,7 +2,7 @@
 import type { Resource, ContactMeta, HomeMeta, VehicleMeta, AccountMeta, InventoryMeta, DocMeta, ResourceType } from '../../../../../types/resource';
 import { useResourceStore } from '../../../../../stores/useResourceStore';
 import { useUserStore } from '../../../../../stores/useUserStore';
-import { storageSet } from '../../../../../storage';
+
 import { ContactMetaView } from './contact/ContactMetaView';
 import { HomeMetaView } from './home/HomeMetaView';
 import { VehicleMetaView } from './vehicle/VehicleMetaView';
@@ -71,7 +71,6 @@ export function ResourceBlockExpanded({ resource, onClose, onEdit }: ResourceBlo
         },
       };
       setUser(updatedUser);
-      storageSet('user', updatedUser);
     }
     onClose();
   }

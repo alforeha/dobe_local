@@ -18,8 +18,8 @@ import type { StatGroupKey } from '../types/user';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useUserStore } from '../stores/useUserStore';
 import { useProgressionStore } from '../stores/useProgressionStore';
-import { storageSet, storageKey } from '../storage';
 import { EVENT_MAX_ATTACHMENTS } from '../storage/storageBudget';
+
 import { awardXP, awardStat } from './awardPipeline';
 import { completeMilestone, decodeQuestRef } from './markerEngine';
 import { checkAchievements } from '../coach/checkAchievements';
@@ -95,7 +95,6 @@ export function completeTask(
   };
 
   scheduleStore.setTask(updatedTask);
-  storageSet(storageKey.task(taskId), updatedTask);
 
   // Quest check-in hook: if this task was fired by a Marker, record the Milestone
   // and evaluate the Quest finish condition (D04).
@@ -186,7 +185,6 @@ export function completeTask(
         },
       };
       userStore.setUser(updatedUser);
-      storageSet('user', updatedUser);
     }
 
     // Quest completion processing — increment questsCompleted + deliver quest reward
@@ -207,7 +205,6 @@ export function completeTask(
           },
         };
         userStore.setUser(withQuestCount);
-        storageSet('user', withQuestCount);
         checkQuestReward(_completedQuest, withQuestCount);
       }
     }
@@ -269,7 +266,6 @@ export function completeEvent(eventId: string): void {
   };
 
   scheduleStore.setActiveEvent(updatedEvent);
-  storageSet(storageKey.event(eventId), updatedEvent);
 
   // Increment eventsCompleted milestone and trigger coach reactions
   const userStoreRef = useUserStore.getState();
@@ -289,7 +285,6 @@ export function completeEvent(eventId: string): void {
       },
     };
     userStoreRef.setUser(withEventCount);
-    storageSet('user', withEventCount);
     pushRibbet('event.completed');
 
     // Achievement check + badge awards
@@ -326,7 +321,7 @@ export function completeEvent(eventId: string): void {
  */
 export function recordAttachment(
   eventId: string,
-  attachment: AttachmentRecord,
+  _attachment: AttachmentRecord,
 ): string | null {
   const scheduleStore = useScheduleStore.getState();
   const event = scheduleStore.activeEvents[eventId] as Event | undefined;
@@ -345,26 +340,6 @@ export function recordAttachment(
 
   const attachmentId = uuidv4();
 
-  // Persist the Attachment record in localStorage (ItemTemplate shape)
-  const attachmentRecord = {
-    id: attachmentId,
-    type: 'attachment',
-    name: attachment.opfsRef,
-    description: '',
-    icon: '',
-    source: 'user',
-    contents: {
-      fileRef: attachment.opfsRef,
-      size: attachment.sizeBytes,
-      type: attachment.mimeType,
-      taskRef: attachment.taskRef,
-      validationStatus: null,
-      approverRef: null,
-    },
-  };
-
-  storageSet(storageKey.attachment(attachmentId), attachmentRecord);
-
   // Update the event to reference the new attachment
   const updatedEvent: Event = {
     ...event,
@@ -372,7 +347,6 @@ export function recordAttachment(
   };
 
   scheduleStore.setActiveEvent(updatedEvent);
-  storageSet(storageKey.event(eventId), updatedEvent);
 
   return attachmentId;
 }

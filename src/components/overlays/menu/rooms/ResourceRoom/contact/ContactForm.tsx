@@ -16,7 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Resource, ContactMeta } from '../../../../../../types/resource';
 import { useResourceStore } from '../../../../../../stores/useResourceStore';
 import { useUserStore } from '../../../../../../stores/useUserStore';
-import { storageSet, storageKey } from '../../../../../../storage';
+
 import { generateScheduledTasks } from '../../../../../../engine/resourceEngine';
 import { TextInput } from '../../../../../shared/inputs/TextInput';
 
@@ -93,7 +93,6 @@ export function ContactForm({ existing, onSaved, onCancel }: ContactFormProps) {
 
     // Write to store + storage
     setResource(resource);
-    storageSet(storageKey.resource(resource.id), resource);
 
     // If new contact: register in user.resources.contacts
     if (!existing && user) {
@@ -107,7 +106,6 @@ export function ContactForm({ existing, onSaved, onCancel }: ContactFormProps) {
         },
       };
       setUser(updatedUser);
-      storageSet('user', updatedUser);
     }
 
     // Generate/update birthday PlannedEvent (or other scheduled tasks)

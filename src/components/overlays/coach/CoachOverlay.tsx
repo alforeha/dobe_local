@@ -7,6 +7,7 @@ import { RecommendationsRoom } from './rooms/RecommendationsRoom';
 import { ReviewingRoom } from './rooms/ReviewingRoom';
 import { TrackingRoom } from './rooms/TrackingRoom';
 import { LeaderboardRoom } from './rooms/LeaderboardRoom';
+import { AboutPopup } from './AboutPopup';
 
 export type CoachRoom = 'feed' | 'recommendations' | 'reviewing' | 'tracking' | 'leaderboard';
 
@@ -29,6 +30,7 @@ export function CoachOverlay({ onClose, onOpenEvent, onNavigateToDayView }: Coac
   const [activeRoom, setActiveRoom] = useState<CoachRoom>(
     hasFeedContent ? 'feed' : 'recommendations'
   );
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   const handleOpenEvent = (eventId: string) => {
     onClose();
@@ -45,6 +47,7 @@ export function CoachOverlay({ onClose, onOpenEvent, onNavigateToDayView }: Coac
       <CoachOverlayHeader
         onClose={onClose}
         onFeedNav={() => setActiveRoom('feed')}
+        onInfo={() => setAboutOpen(true)}
         unreadCount={unreadCount}
       />
 
@@ -67,6 +70,8 @@ export function CoachOverlay({ onClose, onOpenEvent, onNavigateToDayView }: Coac
         onNav={setActiveRoom}
         userLevel={userLevel}
       />
+
+      {aboutOpen && <AboutPopup onClose={() => setAboutOpen(false)} />}
     </div>
   );
 }

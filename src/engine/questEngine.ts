@@ -16,7 +16,6 @@ import { useProgressionStore } from '../stores/useProgressionStore';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useResourceStore } from '../stores/useResourceStore';
 import { useUserStore } from '../stores/useUserStore';
-import { storageSet, storageKey } from '../storage';
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
@@ -352,5 +351,4 @@ export function updateQuestProgress(
   };
 
   progressionStore.setAct(updatedAct);
-  storageSet(storageKey.act(actId), updatedAct);
 }

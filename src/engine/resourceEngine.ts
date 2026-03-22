@@ -23,7 +23,7 @@ import type { QuickActionsEvent } from '../types/event';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useUserStore } from '../stores/useUserStore';
 import { useResourceStore } from '../stores/useResourceStore';
-import { storageSet, storageKey } from '../storage';
+
 import { awardXP, awardStat } from './awardPipeline';
 import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge } from '../coach/rewardPipeline';
@@ -146,7 +146,6 @@ export function generateScheduledTasks(resource: Resource): PlannedEvent[] {
 
   for (const pe of created) {
     useScheduleStore.getState().setPlannedEvent(pe);
-    storageSet(storageKey.plannedEvent(pe.id), pe);
   }
 
   return created;
@@ -328,7 +327,6 @@ export function generateGTDItems(resource: Resource): Task[] {
     if (latestUser) {
       for (const task of created) {
         scheduleStore.setTask(task);
-        storageSet(storageKey.task(task.id), task);
       }
       const updatedUser: User = {
         ...latestUser,
@@ -338,7 +336,6 @@ export function generateGTDItems(resource: Resource): Task[] {
         },
       };
       userStore.setUser(updatedUser);
-      storageSet('user', updatedUser);
     }
   }
 
@@ -672,7 +669,6 @@ export function completeGTDItem(itemId: string, user: User): void {
   const updatedTask: Task = { ...task, completionState: 'complete', completedAt: now };
 
   scheduleStore.setTask(updatedTask);
-  storageSet(storageKey.task(itemId), updatedTask);
 
   // Write to today's QuickActionsEvent (date-keyed singleton per D12)
   const today = todayISO();
@@ -684,7 +680,6 @@ export function completeGTDItem(itemId: string, user: User): void {
       completions: [...qa.completions, { taskRef: itemId, completedAt: now }],
     };
     scheduleStore.setActiveEvent(updatedQa);
-    storageSet(storageKey.quickActions(today), updatedQa);
   }
 
   // Remove from gtdList now that it's complete
@@ -697,7 +692,6 @@ export function completeGTDItem(itemId: string, user: User): void {
     },
   };
   userStore.setUser(withoutItem);
-  storageSet('user', withoutItem);
 
   // XP award — +2 agility (QuickActions context) + +2 defense (resource context)
   const userId = withoutItem.system.id;

@@ -11,7 +11,7 @@
 // Seeding triggered by W30 first-run flow. Export is the handoff point.
 // ─────────────────────────────────────────
 
-import type { Act, Chain, Quest, ActCommitment } from '../types/act';
+import type { Act, Chain, Quest, ActCommitment, ActHabitat } from '../types/act';
 import type { Marker, MarkerConditionType, MarkerTriggerSource } from '../types/quest/Marker';
 import type { QuestTimely } from '../types/quest/timely';
 import type { QuestSpecific } from '../types/quest/specific';
@@ -20,6 +20,7 @@ import type { QuestExigency } from '../types/quest/exigency';
 import type { TaskTemplate, XpAward, TaskSecondaryTag, RecurrenceRule } from '../types/taskTemplate';
 import { useProgressionStore } from '../stores/useProgressionStore';
 import { useScheduleStore } from '../stores/useScheduleStore';
+import { useUserStore } from '../stores/useUserStore';
 
 // ── STABLE ACT IDs ────────────────────────────────────────────────────────────
 // Fixed UUIDs so seeding is idempotent — re-seeding won't duplicate Acts.
@@ -933,6 +934,7 @@ export function seedStarterContent(skipExisting = true): void {
   for (const act of starterQuestLibrary.acts) {
     if (skipExisting && progressionStore.acts[act.id]) continue;
     progressionStore.setAct(act);
+    useUserStore.getState().addActRef(act.id, (act.habitat ?? 'habitats') as ActHabitat);
   }
 
   // Seed TaskTemplates

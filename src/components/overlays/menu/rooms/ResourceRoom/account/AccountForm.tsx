@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Resource, AccountMeta, AccountKind } from '../../../../../../types/resource';
 import { useResourceStore } from '../../../../../../stores/useResourceStore';
 import { useUserStore } from '../../../../../../stores/useUserStore';
-import { storageSet, storageKey } from '../../../../../../storage';
+
 import { generateGTDItems } from '../../../../../../engine/resourceEngine';
 import { TextInput } from '../../../../../shared/inputs/TextInput';
 import { NumberInput } from '../../../../../shared/inputs/NumberInput';
@@ -83,7 +83,6 @@ export function AccountForm({ existing, onSaved, onCancel }: AccountFormProps) {
     };
 
     setResource(resource);
-    storageSet(storageKey.resource(resource.id), resource);
 
     if (!existing && user) {
       const updatedUser = {
@@ -96,7 +95,6 @@ export function AccountForm({ existing, onSaved, onCancel }: AccountFormProps) {
         },
       };
       setUser(updatedUser);
-      storageSet('user', updatedUser);
     }
 
     generateGTDItems(resource);

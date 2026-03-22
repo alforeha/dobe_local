@@ -13,7 +13,7 @@ import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { useUserStore } from '../../../../../stores/useUserStore';
 import { taskTemplateLibrary } from '../../../../../coach';
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
-import { storageSet, storageDelete, storageKey } from '../../../../../storage';
+import { storageDelete, storageKey } from '../../../../../storage';
 import type { PlannedEvent, ConflictMode } from '../../../../../types/plannedEvent';
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
@@ -168,7 +168,6 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
         taskPool,
       };
       setPlannedEvent(updated);
-      storageSet(storageKey.plannedEvent(updated.id), updated);
 
       // If updated date is today or in the past, trigger materialisation
       if (date <= today) {
@@ -199,7 +198,6 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
       };
 
       setPlannedEvent(newEvent);
-      storageSet(storageKey.plannedEvent(id), newEvent);
       addPlannedRef(id);
 
       // D14 — same-day or past creation triggers immediate materialisation

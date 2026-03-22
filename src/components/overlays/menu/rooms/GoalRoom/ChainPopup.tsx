@@ -18,7 +18,7 @@ import type {
   Weekday,
 } from '../../../../../types';
 import { useProgressionStore } from '../../../../../stores/useProgressionStore';
-import { storageSet, storageKey } from '../../../../../storage';
+
 import { computeProjectedFinish } from '../../../../../engine';
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
@@ -773,7 +773,6 @@ export function ChainPopup({ chain, chainIndex, act, onClose }: ChainPopupProps)
     updatedChains[chainIndex] = updated;
     const updatedAct: Act = { ...act, chains: updatedChains };
     setAct(updatedAct);
-    storageSet(storageKey.act(act.id), updatedAct);
   }
 
   // ── Add quest ─────────────────────────────────────────────────────────────

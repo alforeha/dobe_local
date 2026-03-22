@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Resource, HomeMeta, HomeRoom } from '../../../../../../types/resource';
 import { useResourceStore } from '../../../../../../stores/useResourceStore';
 import { useUserStore } from '../../../../../../stores/useUserStore';
-import { storageSet, storageKey } from '../../../../../../storage';
+
 import { generateScheduledTasks } from '../../../../../../engine/resourceEngine';
 import { TextInput } from '../../../../../shared/inputs/TextInput';
 
@@ -97,7 +97,6 @@ export function HomeForm({ existing, onSaved, onCancel }: HomeFormProps) {
     };
 
     setResource(resource);
-    storageSet(storageKey.resource(resource.id), resource);
 
     if (!existing && user) {
       const updatedUser = {
@@ -110,7 +109,6 @@ export function HomeForm({ existing, onSaved, onCancel }: HomeFormProps) {
         },
       };
       setUser(updatedUser);
-      storageSet('user', updatedUser);
     }
 
     generateScheduledTasks(resource);

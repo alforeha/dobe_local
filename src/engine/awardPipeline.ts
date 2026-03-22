@@ -15,7 +15,7 @@
 
 import type { StatGroupKey } from '../types/user';
 import { useUserStore } from '../stores/useUserStore';
-import { storageSet } from '../storage';
+
 import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge, checkCoachDrops } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
@@ -129,7 +129,6 @@ export function awardXP(
   };
 
   userStore.setUser(updatedUser);
-  storageSet('user', updatedUser);
 
   if (newLevel > oldLevel) {
     console.info(`[awardPipeline] Level up! ${oldLevel} → ${newLevel} (XP: ${newXP})`);
@@ -217,5 +216,4 @@ export function awardStat(
   };
 
   userStore.setUser(updatedUser);
-  storageSet('user', updatedUser);
 }

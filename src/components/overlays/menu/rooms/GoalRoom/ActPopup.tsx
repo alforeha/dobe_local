@@ -14,7 +14,7 @@ import { useProgressionStore } from '../../../../../stores/useProgressionStore';
 import { useUserStore } from '../../../../../stores/useUserStore';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { taskTemplateLibrary } from '../../../../../coach';
-import { storageSet, storageDelete, storageKey } from '../../../../../storage';
+import { storageDelete, storageKey } from '../../../../../storage';
 import type { Act, ActHabitat } from '../../../../../types';
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
@@ -129,7 +129,6 @@ export function ActPopup({ editAct, defaultHabitat, onClose }: ActPopupProps) {
         commitment: { trackedTaskRefs, routineRefs },
       };
       setAct(updated);
-      storageSet(storageKey.act(updated.id), updated);
       if (prevHabitat !== habitat) {
         removeActRef(updated.id);
         addActRef(updated.id, habitat);
@@ -151,7 +150,6 @@ export function ActPopup({ editAct, defaultHabitat, onClose }: ActPopupProps) {
         sharedContacts: null,
       };
       setAct(newAct);
-      storageSet(storageKey.act(id), newAct);
       addActRef(id, habitat);
     }
 

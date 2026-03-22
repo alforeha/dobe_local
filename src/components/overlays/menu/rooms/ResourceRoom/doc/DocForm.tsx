@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Resource, DocMeta, DocType } from '../../../../../../types/resource';
 import { useResourceStore } from '../../../../../../stores/useResourceStore';
 import { useUserStore } from '../../../../../../stores/useUserStore';
-import { storageSet, storageKey } from '../../../../../../storage';
+
 import { generateGTDItems, generateDocTasks_stub } from '../../../../../../engine/resourceEngine';
 import { TextInput } from '../../../../../shared/inputs/TextInput';
 
@@ -87,7 +87,6 @@ export function DocForm({ existing, onSaved, onCancel }: DocFormProps) {
     };
 
     setResource(resource);
-    storageSet(storageKey.resource(resource.id), resource);
 
     if (!existing && user) {
       const updatedUser = {
@@ -100,7 +99,6 @@ export function DocForm({ existing, onSaved, onCancel }: DocFormProps) {
         },
       };
       setUser(updatedUser);
-      storageSet('user', updatedUser);
     }
 
     generateGTDItems(resource);

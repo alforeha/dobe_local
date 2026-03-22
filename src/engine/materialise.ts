@@ -15,7 +15,7 @@ import type { Event } from '../types/event';
 import type { Task } from '../types/task';
 import type { TaskTemplate, TaskSecondaryTag } from '../types/taskTemplate';
 import { useScheduleStore } from '../stores/useScheduleStore';
-import { storageSet, storageKey } from '../storage';
+
 
 // ── RESULT SHAPE ─────────────────────────────────────────────────────────────
 
@@ -141,16 +141,13 @@ export function materialisePlannedEvent(
   // Persist tasks
   for (const task of tasks) {
     scheduleStore.setTask(task);
-    storageSet(storageKey.task(task.id), task);
   }
 
   // Persist event
   scheduleStore.setActiveEvent(event);
-  storageSet(storageKey.event(event.id), event);
 
   // Persist updated PlannedEvent (cursor advanced)
   scheduleStore.setPlannedEvent(updatedPlannedEvent);
-  storageSet(storageKey.plannedEvent(updatedPlannedEvent.id), updatedPlannedEvent);
 
   return { event, tasks, updatedPlannedEvent };
 }

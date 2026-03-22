@@ -18,7 +18,7 @@ import type { Badge, Gear } from '../types/itemTemplate';
 import type { AchievementDefinition } from '../types/coach';
 import { useUserStore } from '../stores/useUserStore';
 import { useResourceStore } from '../stores/useResourceStore';
-import { storageSet, storageKey } from '../storage';
+
 import { pushRibbet } from './ribbet';
 import { characterLibrary } from './index';
 import { appendFeedEntry, FEED_SOURCE } from '../engine/feedEngine';
@@ -63,10 +63,8 @@ export function awardBadge(achievementDef: AchievementDefinition, user: User): U
   };
 
   useUserStore.getState().setUser(updatedUser);
-  storageSet('user', updatedUser);
 
   useResourceStore.getState().setBadge(badge);
-  storageSet(storageKey.badge(badgeId), badge);
 
   pushRibbet('badge.awarded', { itemName: achievementDef.name });
 
@@ -136,10 +134,8 @@ export function awardGear(gearDefId: string, source: string, user: User): User {
   };
 
   useUserStore.getState().setUser(updatedUser);
-  storageSet('user', updatedUser);
 
   useResourceStore.getState().setGear(gear);
-  storageSet(storageKey.gear(gearId), gear);
 
   pushRibbet('gear.awarded', { itemName: gearDef.name });
 

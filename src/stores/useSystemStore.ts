@@ -28,6 +28,8 @@ interface SystemState {
    * Adventure quest on completion (W30). null means value not yet initialised.
    */
   onboardingComplete: boolean | null;
+  /** Developer mode — enables dev tools in About popup. Enabled by 5-tap on version string. */
+  devMode: boolean;
 }
 
 // ── ACTIONS ───────────────────────────────────────────────────────────────────
@@ -39,6 +41,7 @@ interface SystemActions {
   setRolloverStep: (step: number | null) => void;
   setThemeMode: (mode: 'light' | 'dark') => void;
   setOnboardingComplete: (complete: boolean) => void;
+  setDevMode: (val: boolean) => void;
   reset: () => void;
 }
 
@@ -50,6 +53,7 @@ const initialState: SystemState = {
   sessionStart: null,
   rolloverStep: null,
   onboardingComplete: null,
+  devMode: false,
 };
 
 // ── STORE ─────────────────────────────────────────────────────────────────────
@@ -71,6 +75,8 @@ export const useSystemStore = create<SystemState & SystemActions>()(
       setRolloverStep: (rolloverStep) => set({ rolloverStep }),
 
       setOnboardingComplete: (onboardingComplete) => set({ onboardingComplete }),
+
+      setDevMode: (devMode) => set({ devMode }),
 
       setThemeMode: (mode) =>
         set((state) => {

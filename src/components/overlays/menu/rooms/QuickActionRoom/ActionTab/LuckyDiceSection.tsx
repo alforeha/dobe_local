@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useScheduleStore } from '../../../../../../stores/useScheduleStore';
 import { useUserStore } from '../../../../../../stores/useUserStore';
-import { storageSet, storageKey } from '../../../../../../storage';
+
 import { awardXP, awardStat } from '../../../../../../engine/awardPipeline';
 import { STARTER_TEMPLATE_IDS } from '../../../../../../coach/StarterQuestLibrary';
 import type { Task } from '../../../../../../types/task';
@@ -89,18 +89,22 @@ export function LuckyDiceSection() {
         };
 
         store.setTask(rollTask);
-        storageSet(storageKey.task(taskId), rollTask);
 
-        // Write to today's QA event
+        // Write to today's QA event — create one if rollover hasn't run yet (B04)
         const freshQa = store.activeEvents[qaId] as QuickActionsEvent | undefined;
-        if (freshQa) {
-          const updatedQa: QuickActionsEvent = {
-            ...freshQa,
-            completions: [...freshQa.completions, { taskRef: taskId, completedAt: now }],
-          };
-          store.setActiveEvent(updatedQa);
-          storageSet(storageKey.quickActions(today), updatedQa);
-        }
+        const baseQa: QuickActionsEvent = freshQa ?? {
+          id: qaId,
+          eventType: 'quickActions',
+          date: today,
+          completions: [],
+          xpAwarded: 0,
+          sharedCompletions: null,
+        };
+        const updatedQa: QuickActionsEvent = {
+          ...baseQa,
+          completions: [...baseQa.completions, { taskRef: taskId, completedAt: now }],
+        };
+        store.setActiveEvent(updatedQa);
 
         // Award XP: result * 10 agility (range 10–60 XP)
         const xpAmount = result * 10;

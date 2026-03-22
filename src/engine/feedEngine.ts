@@ -12,7 +12,6 @@
 import type { Feed, FeedEntry } from '../types/feed';
 import type { User } from '../types/user';
 import { useUserStore } from '../stores/useUserStore';
-import { storageSet } from '../storage';
 
 // ── DEFAULT LIMIT ─────────────────────────────────────────────────────────────
 
@@ -42,7 +41,6 @@ export function appendFeedEntry(entry: FeedEntry, user: User): void {
 
   const updatedUser: User = { ...latest, feed: updatedFeed };
   userStore.setUser(updatedUser);
-  storageSet('user', updatedUser);
 }
 
 // ── GET FEED ENTRIES ──────────────────────────────────────────────────────────
@@ -88,7 +86,6 @@ export function clearFeedBefore(date: string, user: User): void {
 
   const updatedUser: User = { ...latest, feed: updatedFeed };
   userStore.setUser(updatedUser);
-  storageSet('user', updatedUser);
 }
 
 // ── SOURCE TYPE CONSTANTS ─────────────────────────────────────────────────────
