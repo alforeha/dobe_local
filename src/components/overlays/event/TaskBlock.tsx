@@ -1,6 +1,6 @@
 import { useScheduleStore } from '../../../stores/useScheduleStore';
 import { completeTask } from '../../../engine/eventExecution';
-import type { TaskType, InputFields, CheckInputFields, CounterInputFields, RatingInputFields, TextInputFields, ChoiceInputFields, ChecklistInputFields, LogInputFields, SetsRepsInputFields, CircuitInputFields, DurationInputFields, TimerInputFields, FormInputFields, ScanInputFields, LocationPointInputFields, LocationTrailInputFields } from '../../../types/taskTemplate';
+import type { TaskType, InputFields, CheckInputFields, CounterInputFields, RatingInputFields, TextInputFields, ChoiceInputFields, ChecklistInputFields, LogInputFields, SetsRepsInputFields, CircuitInputFields, DurationInputFields, TimerInputFields, FormInputFields, ScanInputFields, LocationPointInputFields, LocationTrailInputFields, RollInputFields } from '../../../types/taskTemplate';
 import { CheckInput } from './inputs/CheckInput';
 import { CounterInput } from './inputs/CounterInput';
 import { RatingInput } from './inputs/RatingInput';
@@ -16,6 +16,7 @@ import { FormInput } from './inputs/FormInput';
 import { ScanInput } from './inputs/ScanInput';
 import { LocationPointInput } from './inputs/LocationPointInput';
 import { LocationTrailInput } from './inputs/LocationTrailInput';
+import { RollInput } from './inputs/RollInput';
 
 interface TaskBlockProps {
   taskId: string | null;
@@ -235,6 +236,14 @@ function TaskTypeInput({ taskType, template, task, onComplete }: TaskTypeInputPr
           inputFields={template.inputFields as LocationTrailInputFields}
           task={task}
           onComplete={onComplete as (r: Partial<LocationTrailInputFields>) => void}
+        />
+      );
+    case 'ROLL':
+      return (
+        <RollInput
+          inputFields={template.inputFields as RollInputFields}
+          task={task}
+          onComplete={onComplete as (r: Partial<RollInputFields>) => void}
         />
       );
     default:

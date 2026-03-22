@@ -233,5 +233,93 @@
     "cooldown": null,
     "media": null,
     "items": []
+  },
+  {
+    "id": "tmpl-body-log-000000-0000-0000-0000-01",
+    "name": "Log body scan",
+    "description": "Record a quick body scan noting sensations, tension, or energy levels.",
+    "icon": "log",
+    "taskType": "LOG",
+    "secondaryTag": "health",
+    "inputFields": { "prompt": "Body scan — what are you noticing right now?" },
+    "xpAward": { "health": 20, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-meal-log-000000-0000-0000-0000-01",
+    "name": "Log meal",
+    "description": "Log what you ate for a meal — notes on ingredients, quantity, or how it felt.",
+    "icon": "log",
+    "taskType": "LOG",
+    "secondaryTag": "nutrition",
+    "inputFields": { "prompt": "What did you eat? Any notes?" },
+    "xpAward": { "health": 20, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-sleep-circuit-00-0000-0000-0000",
+    "name": "Track sleep",
+    "description": "Log when you went to sleep, when you woke up, and how rested you feel.",
+    "icon": "circuit",
+    "taskType": "CIRCUIT",
+    "secondaryTag": "health",
+    "inputFields": {
+      "exercises": ["Log sleep time", "Log wake time", "Rate restedness (1–5)"],
+      "rounds": 1,
+      "restBetweenRounds": null
+    },
+    "xpAward": { "health": 0, "strength": 30, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": 720,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-chore-00000000-0000-0000-0000-01",
+    "name": "Chore",
+    "description": "Complete a household chore task.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "home",
+    "inputFields": { "label": "Chore complete" },
+    "xpAward": { "health": 0, "strength": 0, "agility": 20, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-clear-inbox-0000-0000-0000-0001",
+    "name": "Clear inbox",
+    "description": "Work through your inbox or GTD list until it's empty.",
+    "icon": "checklist",
+    "taskType": "CHECKLIST",
+    "secondaryTag": "admin",
+    "inputFields": {
+      "items": [
+        { "key": "process_email", "label": "Process email inbox" },
+        { "key": "process_gtd", "label": "Triage GTD list" },
+        { "key": "capture_actions", "label": "Capture next actions" }
+      ]
+    },
+    "xpAward": { "health": 0, "strength": 0, "agility": 30, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-mood-log-000000-0000-0000-0000-01",
+    "name": "Log mood",
+    "description": "Rate and note your current mood state.",
+    "icon": "rating",
+    "taskType": "RATING",
+    "secondaryTag": "mindfulness",
+    "inputFields": { "scale": 10, "label": "Mood (1 = very low, 10 = great)" },
+    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 20 },
+    "cooldown": null,
+    "media": null,
+    "items": []
   }
 ]

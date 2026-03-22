@@ -48,7 +48,9 @@ export type TaskType =
   | 'SCAN'
   | 'LOG'
   | 'LOCATION_POINT'
-  | 'LOCATION_TRAIL';
+  | 'LOCATION_TRAIL'
+  /** D78 — system-generated random roll, one per day, XP multiplier */
+  | 'ROLL';
 
 // ── INPUT FIELDS — per TaskType (D41) ────────────────────────────────────────
 // Each interface defines the inputFields{} shape for a given TaskType.
@@ -185,6 +187,19 @@ export interface LocationTrailInputFields {
   waypoints?: Waypoint[];
 }
 
+/**
+ * D78 — ROLL task input fields.
+ * Result is system-generated (1–6). User cannot edit.
+ * boostApplied stores the XP multiplier string e.g. "1.4x".
+ */
+export interface RollInputFields {
+  sides: number;
+  /** System-generated result (1–sides). Set on completion. */
+  result?: number;
+  /** e.g. "1.4x" — computed from result at fire time */
+  boostApplied?: string;
+}
+
 export type InputFields =
   | CheckInputFields
   | CounterInputFields
@@ -200,7 +215,8 @@ export type InputFields =
   | ScanInputFields
   | LogInputFields
   | LocationPointInputFields
-  | LocationTrailInputFields;
+  | LocationTrailInputFields
+  | RollInputFields;
 
 // ── SECONDARY TAG ────────────────────────────────────────────────────────────
 // Fixed enum for grouping and filtering in the TASK room.

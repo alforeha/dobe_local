@@ -56,6 +56,72 @@ function estimateWeeklyFrequency(rule: RecurrenceRule): number {
   }
 }
 
+/**
+ * Count completed tasks for a taskCount Marker scope filter (D76, D77).
+ * Reads from scheduleStore tasks; systemEvent counting is handled by
+ * the event-specific system counter stored on the User object where applicable.
+ * This function handles taskTemplateRef and statGroup scopes.
+ */
+export function countTasksForScope(marker: Marker): number {
+  if (!marker.taskCountScope) return 0;
+  const { tasks } = useScheduleStore.getState();
+  const { type, ref } = marker.taskCountScope;
+
+  if (type === 'taskTemplateRef') {
+    return Object.values(tasks).filter(
+      (t) => t.completionState === 'complete' && t.templateRef === ref,
+    ).length;
+  }
+
+  if (type === 'statGroup') {
+    // Count completions of any task whose template belongs to the given stat group.
+    // We compare templateRef against prebuilt templates from the coach library —
+    // stat group is stored on the template itself.
+    const { taskTemplates } = useScheduleStore.getState();
+    return Object.values(tasks).filter((t) => {
+      if (t.completionState !== 'complete') return false;
+      const template = taskTemplates[t.templateRef];
+      if (!template) return false;
+      // XP award fields: the primary stat group is the one with the highest value
+      const { xpAward } = template;
+      const maxStat = Object.entries(xpAward).reduce(
+        (best, [k, v]) => (v > best.val ? { key: k, val: v } : best),
+        { key: '', val: -1 },
+      );
+      return maxStat.key === ref;
+    }).length;
+  }
+
+  // systemEvent — caller is responsible for passing pre-counted value via
+  // evaluateTaskCountMarker; this path returns 0 as fallback.
+  return 0;
+}
+
+/**
+ * Evaluate whether a taskCount Marker should fire (D76, D77).
+ * @param marker               The Marker to evaluate (conditionType must be taskCount)
+ * @param systemEventCount     Pre-counted system event count (for systemEvent scope)
+ */
+export function evaluateTaskCountMarker(marker: Marker, systemEventCount = 0): boolean {
+  if (!marker.activeState) return false;
+  if (marker.conditionType !== 'taskCount') return false;
+  if (marker.threshold === null) return false;
+  if (!marker.taskCountScope) return false;
+
+  let count: number;
+  if (marker.taskCountScope.type === 'systemEvent') {
+    count = systemEventCount;
+  } else {
+    count = countTasksForScope(marker);
+  }
+
+  // Already fired at this threshold level — don't fire again for same count
+  const countAtLastFire = marker.taskCountAtLastFire ?? 0;
+  if (count <= countAtLastFire) return false;
+
+  return count >= marker.threshold;
+}
+
 // ── EVALUATE QUEST SPECIFIC (D01) ─────────────────────────────────────────────
 
 /**
@@ -100,6 +166,7 @@ export function evaluateQuestSpecific(quest: Quest, completedTask: Task): boolea
  * Evaluate whether an xpThreshold Marker should fire.
  *
  * Interval markers are date-driven and evaluated by rollover step5 (nextFire check).
+ * taskCount markers are evaluated by evaluateTaskCountMarker().
  * This function handles the xpThreshold conditionType only.
  *
  * Q03 decision: threshold is XP earned since lastFired (repeating interval).

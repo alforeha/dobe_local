@@ -23,7 +23,7 @@ import { useProgressionStore } from '../stores/useProgressionStore';
 import { storageSet, storageKey } from '../storage';
 import { materialisePlannedEvent } from './materialise';
 import { fireMarker } from './markerEngine';
-import { evaluateMarkerCondition } from './questEngine';
+import { evaluateMarkerCondition, evaluateTaskCountMarker } from './questEngine';
 import { ribbet } from '../coach/ribbet';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
 
@@ -209,6 +209,10 @@ function step5_evaluateMarkers(rolloverDate: string): DueMarker[] {
         if (quest.completionState !== 'active') return;
         quest.timely.markers.forEach((marker, markerIndex) => {
           if (!marker.activeState) return;
+          // Only evaluate rollover-triggered markers in step5
+          const triggerSource = marker.triggerSource ?? 'rollover';
+          if (triggerSource !== 'rollover') return;
+
           if (marker.conditionType === 'interval') {
             // Date-driven: fire when nextFire is on or before rolloverDate
             if (marker.nextFire !== null && isOnOrBefore(marker.nextFire, rolloverDate)) {
@@ -217,6 +221,11 @@ function step5_evaluateMarkers(rolloverDate: string): DueMarker[] {
           } else if (marker.conditionType === 'xpThreshold') {
             // XP-driven: fire when qualifying XP delta since last fire meets threshold
             if (evaluateMarkerCondition(marker, currentXp)) {
+              due.push({ marker, actId: act.id, chainIndex, questIndex, markerIndex });
+            }
+          } else if (marker.conditionType === 'taskCount') {
+            // Count-driven (D76): fire when tracked task completions reach threshold
+            if (evaluateTaskCountMarker(marker)) {
               due.push({ marker, actId: act.id, chainIndex, questIndex, markerIndex });
             }
           }

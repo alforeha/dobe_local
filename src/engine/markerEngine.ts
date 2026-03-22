@@ -4,6 +4,7 @@
 // encodeQuestRef / decodeQuestRef — pipe-separated composite key for array-indexed navigation
 // fireMarker()        — creates a check-in Task and snapshots marker state (D05)
 // completeMilestone() — records the Milestone, evaluates finish condition, updates progress
+// evaluatePlannedEventCreatedMarkers() — D80: fire markers triggered by plannedEvent.created
 // ─────────────────────────────────────────
 
 import { v4 as uuidv4 } from 'uuid';
@@ -11,11 +12,12 @@ import type { Marker } from '../types/quest/Marker';
 import type { Milestone } from '../types/quest/Milestone';
 import type { RecurrenceRule } from '../types/taskTemplate';
 import type { Task } from '../types/task';
+import type { GTDItem } from '../types/task';
 import { useProgressionStore } from '../stores/useProgressionStore';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useUserStore } from '../stores/useUserStore';
 import { storageSet, storageKey } from '../storage';
-import { evaluateQuestSpecific, updateQuestProgress } from './questEngine';
+import { evaluateQuestSpecific, updateQuestProgress, countTasksForScope } from './questEngine';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
 
 // ── QUESTREF ENCODING ─────────────────────────────────────────────────────────
@@ -99,8 +101,9 @@ export interface FireMarkerParams {
  *   2. Create a Task with questRef + actRef set for Milestone routing
  *   3. Persist Task to scheduleStore + storage
  *   4. Push Task ref to User.lists.gtdList
- *   5. Snapshot xpAtLastFire + update marker state (lastFired, nextFire)
- *   6. Persist Act to progressionStore + storage
+ *   5. Snapshot xpAtLastFire + taskCountAtLastFire + update marker state (lastFired, nextFire)
+ *   6. Execute sideEffects[] — gtdWrite pushes a GTDItem to manualGtdList (D81)
+ *   7. Persist Act to progressionStore + storage
  *
  * @param params  FireMarkerParams — marker + index triple + actId
  */
@@ -163,10 +166,42 @@ export function fireMarker(params: FireMarkerParams): void {
     }, markerFeedUser);
   }
 
+  // Execute sideEffects[] (D81)
+  const sideEffectUser = useUserStore.getState().user;
+  if (sideEffectUser && marker.sideEffects) {
+    let sideEffectUserMut = sideEffectUser;
+    for (const effect of marker.sideEffects) {
+      if (effect.type === 'gtdWrite') {
+        const gtdItem: GTDItem = {
+          id: uuidv4(),
+          title: effect.note ?? 'Quest task',
+          note: effect.note ?? null,
+          resourceRef: null,
+          dueDate: null,
+          isManual: true,
+          completionState: 'pending',
+          completedAt: null,
+        };
+        sideEffectUserMut = {
+          ...sideEffectUserMut,
+          lists: {
+            ...sideEffectUserMut.lists,
+            manualGtdList: [...sideEffectUserMut.lists.manualGtdList, gtdItem],
+          },
+        };
+      }
+    }
+    userStore.setUser(sideEffectUserMut);
+    storageSet('user', sideEffectUserMut);
+  }
+
   if (!act) return;
 
   // Snapshot current XP for delta computation (Q03 since-last-fired model)
   const currentXp = userStore.user?.progression.stats.xp ?? 0;
+  // Snapshot task count for taskCount markers to prevent re-fire at same threshold
+  const currentTaskCount =
+    marker.conditionType === 'taskCount' ? countTasksForScope(marker) : null;
   const updatedAt = now;
 
   const updatedAct = {
@@ -183,6 +218,7 @@ export function fireMarker(params: FireMarkerParams): void {
               ...m,
               lastFired: updatedAt,
               xpAtLastFire: m.conditionType === 'xpThreshold' ? currentXp : null,
+              taskCountAtLastFire: m.conditionType === 'taskCount' ? currentTaskCount : null,
               nextFire: m.conditionType === 'interval'
                 ? computeMarkerNextFire({ ...m, lastFired: updatedAt })
                 : null,
@@ -197,6 +233,42 @@ export function fireMarker(params: FireMarkerParams): void {
 
   progressionStore.setAct(updatedAct);
   storageSet(storageKey.act(actId), updatedAct);
+}
+
+// ── PLANNED EVENT CREATED TRIGGER (D80) ──────────────────────────────────────
+
+/**
+ * Evaluate and fire any Markers with triggerSource 'plannedEvent.created'.
+ * Called by useScheduleStore.setPlannedEvent() when a new event is created.
+ *
+ * Only fires Markers where:
+ *   - conditionType is taskCount
+ *   - triggerSource is 'plannedEvent.created'
+ *   - the system event count (number of PlannedEvents created) meets threshold
+ */
+export function evaluatePlannedEventCreatedMarkers(): void {
+  const { acts } = useProgressionStore.getState();
+  const { plannedEvents } = useScheduleStore.getState();
+  const plannedEventCount = Object.keys(plannedEvents).length;
+
+  for (const act of Object.values(acts)) {
+    act.chains.forEach((chain, chainIndex) => {
+      chain.quests.forEach((quest, questIndex) => {
+        if (quest.completionState !== 'active') return;
+        quest.timely.markers.forEach((marker, markerIndex) => {
+          if (!marker.activeState) return;
+          if ((marker.triggerSource ?? 'rollover') !== 'plannedEvent.created') return;
+          if (marker.conditionType !== 'taskCount') return;
+          if (marker.threshold === null) return;
+          const countAtLastFire = marker.taskCountAtLastFire ?? 0;
+          if (plannedEventCount <= countAtLastFire) return;
+          if (plannedEventCount >= marker.threshold) {
+            fireMarker({ marker, markerIndex, questIndex, chainIndex, actId: act.id });
+          }
+        });
+      });
+    });
+  }
 }
 
 // ── COMPLETE MILESTONE ────────────────────────────────────────────────────────
