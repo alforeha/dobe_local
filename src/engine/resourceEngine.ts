@@ -443,7 +443,7 @@ function _genInventoryGTD(resource: Resource): Task[] {
     templateRef: templateKey,
     completionState: 'pending' as const,
     completedAt: null,
-    resultFields: { itemName: item.name ?? item.useableRef },
+    resultFields: { itemName: item.name ?? item.useableRef } as Task['resultFields'],
     attachmentRef: null,
     resourceRef: resource.id,
     location: null,
