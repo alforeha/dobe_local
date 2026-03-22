@@ -6,7 +6,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, UserStats, Avatar, BadgeBoard, Equipment, Feed, ActHabitat } from '../types';
+import type { User, UserStats, Avatar, BadgeBoard, Equipment, Feed } from '../types';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 
@@ -27,18 +27,6 @@ interface UserActions {
   addTaskTemplateRef: (id: string) => void;
   /** Remove a custom TaskTemplate UUID ref from User.lists.taskLibrary (D34) */
   removeTaskTemplateRef: (id: string) => void;
-  /** Add a PlannedEvent ref to User.schedule.planned[] — one-off events (W18) */
-  addPlannedRef: (id: string) => void;
-  /** Remove a PlannedEvent ref from User.schedule.planned[] — one-off events (W18) */
-  removePlannedRef: (id: string) => void;
-  /** Add a PlannedEvent ref to User.schedule.routines[] (D36) */
-  addRoutineRef: (id: string) => void;
-  /** Remove a PlannedEvent ref from User.schedule.routines[] (D36) */
-  removeRoutineRef: (id: string) => void;
-  /** Add an Act ref to User.goals.habitats or User.goals.adventures (W17) */
-  addActRef: (id: string, habitat: ActHabitat) => void;
-  /** Remove an Act ref from goals arrays — checks both lists (W17) */
-  removeActRef: (id: string) => void;
   reset: () => void;
 }
 
@@ -124,102 +112,6 @@ export const useUserStore = create<UserState & UserActions>()(
               }
             : {},
         ),
-
-      addPlannedRef: (id) =>
-        set((state) =>
-          state.user
-            ? {
-                user: {
-                  ...state.user,
-                  schedule: {
-                    ...state.user.schedule,
-                    planned: state.user.schedule.planned.includes(id)
-                      ? state.user.schedule.planned
-                      : [...state.user.schedule.planned, id],
-                  },
-                },
-              }
-            : {},
-        ),
-
-      removePlannedRef: (id) =>
-        set((state) =>
-          state.user
-            ? {
-                user: {
-                  ...state.user,
-                  schedule: {
-                    ...state.user.schedule,
-                    planned: state.user.schedule.planned.filter((ref) => ref !== id),
-                  },
-                },
-              }
-            : {},
-        ),
-
-      addRoutineRef: (id) =>
-        set((state) =>
-          state.user
-            ? {
-                user: {
-                  ...state.user,
-                  schedule: {
-                    ...state.user.schedule,
-                    routines: state.user.schedule.routines.includes(id)
-                      ? state.user.schedule.routines
-                      : [...state.user.schedule.routines, id],
-                  },
-                },
-              }
-            : {},
-        ),
-
-      removeRoutineRef: (id) =>
-        set((state) =>
-          state.user
-            ? {
-                user: {
-                  ...state.user,
-                  schedule: {
-                    ...state.user.schedule,
-                    routines: state.user.schedule.routines.filter((ref) => ref !== id),
-                  },
-                },
-              }
-            : {},
-        ),
-
-      addActRef: (id, habitat) =>
-        set((state) => {
-          if (!state.user) return {};
-          const goals = state.user.goals;
-          const list = habitat === 'habitats' ? goals.habitats : goals.adventures;
-          if (list.includes(id)) return {};
-          return {
-            user: {
-              ...state.user,
-              goals: {
-                ...goals,
-                [habitat]: [...list, id],
-              },
-            },
-          };
-        }),
-
-      removeActRef: (id) =>
-        set((state) => {
-          if (!state.user) return {};
-          const goals = state.user.goals;
-          return {
-            user: {
-              ...state.user,
-              goals: {
-                habitats: goals.habitats.filter((ref) => ref !== id),
-                adventures: goals.adventures.filter((ref) => ref !== id),
-              },
-            },
-          };
-        }),
 
       reset: () => set(initialState),
     }),

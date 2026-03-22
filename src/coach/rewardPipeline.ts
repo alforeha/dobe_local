@@ -14,10 +14,9 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { User } from '../types/user';
 import type { Quest } from '../types/act';
-import type { Badge, Gear } from '../types/itemTemplate';
+import type { Badge } from '../types/itemTemplate';
 import type { AchievementDefinition } from '../types/coach';
 import { useUserStore } from '../stores/useUserStore';
-import { useResourceStore } from '../stores/useResourceStore';
 
 import { pushRibbet } from './ribbet';
 import { characterLibrary } from './index';
@@ -64,8 +63,6 @@ export function awardBadge(achievementDef: AchievementDefinition, user: User): U
 
   useUserStore.getState().setUser(updatedUser);
 
-  useResourceStore.getState().setBadge(badge);
-
   pushRibbet('badge.awarded', { itemName: achievementDef.name });
 
   // Feed entry for badge award
@@ -105,24 +102,6 @@ export function awardGear(gearDefId: string, source: string, user: User): User {
 
   const gearId = uuidv4();
 
-  const gear: Gear = {
-    id: gearId,
-    type: 'gear',
-    name: gearDef.name,
-    description: gearDef.description,
-    icon: gearDef.assetRef,
-    source,
-    contents: {
-      slot: gearDef.slot,
-      rarity: gearDef.rarity,
-      name: gearDef.name,
-      description: gearDef.description,
-      model: gearDef.assetRef,
-      xpBoost: gearDef.xpBoost,
-      equippedState: false,
-    },
-  };
-
   const updatedEquipment = {
     ...user.progression.equipment,
     equipment: [...user.progression.equipment.equipment, gearId],
@@ -134,8 +113,6 @@ export function awardGear(gearDefId: string, source: string, user: User): User {
   };
 
   useUserStore.getState().setUser(updatedUser);
-
-  useResourceStore.getState().setGear(gear);
 
   pushRibbet('gear.awarded', { itemName: gearDef.name });
 

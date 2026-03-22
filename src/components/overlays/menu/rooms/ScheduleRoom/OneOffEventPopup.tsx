@@ -10,7 +10,6 @@ import { useState, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { PopupShell } from '../../../../shared/popups/PopupShell';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
-import { useUserStore } from '../../../../../stores/useUserStore';
 import { taskTemplateLibrary } from '../../../../../coach';
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
 import { storageDelete, storageKey } from '../../../../../storage';
@@ -88,8 +87,6 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
   const setPlannedEvent = useScheduleStore((s) => s.setPlannedEvent);
   const removePlannedEvent = useScheduleStore((s) => s.removePlannedEvent);
   const taskTemplates = useScheduleStore((s) => s.taskTemplates);
-  const addPlannedRef = useUserStore((s) => s.addPlannedRef);
-  const removePlannedRef = useUserStore((s) => s.removePlannedRef);
 
   const isEditMode = editEvent !== null;
 
@@ -198,7 +195,6 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
       };
 
       setPlannedEvent(newEvent);
-      addPlannedRef(id);
 
       // D14 — same-day or past creation triggers immediate materialisation
       if (date <= today) {
@@ -219,7 +215,6 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
     if (editEvent) {
       removePlannedEvent(editEvent.id);
       storageDelete(storageKey.plannedEvent(editEvent.id));
-      removePlannedRef(editEvent.id);
     }
     onClose();
   }

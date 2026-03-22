@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useProgressionStore } from '../../../../../stores/useProgressionStore';
-import { useUserStore } from '../../../../../stores/useUserStore';
 import { GoalRoomHeader } from './GoalRoomHeader';
 import { GoalRoomBody } from './GoalRoomBody';
 import { ActPopup } from './ActPopup';
@@ -14,14 +13,10 @@ export function GoalRoom() {
   const [editAct, setEditAct] = useState<Act | null>(null);
 
   const acts = useProgressionStore((s) => s.acts);
-  const user = useUserStore((s) => s.user);
 
-  const refs =
-    tab === 'habitats'
-      ? (user?.goals.habitats ?? [])
-      : (user?.goals.adventures ?? []);
-
-  const filteredActs = refs.map((id) => acts[id]).filter(Boolean);
+  const filteredActs = Object.values(acts).filter(
+    (act) => (act.habitat ?? 'habitats') === tab,
+  );
 
   function handleClosePopup() {
     setAddOpen(false);

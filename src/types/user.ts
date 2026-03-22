@@ -47,27 +47,6 @@ export interface UserProgression {
   talentTree: null;
 }
 
-export interface UserGoals {
-  /** Act refs — user-created habitats */
-  habitats: string[];
-  /** Act refs — Coach-managed adventures */
-  adventures: string[];
-}
-
-export interface UserSchedule {
-  /** PlannedEvent refs */
-  planned: string[];
-  /** PlannedEvent refs — distinction from planned is UI-level only (D36) */
-  routines: string[];
-}
-
-export interface UserEvents {
-  /** Event refs pushed by rollover — includes QuickActionsEvent */
-  active: string[];
-  /** Event refs moved on completion */
-  history: string[];
-}
-
 export interface UserLists {
   /** User custom TaskTemplate refs (D34) */
   taskLibrary: string[];
@@ -122,9 +101,6 @@ export interface User {
   system: UserSystem;
   personal: UserPersonal;
   progression: UserProgression;
-  goals: UserGoals;
-  schedule: UserSchedule;
-  events: UserEvents;
   lists: UserLists;
   resources: UserResources;
   feed: Feed;

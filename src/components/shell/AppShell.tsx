@@ -86,9 +86,6 @@ function makeDefaultUser(): User {
       },
       talentTree: null,
     },
-    goals: { habitats: [], adventures: [] },
-    schedule: { planned: [], routines: [] },
-    events: { active: [], history: [] },
     lists: {
       taskLibrary: [],
       favouritesList: [],

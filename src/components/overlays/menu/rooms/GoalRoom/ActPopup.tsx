@@ -50,8 +50,6 @@ function Field({ label, hint, children }: FieldProps) {
 export function ActPopup({ editAct, defaultHabitat, onClose }: ActPopupProps) {
   const setAct = useProgressionStore((s) => s.setAct);
   const removeAct = useProgressionStore((s) => s.removeAct);
-  const addActRef = useUserStore((s) => s.addActRef);
-  const removeActRef = useUserStore((s) => s.removeActRef);
   const user = useUserStore((s) => s.user);
   const taskTemplates = useScheduleStore((s) => s.taskTemplates);
   const plannedEvents = useScheduleStore((s) => s.plannedEvents);
@@ -75,14 +73,10 @@ export function ActPopup({ editAct, defaultHabitat, onClose }: ActPopupProps) {
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [taskTemplates]);
 
-  // ── Routine options — only PlannedEvents in user.schedule.routines[] ─────
+  // ── Routine options — all PlannedEvents from schedule store ──────────────
   const routineOptions = useMemo(() => {
-    const routineIds = user?.schedule.routines ?? [];
-    return routineIds
-      .map((id) => plannedEvents[id])
-      .filter((pe): pe is NonNullable<typeof pe> => pe !== undefined)
-      .map((pe) => ({ id: pe.id, name: pe.name }));
-  }, [user, plannedEvents]);
+    return Object.values(plannedEvents).map((pe) => ({ id: pe.id, name: pe.name }));
+  }, [plannedEvents]);
 
   // ── Form state ────────────────────────────────────────────────────────────
   const [name, setName] = useState(isEditMode ? editAct.name : '');
@@ -120,7 +114,6 @@ export function ActPopup({ editAct, defaultHabitat, onClose }: ActPopupProps) {
     }
 
     if (isEditMode && editAct) {
-      const prevHabitat: ActHabitat = editAct.habitat ?? defaultHabitat;
       const updated: Act = {
         ...editAct,
         name: name.trim(),
@@ -129,10 +122,6 @@ export function ActPopup({ editAct, defaultHabitat, onClose }: ActPopupProps) {
         commitment: { trackedTaskRefs, routineRefs },
       };
       setAct(updated);
-      if (prevHabitat !== habitat) {
-        removeActRef(updated.id);
-        addActRef(updated.id, habitat);
-      }
     } else {
       const id = uuidv4();
       const newAct: Act = {
@@ -150,7 +139,6 @@ export function ActPopup({ editAct, defaultHabitat, onClose }: ActPopupProps) {
         sharedContacts: null,
       };
       setAct(newAct);
-      addActRef(id, habitat);
     }
 
     onClose();
@@ -165,7 +153,6 @@ export function ActPopup({ editAct, defaultHabitat, onClose }: ActPopupProps) {
     if (editAct) {
       removeAct(editAct.id);
       storageDelete(storageKey.act(editAct.id));
-      removeActRef(editAct.id);
     }
     onClose();
   }
