@@ -20,10 +20,9 @@ import {
   STARTER_ACT_IDS,
   STARTER_TEMPLATE_IDS,
 } from '../../coach/StarterQuestLibrary';
-import { materialisePlannedEvent } from '../../engine/materialise';
 import { evaluatePlannedEventCreatedMarkers } from '../../engine/markerEngine';
 import type { User } from '../../types/user';
-import type { PlannedEvent } from '../../types/plannedEvent';
+import type { Event, Task } from '../../types';
 import type { TimeView } from '../timeViews/TimeViewContainer';
 
 export type ActiveOverlay = 'event' | 'coach' | 'profile' | 'menu' | null;
@@ -102,37 +101,6 @@ function makeDefaultUser(): User {
   };
 }
 
-// ── WELCOME PLANNED EVENT FACTORY ─────────────────────────────────────────────
-
-function makeWelcomePlannedEvent(today: string): PlannedEvent {
-  return {
-    id: 'pe-welcome-onboarding-0000-0000-0000-0001',
-    name: 'Welcome to CAN-DO-BE',
-    description: 'Your first step in the pond. Open this event to begin Quest 1.',
-    icon: 'welcome',
-    color: '#10b981',
-    seedDate: today,
-    dieDate: today,
-    recurrenceInterval: {
-      frequency: 'daily',
-      interval: 1,
-      days: [],
-      endsOn: today,
-      customCondition: null,
-    },
-    activeState: 'active',
-    taskPool: [STARTER_TEMPLATE_IDS.openWelcomeEvent],
-    taskPoolCursor: 0,
-    taskList: [],
-    conflictMode: 'concurrent',
-    startTime: '09:00',
-    endTime: '09:30',
-    location: null,
-    sharedWith: null,
-    pushReminder: null,
-  };
-}
-
 // ── APP SHELL ─────────────────────────────────────────────────────────────────
 
 export function AppShell() {
@@ -199,12 +167,44 @@ export function AppShell() {
       progressionStore.setAct({ ...dailyAct, chains: [...dailyAct.chains, dailyChain] });
     }
 
-    // 5. Create and materialise the Onboarding Welcome PlannedEvent
-    //    so it appears in DAY view on first load
-    const welcomePE = makeWelcomePlannedEvent(today);
+    // 5. Create Welcome Event and Task directly in schedule store (D86)
     const scheduleStore = useScheduleStore.getState();
-    scheduleStore.setPlannedEvent(welcomePE);
-    materialisePlannedEvent(welcomePE, today, scheduleStore.taskTemplates);
+    const welcomeTaskId = uuidv4();
+    const welcomeTask: Task = {
+      id: welcomeTaskId,
+      templateRef: STARTER_TEMPLATE_IDS.openWelcomeEvent,
+      completionState: 'pending',
+      completedAt: null,
+      resultFields: {},
+      attachmentRef: null,
+      resourceRef: null,
+      location: null,
+      sharedWith: null,
+      questRef: null,
+      actRef: null,
+      secondaryTag: null,
+    };
+    const welcomeEventId = uuidv4();
+    const welcomeEvent: Event = {
+      id: welcomeEventId,
+      eventType: 'planned',
+      plannedEventRef: null,
+      name: 'Welcome to CAN-DO-BE',
+      startDate: today,
+      endDate: today,
+      startTime: '09:00',
+      endTime: '09:30',
+      tasks: [welcomeTaskId],
+      completionState: 'pending',
+      xpAwarded: 0,
+      attachments: [],
+      location: null,
+      note: null,
+      sharedWith: null,
+      coAttendees: null,
+    };
+    scheduleStore.setTask(welcomeTask);
+    scheduleStore.setActiveEvent(welcomeEvent);
 
     // 6. Set onboardingComplete: false (quest sets it true on completion)
     useSystemStore.getState().setOnboardingComplete(false);
