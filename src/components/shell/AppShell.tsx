@@ -16,6 +16,7 @@ import { MenuOverlay } from '../overlays/menu/MenuOverlay';
 import { OneOffEventPopup } from '../overlays/menu/rooms/ScheduleRoom/OneOffEventPopup';
 import {
   seedStarterContent,
+  seedStarterTemplates,
   STARTER_TEMPLATE_IDS,
   STARTER_ACT_IDS,
 } from '../../coach/StarterQuestLibrary';
@@ -156,8 +157,11 @@ export function AppShell() {
     // 2. Apply dark theme (default per D72)
     useSystemStore.getState().setThemeMode('dark');
 
-    // 3. Seed Onboarding Act and starter TaskTemplates (D87 — other Acts unlock on game events)
+    // 3. Seed Onboarding Act (D87 — other Acts unlock on game events)
     seedStarterContent();
+
+    // Coach day-one template push — seeds starter set into scheduleStore.taskTemplates (D88)
+    seedStarterTemplates();
 
     // 4. Create Welcome Event and Task directly in schedule store (D86)
     const scheduleStore = useScheduleStore.getState();

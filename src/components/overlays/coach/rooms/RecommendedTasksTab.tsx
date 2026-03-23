@@ -274,7 +274,7 @@ function TaskTemplateRow({ template, active, locked, onToggle }: TaskTemplateRow
           }`}
           aria-label={active ? `Remove ${template.name} from library` : `Add ${template.name} to library`}
         >
-          {active ? 'Active' : 'Add'}
+          {active ? 'Active' : 'Inactive'}
         </button>
       )}
     </div>

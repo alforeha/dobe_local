@@ -19,6 +19,8 @@ import type { QuestMeasurable } from '../types/quest/measurable';
 import type { QuestExigency } from '../types/quest/exigency';
 import type { TaskTemplate, XpAward, TaskSecondaryTag, RecurrenceRule } from '../types/taskTemplate';
 import { useProgressionStore } from '../stores/useProgressionStore';
+import { useScheduleStore } from '../stores/useScheduleStore';
+import { taskTemplateLibrary } from '.';
 import { localISODate } from '../utils/dateUtils';
 
 // ── STABLE ACT IDs ────────────────────────────────────────────────────────────
@@ -926,6 +928,60 @@ export const starterQuestLibrary = {
   acts: [...starterActs, ...coachActs] as Act[],
   taskTemplates: starterTaskTemplates,
 };
+
+// ── STARTER TEMPLATE SET (D88) ───────────────────────────────────────────────
+
+/**
+ * Coach's day-one template push — the templates seeded into scheduleStore
+ * on first run so the Task Room is populated immediately.
+ *
+ * Includes:
+ *   - All Onboarding quest Marker taskTemplateRefs
+ *   - Curated Daily / lifestyle picks
+ */
+export const starterTaskTemplateIds: string[] = [
+  // Onboarding quest markers
+  STARTER_TEMPLATE_IDS.openWelcomeEvent,
+  STARTER_TEMPLATE_IDS.setupSchedule,
+  STARTER_TEMPLATE_IDS.learnGrounds,
+  STARTER_TEMPLATE_IDS.claimIdentity,
+  // Coach curated day-one picks
+  STARTER_TEMPLATE_IDS.drinkWater,
+  STARTER_TEMPLATE_IDS.meditation,
+  STARTER_TEMPLATE_IDS.logEntry,
+  STARTER_TEMPLATE_IDS.moodLog,
+  STARTER_TEMPLATE_IDS.walkRoute,
+  STARTER_TEMPLATE_IDS.chore,
+  STARTER_TEMPLATE_IDS.clearInbox,
+  STARTER_TEMPLATE_IDS.bodyLog,
+  STARTER_TEMPLATE_IDS.mealLog,
+];
+
+/**
+ * Seed the coach's starter template set into scheduleStore.taskTemplates.
+ * Merges taskTemplateLibrary (prebuilts) + starterTaskTemplates (quest-specific),
+ * then writes only IDs in starterTaskTemplateIds.
+ * Idempotent — setTaskTemplate is a simple upsert.
+ */
+export function seedStarterTemplates(): void {
+  const scheduleStore = useScheduleStore.getState();
+  const idSet = new Set(starterTaskTemplateIds);
+
+  // Build lookup from both sources; library wins on duplicates
+  const allTemplates = new Map<string, TaskTemplate>();
+  for (const t of starterTaskTemplates) {
+    if (t.id) allTemplates.set(t.id, t);
+  }
+  for (const t of taskTemplateLibrary) {
+    if (t.id) allTemplates.set(t.id, t);
+  }
+
+  for (const [id, template] of allTemplates) {
+    if (idSet.has(id)) {
+      scheduleStore.setTaskTemplate(id, template);
+    }
+  }
+}
 
 // ── SEED FUNCTION ─────────────────────────────────────────────────────────────
 
