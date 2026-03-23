@@ -175,6 +175,10 @@ export function AppShell() {
       secondaryTag: null,
     };
     const welcomeEventId = uuidv4();
+    const now = new Date();
+    const startTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const endHour = now.getHours() === 23 ? 23 : now.getHours() + 1;
+    const endTime = `${String(endHour).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const welcomeEvent: Event = {
       id: welcomeEventId,
       eventType: 'planned',
@@ -183,8 +187,8 @@ export function AppShell() {
       name: 'Welcome to CAN-DO-BE',
       startDate: today,
       endDate: today,
-      startTime: '09:00',
-      endTime: '09:30',
+      startTime,
+      endTime,
       tasks: [welcomeTaskId],
       completionState: 'pending',
       xpAwarded: 0,
