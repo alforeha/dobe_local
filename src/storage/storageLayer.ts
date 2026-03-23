@@ -108,9 +108,22 @@ export function storageList(prefix: string): string[] {
 
 /**
  * Remove all CAN-DO-BE keys from localStorage.
- * Does NOT clear unrelated third-party keys.
+ * This includes both app-layer storageLayer keys AND the 5 Zustand persist
+ * keys (cdb-system, cdb-user, cdb-progression, cdb-schedule, cdb-resources)
+ * which are the source of truth per D83.
  */
 export function storageClear(): void {
+  // Zustand persist keys — must be removed explicitly as they are not
+  // registered in storageKeys.ts
+  const zustandKeys = [
+    'cdb-system',
+    'cdb-user',
+    'cdb-progression',
+    'cdb-schedule',
+    'cdb-resources',
+  ];
+  zustandKeys.forEach((k) => localStorage.removeItem(k));
+
   const singletonKeys: string[] = [STORAGE_KEY_SETTINGS, STORAGE_KEY_USER];
   const prefixes = [
     `${STORAGE_PREFIX_ACT}:`,

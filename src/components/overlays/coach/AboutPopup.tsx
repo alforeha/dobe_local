@@ -7,7 +7,6 @@
 
 import { useState } from 'react';
 import { useSystemStore } from '../../../stores/useSystemStore';
-import { storageClear } from '../../../storage';
 import { executeRollover } from '../../../engine/rollover';
 
 const APP_VERSION = '0.1.0-local';
@@ -59,7 +58,15 @@ export function AboutPopup({ onClose }: AboutPopupProps) {
       setClearConfirm(true);
       return;
     }
-    storageClear();
+    // Explicitly remove Zustand persist keys (source of truth per D83).
+    // These are NOT covered by storageClear() which only handles app-layer keys.
+    localStorage.removeItem('cdb-system');
+    localStorage.removeItem('cdb-user');
+    localStorage.removeItem('cdb-progression');
+    localStorage.removeItem('cdb-schedule');
+    localStorage.removeItem('cdb-resources');
+    // Wipe remaining app-layer keys via full clear (dev tool — intentional)
+    localStorage.clear();
     window.location.reload();
   }
 
