@@ -145,7 +145,7 @@ export function AboutPopup({ onClose }: AboutPopupProps) {
             <p className="text-xs text-gray-500 dark:text-gray-400">
               App date:{' '}
               <span className="font-mono text-amber-700 dark:text-amber-300">
-                {lastRollover ?? 'not set'}
+                {lastRollover ?? localISODate(new Date())}
               </span>
             </p>
 
