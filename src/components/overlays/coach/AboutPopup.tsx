@@ -8,13 +8,12 @@
 import { useState } from 'react';
 import { useSystemStore } from '../../../stores/useSystemStore';
 import { executeRollover } from '../../../engine/rollover';
+import { localISODate, addDays } from '../../../utils/dateUtils';
 
 const APP_VERSION = '0.1.0-local';
 
 function tomorrowISO(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+  return localISODate(addDays(new Date(), 1));
 }
 
 function todayDisplay(): string {
@@ -33,9 +32,11 @@ interface AboutPopupProps {
 export function AboutPopup({ onClose }: AboutPopupProps) {
   const devMode = useSystemStore((s) => s.devMode);
   const setDevMode = useSystemStore((s) => s.setDevMode);
+  const lastRollover = useSystemStore((s) => s.lastRollover);
   const [versionTaps, setVersionTaps] = useState(0);
   const [clearConfirm, setClearConfirm] = useState(false);
   const [rolling, setRolling] = useState(false);
+  const [skippingWeek, setSkippingWeek] = useState(false);
 
   function handleVersionTap() {
     if (devMode) return;
@@ -49,8 +50,29 @@ export function AboutPopup({ onClose }: AboutPopupProps) {
   async function handleTriggerRollover() {
     if (rolling) return;
     setRolling(true);
-    await executeRollover(tomorrowISO());
-    window.location.reload();
+    try {
+      await executeRollover(tomorrowISO());
+      window.location.reload();
+    } catch (err) {
+      setRolling(false);
+      alert(`Rollover failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  async function handleSkipWeek() {
+    if (skippingWeek) return;
+    setSkippingWeek(true);
+    try {
+      const today = new Date();
+      for (let i = 1; i <= 7; i++) {
+        const date = localISODate(addDays(today, i));
+        await executeRollover(date);
+      }
+      window.location.reload();
+    } catch (err) {
+      setSkippingWeek(false);
+      alert(`Week skip failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   function handleClearData() {
@@ -120,13 +142,29 @@ export function AboutPopup({ onClose }: AboutPopupProps) {
           <div className="mt-2 flex flex-col gap-3 border-t border-amber-200 dark:border-amber-800 pt-4">
             <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">Dev Tools</p>
 
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              App date:{' '}
+              <span className="font-mono text-amber-700 dark:text-amber-300">
+                {lastRollover ?? 'not set'}
+              </span>
+            </p>
+
             <button
               type="button"
               onClick={handleTriggerRollover}
-              disabled={rolling}
+              disabled={rolling || skippingWeek}
               className="w-full py-2 rounded-lg bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-sm font-medium hover:bg-amber-200 dark:hover:bg-amber-800 disabled:opacity-50 transition-colors"
             >
               {rolling ? 'Rolling over…' : 'Trigger Rollover'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSkipWeek}
+              disabled={rolling || skippingWeek}
+              className="w-full py-2 rounded-lg bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-sm font-medium hover:bg-amber-200 dark:hover:bg-amber-800 disabled:opacity-50 transition-colors"
+            >
+              {skippingWeek ? 'Skipping 7 days…' : 'Skip Forward 1 Week'}
             </button>
 
             <button
