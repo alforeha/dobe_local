@@ -14,23 +14,23 @@ interface CoachOverlayHeaderProps {
 export function CoachOverlayHeader({ onClose, onFeedNav, onInfo, unreadCount }: CoachOverlayHeaderProps) {
   return (
     <div className="flex shrink-0 items-center px-4 py-5 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
-      {/* Coach icon + bee offset badge — bee always visible, pulses when unread */}
+      {/* Coach icon + optional bee badge — bee only shown when there are unread messages */}
       <div className="relative">
         <div className="text-7xl leading-none select-none" aria-hidden="true">🐸</div>
-        <button
-          type="button"
-          aria-label={unreadCount > 0 ? `${unreadCount} unread feed messages` : 'Feed'}
-          onClick={onFeedNav}
-          className="absolute -top-2 -right-14 text-3xl leading-none hover:opacity-70 transition-opacity"
-        >
-          🐝
-          {unreadCount > 0 && (
+        {unreadCount > 0 && (
+          <button
+            type="button"
+            aria-label={`${unreadCount} unread feed messages`}
+            onClick={onFeedNav}
+            className="absolute -top-2 -right-14 text-3xl leading-none hover:opacity-70 transition-opacity"
+          >
+            🐝
             <span className="absolute -top-1 -right-1 flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500" />
             </span>
-          )}
-        </button>
+          </button>
+        )}
       </div>
 
       {/* Flex spacer */}

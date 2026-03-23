@@ -8,9 +8,9 @@ export function RecommendationCard({ name, owned, tab: _tab }: RecommendationCar
   return (
     <div className="flex items-center justify-between px-4 py-3">
       <div>
-        <p className="text-sm text-gray-800">{name}</p>
+        <p className="text-sm text-gray-900 dark:text-gray-100">{name}</p>
         {owned && (
-          <span className="text-xs text-green-600">✓ Already owned</span>
+          <span className="text-xs text-green-600 dark:text-green-400">✓ Already owned</span>
         )}
       </div>
       <button

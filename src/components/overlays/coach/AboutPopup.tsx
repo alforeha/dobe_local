@@ -93,9 +93,9 @@ export function AboutPopup({ onClose }: AboutPopupProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
-        className="w-full max-w-md bg-white dark:bg-gray-900 rounded-t-2xl p-6 pb-10 flex flex-col gap-4"
+        className="w-full max-w-sm mx-4 bg-white dark:bg-gray-900 rounded-2xl p-6 flex flex-col gap-4"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

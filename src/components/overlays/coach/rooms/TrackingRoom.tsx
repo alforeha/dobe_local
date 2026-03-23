@@ -23,7 +23,7 @@ function TrackingEventRow({ name, time, color, onOpen }: TrackingEventRowProps) 
         style={{ backgroundColor: color ?? '#6b7280' }}
       />
       <div>
-        <p className="text-sm text-gray-800">{name}</p>
+        <p className="text-sm text-gray-900 dark:text-gray-100">{name}</p>
         <p className="text-xs text-gray-400">{time}</p>
       </div>
     </button>
@@ -50,17 +50,17 @@ export function TrackingRoom({ onOpenEvent }: TrackingRoomProps) {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-gray-100 px-4 py-3">
-        <h3 className="text-sm font-bold text-gray-700">Tracking</h3>
+      <div className="shrink-0 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Tracking</h3>
       </div>
       <div className="flex-1 overflow-y-auto">
-        <p className="px-4 pt-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+        <p className="px-4 pt-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
           In progress
         </p>
         {ongoing.length === 0 ? (
-          <p className="px-4 py-2 text-sm text-gray-400">Nothing active right now.</p>
+          <p className="px-4 py-2 text-sm text-gray-400 dark:text-gray-500">Nothing active right now.</p>
         ) : (
-          <ul className="divide-y divide-gray-100">
+            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
             {ongoing.map((ev) => (
               <TrackingEventRow
                 key={ev.id}
@@ -73,13 +73,13 @@ export function TrackingRoom({ onOpenEvent }: TrackingRoomProps) {
           </ul>
         )}
 
-        <p className="px-4 pt-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+        <p className="px-4 pt-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
           Upcoming
         </p>
         {upcoming.length === 0 ? (
-          <p className="px-4 py-2 text-sm text-gray-400">No upcoming events.</p>
+          <p className="px-4 py-2 text-sm text-gray-400 dark:text-gray-500">No upcoming events.</p>
         ) : (
-          <ul className="divide-y divide-gray-100">
+            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
             {upcoming.map((pe) => (
               <TrackingEventRow
                 key={pe.id}

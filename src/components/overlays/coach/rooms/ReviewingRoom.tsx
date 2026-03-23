@@ -22,7 +22,7 @@ function ReviewingStatSurface({ onNavigateToDayView }: ReviewingStatSurfaceProps
 
   if (!bestDate) {
     return (
-      <div className="px-4 py-3 text-sm text-gray-400">
+      <div className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">
         No completed events yet.
       </div>
     );
@@ -38,12 +38,12 @@ function ReviewingStatSurface({ onNavigateToDayView }: ReviewingStatSurfaceProps
   return (
     <button
       type="button"
-      className="w-full text-left px-4 py-3 bg-indigo-50 hover:bg-indigo-100 rounded"
+      className="w-full text-left px-4 py-3 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded"
       onClick={() => onNavigateToDayView(date)}
     >
-      <p className="text-xs text-indigo-500 font-semibold uppercase tracking-wide">Best day</p>
-      <p className="text-sm font-bold text-indigo-700">{displayDate}</p>
-      <p className="text-xs text-indigo-600">+{xp} XP earned</p>
+      <p className="text-xs text-indigo-500 dark:text-indigo-400 font-semibold uppercase tracking-wide">Best day</p>
+      <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300">{displayDate}</p>
+      <p className="text-xs text-indigo-600 dark:text-indigo-400">+{xp} XP earned</p>
     </button>
   );
 }
@@ -61,12 +61,12 @@ function ReviewingIncompleteList({ onOpenEvent }: ReviewingIncompleteListProps) 
 
   if (incomplete.length === 0) {
     return (
-      <p className="px-4 py-3 text-sm text-gray-400">No incomplete past events.</p>
+      <p className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">No incomplete past events.</p>
     );
   }
 
   return (
-    <ul className="divide-y divide-gray-100">
+    <ul className="divide-y divide-gray-200 dark:divide-gray-700">
       {incomplete.map((ev) => {
         const display = new Date(ev.startDate).toLocaleDateString(undefined, {
           month: 'short',
@@ -79,7 +79,7 @@ function ReviewingIncompleteList({ onOpenEvent }: ReviewingIncompleteListProps) 
               className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800"
               onClick={() => onOpenEvent(ev.id)}
             >
-              <p className="text-sm text-gray-800">{ev.name}</p>
+              <p className="text-sm text-gray-900 dark:text-gray-100">{ev.name}</p>
               <p className="text-xs text-gray-400">{display}</p>
             </button>
           </li>
@@ -97,13 +97,13 @@ interface ReviewingRoomProps {
 export function ReviewingRoom({ onNavigateToDayView, onOpenEvent }: ReviewingRoomProps) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-gray-100 px-4 py-3">
-        <h3 className="text-sm font-bold text-gray-700">Reviewing</h3>
+      <div className="shrink-0 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Reviewing</h3>
       </div>
       <div className="flex-1 overflow-y-auto flex flex-col gap-4 p-4">
         <ReviewingStatSurface onNavigateToDayView={onNavigateToDayView} />
         <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-0">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 px-0">
             Incomplete events
           </p>
           <ReviewingIncompleteList onOpenEvent={onOpenEvent} />

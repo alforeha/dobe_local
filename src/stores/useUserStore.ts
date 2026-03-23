@@ -23,6 +23,12 @@ interface UserActions {
   setBadgeBoard: (badgeBoard: BadgeBoard) => void;
   setEquipment: (equipment: Equipment) => void;
   setFeed: (feed: Feed) => void;
+  /** Mark a single feed entry as read by index; decrements unreadCount if it was unread */
+  markFeedEntryRead: (index: number) => void;
+  /** Mark all feed entries as read and reset unreadCount to 0 */
+  markAllFeedRead: () => void;
+  /** Toggle a reaction key on a feed entry */
+  toggleFeedReaction: (index: number, reaction: string) => void;
   /** Add a custom TaskTemplate UUID ref to User.lists.taskLibrary (D34) */
   addTaskTemplateRef: (id: string) => void;
   /** Remove a custom TaskTemplate UUID ref from User.lists.taskLibrary (D34) */
@@ -84,6 +90,55 @@ export const useUserStore = create<UserState & UserActions>()(
         set((state) =>
           state.user ? { user: { ...state.user, feed } } : {},
         ),
+
+      markFeedEntryRead: (index) =>
+        set((state) => {
+          if (!state.user) return {};
+          const entries = state.user.feed.entries;
+          if (!entries[index] || entries[index].read) return {};
+          const updated = entries.map((e, i) =>
+            i === index ? { ...e, read: true } : e,
+          );
+          const newUnread = Math.max(0, state.user.feed.unreadCount - 1);
+          return {
+            user: {
+              ...state.user,
+              feed: { ...state.user.feed, entries: updated, unreadCount: newUnread },
+            },
+          };
+        }),
+
+      markAllFeedRead: () =>
+        set((state) => {
+          if (!state.user) return {};
+          const updated = state.user.feed.entries.map((e) => ({ ...e, read: true }));
+          return {
+            user: {
+              ...state.user,
+              feed: { ...state.user.feed, entries: updated, unreadCount: 0 },
+            },
+          };
+        }),
+
+      toggleFeedReaction: (index, reaction) =>
+        set((state) => {
+          if (!state.user) return {};
+          const entries = state.user.feed.entries;
+          if (!entries[index]) return {};
+          const current = entries[index].reactions ?? [];
+          const next = current.includes(reaction)
+            ? current.filter((r) => r !== reaction)
+            : [...current, reaction];
+          const updated = entries.map((e, i) =>
+            i === index ? { ...e, reactions: next } : e,
+          );
+          return {
+            user: {
+              ...state.user,
+              feed: { ...state.user.feed, entries: updated },
+            },
+          };
+        }),
 
       addTaskTemplateRef: (id) =>
         set((state) =>
