@@ -88,8 +88,16 @@ export function RecommendedTasksTab() {
   const taskLibrary = useUserStore((s) => s.user?.lists.taskLibrary ?? []);
   const addTaskTemplateRef = useUserStore((s) => s.addTaskTemplateRef);
   const removeTaskTemplateRef = useUserStore((s) => s.removeTaskTemplateRef);
-  // Seeded starter templates live in scheduleStore.taskTemplates — treat them as active too
+  // Seeded starter templates live in scheduleStore.taskTemplates
   const customTemplates = useScheduleStore((s) => s.taskTemplates);
+  // Prebuilt templates used in any PlannedEvent taskPool are also "have" — collect into a Set
+  const pooledTemplateIds = useScheduleStore((s) => {
+    const ids = new Set<string>();
+    for (const pe of Object.values(s.plannedEvents)) {
+      for (const id of pe.taskPool) ids.add(id);
+    }
+    return ids;
+  });
 
   const [filterType, setFilterType] = useState<TaskType | 'All'>('All');
   const [search, setSearch] = useState('');
@@ -160,8 +168,11 @@ export function RecommendedTasksTab() {
         )}
         {visible.map((template) => {
           const id = template.id ?? '';
-          // Active if: explicitly in user.lists.taskLibrary OR seeded into scheduleStore.taskTemplates
-          const active = id !== '' && (taskLibrary.includes(id) || id in customTemplates);
+          // Active if: in user.lists.taskLibrary, seeded into scheduleStore.taskTemplates,
+          // OR referenced in any PlannedEvent taskPool
+          const active =
+            id !== '' &&
+            (taskLibrary.includes(id) || id in customTemplates || pooledTemplateIds.has(id));
           return (
             <TaskTemplateRow
               key={template.id ?? template.name}
