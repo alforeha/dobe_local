@@ -10,7 +10,7 @@ import { taskTemplateLibrary } from '../../../../coach';
 import { starterTaskTemplates } from '../../../../coach/StarterQuestLibrary';
 import { useUserStore } from '../../../../stores/useUserStore';
 import { useScheduleStore } from '../../../../stores/useScheduleStore';
-import type { TaskTemplate, TaskType } from '../../../../types/taskTemplate';
+import type { TaskTemplate, TaskType, XpAward } from '../../../../types/taskTemplate';
 import type { StatGroupKey } from '../../../../types/user';
 
 // ── STAT ICONS (mirrors StatIcon.tsx) ────────────────────────────────────────
@@ -28,11 +28,11 @@ const STAT_KEYS: StatGroupKey[] = [
   'health', 'strength', 'agility', 'defense', 'charisma', 'wisdom',
 ];
 
-function getPrimaryStatIcon(xpAward: Record<string, number>): string {
+function getPrimaryStatIcon(xpAward: XpAward): string {
   let best: StatGroupKey | null = null;
   let bestVal = 0;
   for (const key of STAT_KEYS) {
-    const val = xpAward[key] ?? 0;
+    const val = xpAward[key];
     if (val > bestVal) {
       bestVal = val;
       best = key;
@@ -90,14 +90,15 @@ export function RecommendedTasksTab() {
   const removeTaskTemplateRef = useUserStore((s) => s.removeTaskTemplateRef);
   // Seeded starter templates live in scheduleStore.taskTemplates
   const customTemplates = useScheduleStore((s) => s.taskTemplates);
-  // Prebuilt templates used in any PlannedEvent taskPool are also "have" — collect into a Set
-  const pooledTemplateIds = useScheduleStore((s) => {
+  // Collect all PlannedEvent taskPool ids — select the stable object, derive Set in useMemo
+  const plannedEvents = useScheduleStore((s) => s.plannedEvents);
+  const pooledTemplateIds = useMemo(() => {
     const ids = new Set<string>();
-    for (const pe of Object.values(s.plannedEvents)) {
+    for (const pe of Object.values(plannedEvents)) {
       for (const id of pe.taskPool) ids.add(id);
     }
     return ids;
-  });
+  }, [plannedEvents]);
 
   const [filterType, setFilterType] = useState<TaskType | 'All'>('All');
   const [search, setSearch] = useState('');
@@ -227,7 +228,7 @@ interface TaskTemplateRowProps {
 }
 
 function TaskTemplateRow({ template, active, onToggle }: TaskTemplateRowProps) {
-  const statIcon = getPrimaryStatIcon(template.xpAward as Record<string, number>);
+  const statIcon = getPrimaryStatIcon(template.xpAward);
   const typeLabel = TYPE_LABELS[template.taskType as TaskType] ?? template.taskType;
 
   return (
