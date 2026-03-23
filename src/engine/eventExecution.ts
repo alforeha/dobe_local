@@ -83,6 +83,11 @@ export function completeTask(
     return;
   }
 
+  // FIX-13 trace — confirm questRef/actRef are populated before milestone routing
+  console.log(
+    `[completeTask] taskId=${taskId} questRef=${task.questRef ?? 'null'} actRef=${task.actRef ?? 'null'}`,
+  );
+
   const now = new Date().toISOString();
 
   const updatedTask: Task = {

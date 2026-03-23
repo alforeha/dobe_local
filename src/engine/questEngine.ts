@@ -26,12 +26,35 @@ function todayISO(): string {
 
 /**
  * Walk task.resultFields and return the first numeric value found.
- * Drills one level into nested objects (e.g. CounterInputFields, SetsRepsInputFields).
- * Returns null when no numeric value is present.
+ *
+ * Handles:
+ *   COUNTER/RATING/ROLL etc  — top-level numeric field
+ *   CIRCUIT/SETS_REPS etc    — first numeric in a nested plain object
+ *   CHECKLIST                — count of `checked === true` items in the items array
+ *                              (future: ChecklistItem.systemEventRef lets the UI
+ *                               auto-check items on nav/state events without a task commit)
+ *
+ * Returns null when no numeric value is present (CHECK, LOG, FORM, TEXT, …).
+ * For CHECKLIST with 0 items checked, also returns null so the milestone-count
+ * fallback in evaluateQuestSpecific handles the edge case gracefully.
  */
 function extractNumericFromResult(task: Task): number | null {
   for (const value of Object.values(task.resultFields)) {
     if (typeof value === 'number') return value;
+
+    // CHECKLIST: resultFields.items is ChecklistItem[] — count how many were ticked
+    if (Array.isArray(value)) {
+      const count = value.filter(
+        (item) =>
+          item !== null &&
+          typeof item === 'object' &&
+          (item as Record<string, unknown>).checked === true,
+      ).length;
+      if (count > 0) return count;
+      // count === 0: fall through to return null so the quest doesn't count a blank submit
+      continue;
+    }
+
     if (value !== null && typeof value === 'object') {
       for (const nested of Object.values(value as Record<string, unknown>)) {
         if (typeof nested === 'number') return nested;
@@ -139,10 +162,20 @@ export function evaluateQuestSpecific(quest: Quest, completedTask: Task): boolea
 
   if (specific.sourceType === 'taskInput') {
     const value = extractNumericFromResult(completedTask);
-    if (value !== null) return value >= specific.targetValue;
-    // Fallback: milestone count for non-numeric tasks (e.g. CHECK).
-    // quest.milestones is pre-addition at call time; add 1 for the task being completed now.
-    return (quest.milestones.length + 1) >= specific.targetValue;
+    let isFinished: boolean;
+    if (value !== null) {
+      isFinished = value >= specific.targetValue;
+    } else {
+      // Fallback: milestone count for non-numeric tasks (e.g. CHECK).
+      // quest.milestones is pre-addition at call time; add 1 for the task being completed now.
+      isFinished = (quest.milestones.length + 1) >= specific.targetValue;
+    }
+    // FIX-13 trace — confirm the finish condition result for each check-in
+    console.log(
+      `[evaluateQuestSpecific] quest="${quest.name}" milestones=${quest.milestones.length} ` +
+      `targetValue=${specific.targetValue} numericValue=${value ?? 'null'} isFinished=${isFinished}`,
+    );
+    return isFinished;
   }
 
   if (

@@ -20,6 +20,7 @@ import {
   STARTER_ACT_IDS,
 } from '../../coach/StarterQuestLibrary';
 import { evaluatePlannedEventCreatedMarkers } from '../../engine/markerEngine';
+import { autoCheckQuestItem } from '../../engine/resourceEngine';
 import type { User } from '../../types/user';
 import type { Event, Task } from '../../types';
 import type { TimeView } from '../timeViews/TimeViewContainer';
@@ -212,9 +213,19 @@ export function AppShell() {
 
   // ── OVERLAY HELPERS ──────────────────────────────────────────────────────────
 
+  const handleViewChange = (newView: TimeView) => {
+    setActiveView(newView);
+    if (newView === 'week') {
+      autoCheckQuestItem(STARTER_TEMPLATE_IDS.setupSchedule, 'week_view');
+    } else if (newView === 'explorer') {
+      autoCheckQuestItem(STARTER_TEMPLATE_IDS.setupSchedule, 'month_view');
+    }
+  };
+
   const handleWeekSelect = (weekStart: Date) => {
     setWeekViewSeed(weekStart);
     setActiveView('week');
+    autoCheckQuestItem(STARTER_TEMPLATE_IDS.setupSchedule, 'week_view');
   };
 
   const openEventOverlay = (eventId: string) => {
@@ -264,7 +275,7 @@ export function AppShell() {
       />
       <Footer
         activeView={activeView}
-        onViewChange={setActiveView}
+        onViewChange={handleViewChange}
         onCoachOpen={() => setOverlay('coach')}
         onMenuOpen={() => setOverlay('menu')}
       />

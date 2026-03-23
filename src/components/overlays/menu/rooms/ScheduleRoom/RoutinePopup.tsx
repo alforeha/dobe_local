@@ -11,6 +11,8 @@ import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { useUserStore } from '../../../../../stores/useUserStore';
 import { taskTemplateLibrary } from '../../../../../coach';
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
+import { autoCheckQuestItem } from '../../../../../engine/resourceEngine';
+import { STARTER_TEMPLATE_IDS } from '../../../../../coach/StarterQuestLibrary';
 import { storageDelete, storageKey } from '../../../../../storage';
 import { localISODate } from '../../../../../utils/dateUtils';
 import type { PlannedEvent, ConflictMode } from '../../../../../types/plannedEvent';
@@ -232,6 +234,7 @@ export function RoutinePopup({ editRoutine, onClose }: RoutinePopupProps) {
 
       setPlannedEvent(newRoutine);
       addRoutineRef(id);
+      autoCheckQuestItem(STARTER_TEMPLATE_IDS.setupSchedule, 'add_routine');
 
       // D14 — same-day creation triggers immediate materialisation only when
       // today is a valid recurrence day for this routine's frequency/days filter.

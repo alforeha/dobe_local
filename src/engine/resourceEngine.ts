@@ -24,8 +24,10 @@ import type { QuickActionsEvent } from '../types/event';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useUserStore } from '../stores/useUserStore';
 import { useResourceStore } from '../stores/useResourceStore';
+import { useProgressionStore } from '../stores/useProgressionStore';
 
 import { awardXP, awardStat } from './awardPipeline';
+import { completeMilestone, decodeQuestRef } from './markerEngine';
 import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
@@ -671,6 +673,11 @@ export function completeGTDItem(itemId: string, user: User): void {
 
   scheduleStore.setTask(updatedTask);
 
+  // Route quest milestone through the quest engine (was bypassed before — FIX)
+  if (updatedTask.questRef) {
+    completeMilestone(updatedTask);
+  }
+
   // Write to today's QuickActionsEvent (date-keyed singleton per D12)
   const today = todayISO();
   const qaId = `qa-${today}`;
@@ -718,4 +725,94 @@ export function completeGTDItem(itemId: string, user: User): void {
   }
 
   pushRibbet('gtd.completed');
+}
+
+// ── AUTO-CHECK QUEST CHECKLIST ITEM (D88-auto) ───────────────────────────────
+
+/**
+ * Auto-check a single CHECKLIST item on a pending quest task in the GTD list.
+ * Called when the user performs the corresponding system action (nav, routine add, etc.).
+ * When all checklist items are checked, the task is routed through the normal
+ * GTD completion pipeline (XP, milestone, quest progress).
+ *
+ * Idempotent — calling with an already-checked key is a no-op.
+ *
+ * @param templateRef  TaskTemplate ID — identifies which quest task to update
+ * @param itemKey      Checklist item key to mark as checked
+ */
+export function autoCheckQuestItem(templateRef: string, itemKey: string): void {
+  const scheduleStore = useScheduleStore.getState();
+  const user = useUserStore.getState().user;
+  if (!user) return;
+
+  // Find the first matching pending task in gtdList
+  const taskId = user.lists.gtdList.find((id) => {
+    const t = scheduleStore.tasks[id];
+    return t?.completionState === 'pending' && t.templateRef === templateRef;
+  });
+  if (!taskId) return;
+
+  const task = scheduleStore.tasks[taskId];
+  if (!task) return;
+
+  // Resolve current items from resultFields or initialise from template shape
+  const template = scheduleStore.taskTemplates[templateRef];
+  const templateItems =
+    (template?.inputFields as { items?: Array<{ key: string; label: string }> })?.items ?? [];
+  const rawItems = (task.resultFields as Record<string, unknown>).items;
+  const existingItems: Array<{ key: string; label: string; checked: boolean }> =
+    Array.isArray(rawItems)
+      ? (rawItems as Array<{ key: string; label: string; checked: boolean }>)
+      : templateItems.map((i) => ({ ...i, checked: false }));
+
+  // Idempotent — already checked
+  if (existingItems.find((i) => i.key === itemKey)?.checked === true) return;
+
+  const updatedItems = existingItems.map((item) =>
+    item.key === itemKey ? { ...item, checked: true } : item,
+  );
+
+  // Persist partial progress — task stays 'pending' until all items are done
+  scheduleStore.setTask({ ...task, resultFields: { ...task.resultFields, items: updatedItems } });
+
+  const allDone = updatedItems.every((i) => i.checked);
+
+  // Write incremental progressPercent so the UI reflects each step before the task completes
+  if (!allDone && task.questRef) {
+    const parsed = decodeQuestRef(task.questRef);
+    if (parsed) {
+      const { actId, chainIndex, questIndex } = parsed;
+      const progressionStore = useProgressionStore.getState();
+      const act = progressionStore.acts[actId];
+      if (act) {
+        const quest = act.chains[chainIndex]?.quests[questIndex];
+        if (quest && quest.specific.targetValue > 0) {
+          const checkedCount = updatedItems.filter((i) => i.checked).length;
+          const progressPercent = Math.min(
+            99, // cap at 99 — 100 is reserved for official completion via completeMilestone
+            Math.round((checkedCount / quest.specific.targetValue) * 100),
+          );
+          const updatedAct = {
+            ...act,
+            chains: act.chains.map((c, ci: number) =>
+              ci !== chainIndex
+                ? c
+                : {
+                    ...c,
+                    quests: c.quests.map((q, qi: number) =>
+                      qi !== questIndex ? q : { ...q, progressPercent },
+                    ),
+                  },
+            ),
+          };
+          progressionStore.setAct(updatedAct);
+        }
+      }
+    }
+  }
+
+  // All items checked → route through normal GTD completion (XP, quest, gtdList cleanup)
+  if (allDone) {
+    completeGTDItem(taskId, user);
+  }
 }

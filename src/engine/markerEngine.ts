@@ -290,6 +290,9 @@ export function evaluatePlannedEventCreatedMarkers(): void {
 export function completeMilestone(completedTask: Task): void {
   if (!completedTask.questRef) return;
 
+  // FIX-13 trace — confirm questRef format and parsing at the entry point
+  console.log(`[completeMilestone] questRef=${completedTask.questRef}`);
+
   const parsed = decodeQuestRef(completedTask.questRef);
   if (!parsed) {
     console.warn(
@@ -298,6 +301,7 @@ export function completeMilestone(completedTask: Task): void {
     return;
   }
   const { actId, chainIndex, questIndex } = parsed;
+  console.log(`[completeMilestone] decoded → actId=${actId} chainIdx=${chainIndex} questIdx=${questIndex}`);
 
   const progressionStore = useProgressionStore.getState();
   const scheduleStore = useScheduleStore.getState();
@@ -376,6 +380,33 @@ export function completeMilestone(completedTask: Task): void {
   if (!isFinished) {
     updateQuestProgress(actId, chainIndex, questIndex);
     return;
+  }
+
+  // Quest just completed — fire the next quest's interval marker immediately so
+  // the user can act on Quest N+1 without waiting for the next rollover (FIX-13).
+  // Only fires if the next quest exists, is active, and its first interval marker
+  // has not yet been initialised (nextFire === null).
+  const nextQuestIndex = questIndex + 1;
+  const freshActForNext = useProgressionStore.getState().acts[actId];
+  const nextQuest = freshActForNext?.chains[chainIndex]?.quests[nextQuestIndex];
+  if (nextQuest && nextQuest.completionState === 'active') {
+    const nextMarkerIdx = nextQuest.timely.markers.findIndex(
+      (m) => m.activeState && m.conditionType === 'interval' && m.nextFire === null,
+    );
+    if (nextMarkerIdx !== -1) {
+      const nextMarker = nextQuest.timely.markers[nextMarkerIdx]!;
+      console.log(
+        `[completeMilestone] Quest "${quest.name}" complete → firing next quest marker ` +
+        `(questIdx=${nextQuestIndex} markerIdx=${nextMarkerIdx} template=${nextMarker.taskTemplateRef})`,
+      );
+      fireMarker({
+        marker: nextMarker,
+        markerIndex: nextMarkerIdx,
+        questIndex: nextQuestIndex,
+        chainIndex,
+        actId,
+      });
+    }
   }
 
   // Quest just completed — propagate completion up to chain and act (D87)

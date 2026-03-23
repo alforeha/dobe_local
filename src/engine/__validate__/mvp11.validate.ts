@@ -411,6 +411,99 @@ async function main(): Promise<void> {
   const completedTask = useScheduleStore.getState().tasks[welcomeTaskId];
   assert('Task — completionState updated to complete', completedTask?.completionState === 'complete');
 
+  // ─── FIX-13: Quest 1 (Ripple) progress assertions ─────────────────────
+  const q1AfterComplete = useProgressionStore.getState().acts[obActId]?.chains[0]?.quests[0];
+  assert(
+    'Quest 1 (Ripple) — completionState is complete',
+    q1AfterComplete?.completionState === 'complete',
+    `got: ${q1AfterComplete?.completionState}`,
+  );
+  assert(
+    'Quest 1 (Ripple) — progressPercent is 100',
+    q1AfterComplete?.progressPercent === 100,
+    `got: ${q1AfterComplete?.progressPercent}`,
+  );
+  assert(
+    'Quest 1 (Ripple) — has exactly 1 milestone',
+    q1AfterComplete?.milestones.length === 1,
+    `got: ${q1AfterComplete?.milestones.length}`,
+  );
+
+  // ─── FIX-13: Quest 2 (Splash) armed after Quest 1 completes ───────────
+  // completeMilestone() should have fired Quest 2's first interval marker
+  // so a Check-In task now exists in the schedule for Quest 2.
+  const q2AfterFire = useProgressionStore.getState().acts[obActId]?.chains[0]?.quests[1];
+  assert(
+    'Quest 2 (Splash) — remains active after Quest 1 completes',
+    q2AfterFire?.completionState === 'active',
+    `got: ${q2AfterFire?.completionState}`,
+  );
+  const allTasksAfterQ1 = Object.values(useScheduleStore.getState().tasks);
+  const q2TaskRef = `${obActId}|0|1`;
+  const q2TaskExists = allTasksAfterQ1.some(
+    (t) => t.questRef === q2TaskRef && t.completionState !== 'complete',
+  );
+  assert(
+    'Quest 2 (Splash) — armed: a task with its questRef exists in the schedule',
+    q2TaskExists,
+    `tasks with questRefs: ${allTasksAfterQ1.filter((t) => t.questRef).map((t) => t.questRef).join(', ')}`,
+  );
+
+  // ─── FIX-13: Q2 CHECKLIST completion (targetValue=3, 3 items) ──────────
+  // Simulate the user completing the Q2 setupSchedule CHECKLIST with all
+  // 3 items checked — verifies extractNumericFromResult handles ChecklistItem[].
+  const q2Task = allTasksAfterQ1.find(
+    (t) => t.questRef === q2TaskRef && t.completionState !== 'complete',
+  )!;
+  assert('Quest 2 (Splash) — task found before Q2 complete call', !!q2Task);
+
+  if (q2Task) {
+    // Build a CHECKLIST result with all 3 items ticked — mirrors ChecklistInput.handleComplete()
+    const q2Result = {
+      resultFields: {
+        items: [
+          { key: 'add_routine', label: 'Add a default routine from prebuilts', checked: true },
+          { key: 'week_view',   label: 'Switch to Week view',                  checked: true },
+          { key: 'month_view',  label: 'Switch to Month view',                 checked: true },
+        ],
+        requireAll: false,
+      },
+    };
+    let q2CompleteError: unknown = null;
+    try {
+      // Q2 task lives in gtdList (created by fireMarker), not inside an event.
+      // completeTask's eventId is only used for quickActions context bonus — safe to use a placeholder.
+      completeTask(q2Task.id, 'validate-q2-event', q2Result);
+    } catch (e) {
+      q2CompleteError = e;
+    }
+    assert('Quest 2 (Splash) — completeTask runs without error', q2CompleteError === null, String(q2CompleteError));
+
+    const q2AfterComplete = useProgressionStore.getState().acts[obActId]?.chains[0]?.quests[1];
+    assert(
+      'Quest 2 (Splash) — completionState is complete',
+      q2AfterComplete?.completionState === 'complete',
+      `got: ${q2AfterComplete?.completionState}`,
+    );
+    assert(
+      'Quest 2 (Splash) — progressPercent is 100',
+      q2AfterComplete?.progressPercent === 100,
+      `got: ${q2AfterComplete?.progressPercent}`,
+    );
+
+    // Q3 (High Ground) should now be armed
+    const q3TaskRef = `${obActId}|0|2`;
+    const allTasksAfterQ2 = Object.values(useScheduleStore.getState().tasks);
+    const q3TaskExists = allTasksAfterQ2.some(
+      (t) => t.questRef === q3TaskRef && t.completionState !== 'complete',
+    );
+    assert(
+      'Quest 3 (High Ground) — armed after Quest 2 completes',
+      q3TaskExists,
+      `tasks with questRefs: ${allTasksAfterQ2.filter((t) => t.questRef).map((t) => t.questRef).join(', ')}`,
+    );
+  }
+
   // ═══════════════════════════════════════════════════════════════════════
   // PHASE 3 — ROLLOVER SIMULATION (DAY 2)
   // ═══════════════════════════════════════════════════════════════════════

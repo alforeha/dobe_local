@@ -3,6 +3,7 @@ import { useScheduleStore } from '../../../../../../stores/useScheduleStore';
 import { useUserStore } from '../../../../../../stores/useUserStore';
 import { GTDTaskBlock } from './GTDTaskBlock';
 import { GTDManualBlock } from './GTDManualBlock';
+import { STARTER_TEMPLATE_IDS } from '../../../../../../coach/StarterQuestLibrary';
 import { AddGTDItemPopup } from './AddGTDItemPopup';
 
 export function GTDSection() {
@@ -14,10 +15,13 @@ export function GTDSection() {
   const gtdList = user?.lists.gtdList ?? [];
   const manualGtdList = user?.lists.manualGtdList ?? [];
 
-  // Resolve system/resource-generated Task refs — pending only
+  // Templates managed entirely by system auto-checks — never shown as manual GTD items
+  const AUTO_TRACKED = new Set([STARTER_TEMPLATE_IDS.setupSchedule]);
+
+  // Resolve system/resource-generated Task refs — pending only, excluding auto-tracked
   const systemTasks = gtdList
     .map((id) => tasks[id])
-    .filter((t) => Boolean(t) && t.completionState === 'pending');
+    .filter((t) => Boolean(t) && t.completionState === 'pending' && !AUTO_TRACKED.has(t.templateRef));
 
   // Manual items — pending only
   const manualItems = manualGtdList.filter((i) => i.completionState === 'pending');
