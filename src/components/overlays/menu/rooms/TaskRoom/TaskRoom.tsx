@@ -18,16 +18,15 @@ export function TaskRoom() {
   const [popup, setPopup] = useState<PopupState>(null);
   const taskTemplates = useScheduleStore((s) => s.taskTemplates);
 
-  const prebuiltEntries = taskTemplateLibrary.map(
-    (t): [string, TaskTemplate, boolean] => [t.id ?? t.name, t, false],
-  );
-  const prebuiltIds = new Set(prebuiltEntries.map(([k]) => k));
-  const userEntries = Object.entries(taskTemplates)
-    .filter(([k]) => !prebuiltIds.has(k))
-    .map(([k, t]): [string, TaskTemplate, boolean] => [k, t, true]);
-  // Prebuilt templates shown first in Stat Tasks tab; resource tab deferred (BUILD-TIME)
+  // Only show templates the user has activated (in store).
+  // Prebuilt IDs (from coach bundle) are read-only; UUID keys are user-custom.
+  const prebuiltIds = new Set(taskTemplateLibrary.map((t) => t.id ?? t.name));
   const filtered: [string, TaskTemplate, boolean][] =
-    tab === 'stat' ? [...prebuiltEntries, ...userEntries] : [];
+    tab === 'stat'
+      ? Object.entries(taskTemplates).map(
+          ([k, t]): [string, TaskTemplate, boolean] => [k, t, !prebuiltIds.has(k)],
+        )
+      : [];
 
   function handleEdit(key: string, template: TaskTemplate) {
     setPopup({ mode: 'edit', key, template });
