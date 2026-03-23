@@ -53,7 +53,7 @@ const initialState: SystemState = {
   sessionStart: null,
   rolloverStep: null,
   onboardingComplete: null,
-  devMode: false,
+  devMode: true,
 };
 
 // ── STORE ─────────────────────────────────────────────────────────────────────
