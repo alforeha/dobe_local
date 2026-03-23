@@ -58,6 +58,8 @@ export interface UserLists {
   shoppingLists: ShoppingList[];
   /** Manual GTD items — user-created (MVP11 W19) */
   manualGtdList: GTDItem[];
+  /** PlannedEvent (Routine) UUID refs owned by this user */
+  routineRefs: string[];
 }
 
 export interface ShoppingItem {

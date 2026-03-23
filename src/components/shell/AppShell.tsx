@@ -89,6 +89,7 @@ function makeDefaultUser(): User {
       gtdList: [],
       shoppingLists: [],
       manualGtdList: [],
+      routineRefs: [],
     },
     resources: {
       homes: [], vehicles: [], contacts: [],
