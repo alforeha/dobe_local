@@ -321,5 +321,212 @@
     "cooldown": null,
     "media": null,
     "items": []
+  },
+  {
+    "id": "item-tmpl-cut-onions-01",
+    "name": "Cut onions",
+    "description": "Prep onions for your next meal.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "nutrition",
+    "inputFields": { "label": "Onions prepped?" },
+    "xpAward": { "health": 3, "strength": 0, "agility": 2, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": ["item-onion"]
+  },
+  {
+    "id": "item-tmpl-morning-coffee-01",
+    "name": "Morning coffee",
+    "description": "Brew your morning coffee and set the tone for the day.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "mindfulness",
+    "inputFields": { "label": "Coffee brewed?" },
+    "xpAward": { "health": 2, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 2 },
+    "cooldown": null,
+    "media": null,
+    "items": ["item-coffee-beans"]
+  },
+  {
+    "id": "item-tmpl-clean-room-01",
+    "name": "Clean room",
+    "description": "Tidy, wipe down, and vacuum the room.",
+    "icon": "checklist",
+    "taskType": "CHECKLIST",
+    "secondaryTag": "home",
+    "inputFields": {
+      "items": [
+        { "label": "Clear surfaces" },
+        { "label": "Wipe down" },
+        { "label": "Vacuum/sweep" }
+      ]
+    },
+    "xpAward": { "health": 3, "strength": 0, "agility": 2, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": ["item-cleaning-supplies"]
+  },
+  {
+    "id": "item-tmpl-do-laundry-01",
+    "name": "Do laundry",
+    "description": "Load the machine, add detergent, and run a cycle.",
+    "icon": "checklist",
+    "taskType": "CHECKLIST",
+    "secondaryTag": "home",
+    "inputFields": {
+      "items": [
+        { "label": "Load machine" },
+        { "label": "Add detergent" },
+        { "label": "Run cycle" },
+        { "label": "Hang or fold" }
+      ]
+    },
+    "xpAward": { "health": 3, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": ["item-laundry-detergent"]
+  },
+  {
+    "id": "item-tmpl-make-bed-01",
+    "name": "Make bed",
+    "description": "A made bed starts the day with a win.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "home",
+    "inputFields": { "label": "Bed made?" },
+    "xpAward": { "health": 2, "strength": 0, "agility": 1, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": ["item-bed"]
+  },
+  {
+    "id": "item-tmpl-weekly-car-check-01",
+    "name": "Weekly car check",
+    "description": "Quick safety and maintenance check on the car.",
+    "icon": "checklist",
+    "taskType": "CHECKLIST",
+    "secondaryTag": "home",
+    "inputFields": {
+      "items": [
+        { "label": "Check tyre pressure" },
+        { "label": "Check fluid levels" },
+        { "label": "Check lights" },
+        { "label": "Check windscreen wipers" }
+      ]
+    },
+    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 5, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": ["item-car"]
+  },
+  {
+    "id": "item-tmpl-clean-oven-01",
+    "name": "Clean oven",
+    "description": "Monthly deep clean to prevent grease buildup.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "home",
+    "inputFields": { "label": "Oven cleaned?" },
+    "xpAward": { "health": 2, "strength": 0, "agility": 3, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": ["item-oven"]
+  },
+  {
+    "id": "item-tmpl-water-plants-01",
+    "name": "Water plants",
+    "description": "Give your plants their daily drink.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "home",
+    "inputFields": { "label": "Plants watered?" },
+    "xpAward": { "health": 2, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 2 },
+    "cooldown": null,
+    "media": null,
+    "items": ["item-garden"]
+  },
+  {
+    "id": "item-tmpl-run-wash-01",
+    "name": "Run wash",
+    "description": "Set the washing machine going.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "home",
+    "inputFields": { "label": "Wash running?" },
+    "xpAward": { "health": 3, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": ["item-washing-machine"]
+  },
+  {
+    "id": "item-tmpl-clean-fridge-01",
+    "name": "Clean fridge",
+    "description": "Monthly wipe-down to keep food fresh and safe.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "home",
+    "inputFields": { "label": "Fridge cleaned?" },
+    "xpAward": { "health": 2, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": ["item-fridge"]
+  },
+  {
+    "id": "item-tmpl-clear-desk-01",
+    "name": "Clear desk",
+    "description": "Remove clutter and reset your workspace for focus.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "work",
+    "inputFields": { "label": "Desk cleared?" },
+    "xpAward": { "health": 0, "strength": 0, "agility": 2, "defense": 0, "charisma": 0, "wisdom": 3 },
+    "cooldown": null,
+    "media": null,
+    "items": ["item-desk"]
+  },
+  {
+    "id": "item-tmpl-clean-shower-01",
+    "name": "Clean shower",
+    "description": "Weekly scrub to keep the shower hygienic.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "home",
+    "inputFields": { "label": "Shower cleaned?" },
+    "xpAward": { "health": 3, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": ["item-shower"]
+  },
+  {
+    "id": "item-tmpl-mow-lawn-01",
+    "name": "Mow lawn",
+    "description": "Keep the garden tidy — weekly in growing season.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "home",
+    "inputFields": { "label": "Lawn mowed?" },
+    "xpAward": { "health": 3, "strength": 0, "agility": 3, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": ["item-lawnmower"]
+  },
+  {
+    "id": "item-tmpl-check-tyre-01",
+    "name": "Check tyre pressure",
+    "description": "Quick tyre safety check before each ride.",
+    "icon": "checklist",
+    "taskType": "CHECKLIST",
+    "secondaryTag": "home",
+    "inputFields": {
+      "items": [
+        { "label": "Front tyre pressure OK" },
+        { "label": "Rear tyre pressure OK" }
+      ]
+    },
+    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 4, "charisma": 0, "wisdom": 0 },
+    "cooldown": null,
+    "media": null,
+    "items": ["item-bicycle"]
   }
 ]

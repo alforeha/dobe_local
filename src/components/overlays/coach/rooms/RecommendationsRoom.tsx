@@ -3,6 +3,8 @@ import { TabButton } from '../../../../components/shared/buttons/TabButton';
 import { LootDropBanner } from './LootDropBanner';
 import { RecommendedTasksTab } from './RecommendedTasksTab';
 import { RecommendedRoutinesTab } from './RecommendedRoutinesTab';
+import { RecommendedGearTab } from './RecommendedGearTab';
+import { RecommendedItemsTab } from './RecommendedItemsTab';
 
 type RecTab = 'Tasks' | 'Routines' | 'Gear' | 'Items';
 const TABS: RecTab[] = ['Tasks', 'Routines', 'Gear', 'Items'];
@@ -31,11 +33,8 @@ export function RecommendationsRoom() {
       <div className="flex-1 overflow-hidden">
         {activeTab === 'Tasks' && <RecommendedTasksTab />}
         {activeTab === 'Routines' && <RecommendedRoutinesTab />}
-        {(activeTab === 'Gear' || activeTab === 'Items') && (
-          <div className="px-4 py-8 text-center text-sm text-gray-400 dark:text-gray-500">
-            Coming soon.
-          </div>
-        )}
+        {activeTab === 'Gear' && <RecommendedGearTab />}
+        {activeTab === 'Items' && <RecommendedItemsTab />}
       </div>
     </div>
   );

@@ -182,7 +182,18 @@
       "slot": "head",
       "rarity": "common",
       "xpBoost": 0,
+      "statBonus": { "agility": 2 },
       "assetRef": "gear:gear-starter-hat"
+    },
+    {
+      "id": "gear-work-shirt",
+      "name": "Work Shirt",
+      "description": "A clean, pressed shirt that makes a solid first impression.",
+      "slot": "body",
+      "rarity": "common",
+      "xpBoost": 0,
+      "statBonus": { "charisma": 2 },
+      "assetRef": "gear:gear-work-shirt"
     },
     {
       "id": "gear-adventurer-jacket",
@@ -191,7 +202,28 @@
       "slot": "body",
       "rarity": "rare",
       "xpBoost": 0.05,
+      "statBonus": { "strength": 5 },
       "assetRef": "gear:gear-adventurer-jacket"
+    },
+    {
+      "id": "gear-work-gloves",
+      "name": "Work Gloves",
+      "description": "Sturdy gloves worn by those who get things done.",
+      "slot": "hand",
+      "rarity": "common",
+      "xpBoost": 0,
+      "statBonus": { "defense": 2 },
+      "assetRef": "gear:gear-work-gloves"
+    },
+    {
+      "id": "gear-streak-gloves",
+      "name": "Streak Gloves",
+      "description": "Gloves that crackle with the energy of a 30-day streak.",
+      "slot": "hand",
+      "rarity": "rare",
+      "xpBoost": 0.05,
+      "statBonus": { "strength": 5 },
+      "assetRef": "gear:gear-streak-gloves"
     },
     {
       "id": "gear-veteran-boots",
@@ -200,7 +232,18 @@
       "slot": "feet",
       "rarity": "epic",
       "xpBoost": 0.1,
+      "statBonus": { "health": 8 },
       "assetRef": "gear:gear-veteran-boots"
+    },
+    {
+      "id": "gear-endurance-boots",
+      "name": "Endurance Boots",
+      "description": "Boots that have carried their owner through 30 consecutive best-streak days.",
+      "slot": "feet",
+      "rarity": "epic",
+      "xpBoost": 0.08,
+      "statBonus": { "health": 8 },
+      "assetRef": "gear:gear-endurance-boots"
     },
     {
       "id": "gear-legendary-crown",
@@ -209,6 +252,7 @@
       "slot": "head",
       "rarity": "legendary",
       "xpBoost": 0.2,
+      "statBonus": { "wisdom": 15 },
       "assetRef": "gear:gear-legendary-crown"
     },
     {
@@ -218,25 +262,8 @@
       "slot": "accessory",
       "rarity": "rare",
       "xpBoost": 0.05,
+      "statBonus": { "wisdom": 5 },
       "assetRef": "gear:gear-task-master-ring"
-    },
-    {
-      "id": "gear-streak-gloves",
-      "name": "Streak Gloves",
-      "description": "Gloves that crackle with the energy of a 30-day streak.",
-      "slot": "hand",
-      "rarity": "rare",
-      "xpBoost": 0.05,
-      "assetRef": "gear:gear-streak-gloves"
-    },
-    {
-      "id": "gear-endurance-boots",
-      "name": "Endurance Boots",
-      "description": "Boots that have carried their owner through 30 consecutive best-streak days.",
-      "slot": "feet",
-      "rarity": "epic",
-      "xpBoost": 0.08,
-      "assetRef": "gear:gear-endurance-boots"
     },
     {
       "id": "gear-all-rounder-amulet",
@@ -245,6 +272,7 @@
       "slot": "accessory",
       "rarity": "legendary",
       "xpBoost": 0.15,
+      "statBonus": { "health": 3, "strength": 3, "agility": 3, "defense": 3, "charisma": 3, "wisdom": 3 },
       "assetRef": "gear:gear-all-rounder-amulet"
     },
     {
@@ -254,6 +282,7 @@
       "slot": "accessory",
       "rarity": "common",
       "xpBoost": 0,
+      "statBonus": { "charisma": 2 },
       "assetRef": "gear:gear-coach-drop-ribbon"
     }
   ],

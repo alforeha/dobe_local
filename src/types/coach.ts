@@ -132,8 +132,10 @@ export interface GearDefinition {
   name: string;
   description: string;
   assetRef: string;
-  /** XP boost value applied when gear is equipped */
+  /** XP boost multiplier applied when gear is equipped */
   xpBoost: number;
+  /** Per-stat bonus displayed in Gear tab e.g. '+5 XP agility' */
+  statBonus?: Partial<Record<'health' | 'strength' | 'agility' | 'defense' | 'charisma' | 'wisdom', number>>;
 }
 
 export interface BadgeStickerModel {
