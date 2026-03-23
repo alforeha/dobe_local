@@ -19,6 +19,7 @@ import type { PlannedEvent } from '../types/plannedEvent';
 import type { Task } from '../types/task';
 import type { TaskTemplate } from '../types/taskTemplate';
 import type { User } from '../types/user';
+import { localISODate } from '../utils/dateUtils';
 import type { QuickActionsEvent } from '../types/event';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useUserStore } from '../stores/useUserStore';
@@ -32,7 +33,7 @@ import { pushRibbet } from '../coach/ribbet';
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localISODate(new Date());
 }
 
 /**

@@ -8,6 +8,18 @@ const MONTH_NAMES = [
 
 type FormatType = 'display' | 'iso' | 'short' | 'monthYear' | 'time';
 
+/**
+ * Returns a YYYY-MM-DD string in the user's LOCAL timezone.
+ * Use instead of toISOString().slice(0,10) which gives the UTC date and
+ * causes events to appear one day off for users ahead of UTC.
+ */
+export function localISODate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 /** Format a Date into a string of the given type */
 export function format(date: Date, type: FormatType): string {
   switch (type) {
@@ -15,8 +27,8 @@ export function format(date: Date, type: FormatType): string {
       // DDD MMM DD
       return `${DAY_NAMES[date.getDay()]} ${MONTH_NAMES[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')}`;
     case 'iso':
-      // YYYY-MM-DD
-      return date.toISOString().slice(0, 10);
+      // YYYY-MM-DD in local timezone (not UTC)
+      return localISODate(date);
     case 'short':
       // MM/DD
       return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;

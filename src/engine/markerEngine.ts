@@ -19,6 +19,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { storageSet, storageKey } from '../storage';
 import { evaluateQuestSpecific, updateQuestProgress, countTasksForScope } from './questEngine';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
+import { localISODate } from '../utils/dateUtils';
 
 // ── QUESTREF ENCODING ─────────────────────────────────────────────────────────
 
@@ -62,7 +63,7 @@ export function decodeQuestRef(
  * Used inside fireMarker to update marker.nextFire after each fire.
  */
 function computeMarkerNextFire(marker: Marker): string {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localISODate(new Date());
   if (!marker.lastFired) return today;
   const rule = marker.interval;
   if (!rule) return today; // xpThreshold marker — no calendar anchor
@@ -80,7 +81,7 @@ function computeMarkerNextFire(marker: Marker): string {
     default:
       break;
   }
-  return anchor.toISOString().slice(0, 10);
+  return localISODate(anchor);
 }
 
 // ── FIRE MARKER ───────────────────────────────────────────────────────────────
@@ -113,7 +114,7 @@ export function fireMarker(params: FireMarkerParams): void {
   const scheduleStore = useScheduleStore.getState();
   const userStore = useUserStore.getState();
   const progressionStore = useProgressionStore.getState();
-  const now = new Date().toISOString().slice(0, 10);
+  const now = localISODate(new Date());
 
   // Resolve the Quest to determine resource context
   const act = progressionStore.acts[actId];

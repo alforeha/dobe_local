@@ -18,6 +18,7 @@ import type { Task } from '../types/task';
 import type { GTDItem } from '../types/task';
 import type { QuickActionsEvent } from '../types/event';
 import type { Resource } from '../types/resource';
+import { localISODate } from '../utils/dateUtils';
 import type { AccountMeta, PendingTransaction } from '../types/resource';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useUserStore } from '../stores/useUserStore';
@@ -31,7 +32,7 @@ import { pushRibbet } from '../coach/ribbet';
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localISODate(new Date());
 }
 
 /**

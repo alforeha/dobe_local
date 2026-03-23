@@ -16,11 +16,12 @@ import { useProgressionStore } from '../stores/useProgressionStore';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useResourceStore } from '../stores/useResourceStore';
 import { useUserStore } from '../stores/useUserStore';
+import { localISODate } from '../utils/dateUtils';
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localISODate(new Date());
 }
 
 /**
@@ -300,7 +301,7 @@ export function computeProjectedFinish(quest: Quest): string | null {
     const days = Math.ceil(xpRemaining / dailyXP);
     const target = new Date();
     target.setDate(target.getDate() + days);
-    return target.toISOString().slice(0, 10);
+    return localISODate(target);
   }
 
   return null;

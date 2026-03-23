@@ -25,12 +25,13 @@ import { fireMarker } from './markerEngine';
 import { evaluateMarkerCondition, evaluateTaskCountMarker } from './questEngine';
 import { ribbet } from '../coach/ribbet';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
+import { localISODate } from '../utils/dateUtils';
 
 // ── DATE HELPERS ──────────────────────────────────────────────────────────────
 
-/** Returns today as YYYY-MM-DD */
+/** Returns today as YYYY-MM-DD in local timezone */
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localISODate(new Date());
 }
 
 /** Returns true if isoDate (YYYY-MM-DD) is on or before the cutoff date */
@@ -105,7 +106,7 @@ function computeNextSeedDate(pe: PlannedEvent, afterDate: string): string {
   const start = new Date(afterDate + 'T00:00:00');
   for (let i = 1; i <= DAYS_LOOKAHEAD; i++) {
     const candidate = new Date(start.getTime() + i * 86_400_000);
-    const candidateISO = candidate.toISOString().slice(0, 10);
+    const candidateISO = localISODate(candidate);
     const candidatePe: PlannedEvent = { ...pe, seedDate: pe.seedDate }; // seedDate stays for nth-weekday reference
     if (isPlannedEventDue(candidatePe, candidateISO)) {
       return candidateISO;

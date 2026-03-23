@@ -4,6 +4,7 @@ import { useSystemStore } from '../../stores/useSystemStore';
 import { useScheduleStore } from '../../stores/useScheduleStore';
 import { useUserStore } from '../../stores/useUserStore';
 import { useProgressionStore } from '../../stores/useProgressionStore';
+import { localISODate } from '../../utils/dateUtils';
 import { Header } from './Header';
 import { Body } from './Body';
 import { Footer } from './Footer';
@@ -147,7 +148,7 @@ export function AppShell() {
   // ── BEGIN (first-run) ────────────────────────────────────────────────────────
 
   const handleBegin = () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localISODate(new Date());
 
     // 1. Create and persist default user
     const user = makeDefaultUser();

@@ -20,6 +20,7 @@ import type { QuestExigency } from '../types/quest/exigency';
 import type { TaskTemplate, XpAward, TaskSecondaryTag, RecurrenceRule } from '../types/taskTemplate';
 import { useProgressionStore } from '../stores/useProgressionStore';
 import { useScheduleStore } from '../stores/useScheduleStore';
+import { localISODate } from '../utils/dateUtils';
 
 // ── STABLE ACT IDs ────────────────────────────────────────────────────────────
 // Fixed UUIDs so seeding is idempotent — re-seeding won't duplicate Acts.
@@ -529,7 +530,7 @@ const q1Marker: Marker = {
   lastFired: null,
   xpAtLastFire: null,
   taskCountAtLastFire: null,
-  nextFire: new Date().toISOString().slice(0, 10),
+  nextFire: localISODate(new Date()),
   activeState: true,
   // D81 sideEffect: drop a GTD item after Q1 fires so user must complete it in Q3
   sideEffects: [
