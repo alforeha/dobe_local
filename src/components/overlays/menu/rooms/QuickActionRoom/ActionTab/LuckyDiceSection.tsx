@@ -32,7 +32,7 @@ function getTodayRoll(
     if (task.completionState !== 'complete') continue;
     const rf = task.resultFields as Partial<RollInputFields>;
     if (rf.result != null) {
-      return { result: rf.result, boostApplied: rf.boostApplied ?? `${(1 + rf.result * 0.1).toFixed(1)}x` };
+      return { result: rf.result, boostApplied: rf.boostApplied ?? `×${rf.result}` };
     }
   }
   return null;
@@ -59,7 +59,7 @@ export function LuckyDiceSection() {
 
     setRolling(true);
     const result = Math.floor(Math.random() * SIDES) + 1;
-    const boostApplied = `${(1 + result * 0.1).toFixed(1)}x`;
+    const boostApplied = `×${result}`;
     let ticks = 0;
 
     const id = window.setInterval(() => {
