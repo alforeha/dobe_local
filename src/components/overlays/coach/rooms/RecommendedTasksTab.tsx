@@ -10,6 +10,7 @@ import { taskTemplateLibrary } from '../../../../coach';
 import { starterTaskTemplates } from '../../../../coach/StarterQuestLibrary';
 import { useUserStore } from '../../../../stores/useUserStore';
 import { useScheduleStore } from '../../../../stores/useScheduleStore';
+import { useProgressionStore } from '../../../../stores/useProgressionStore';
 import type { TaskTemplate, TaskType, XpAward } from '../../../../types/taskTemplate';
 import type { StatGroupKey } from '../../../../types/user';
 
@@ -99,6 +100,22 @@ export function RecommendedTasksTab() {
     }
     return ids;
   }, [plannedEvents]);
+  // Collect all Marker taskTemplateRefs from active quest acts
+  // Path: acts → chains[] → quests[] → timely.markers[] → taskTemplateRef
+  const acts = useProgressionStore((s) => s.acts);
+  const markerTemplateIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const act of Object.values(acts)) {
+      for (const chain of act.chains) {
+        for (const quest of chain.quests) {
+          for (const marker of quest.timely.markers) {
+            if (marker.taskTemplateRef) ids.add(marker.taskTemplateRef);
+          }
+        }
+      }
+    }
+    return ids;
+  }, [acts]);
 
   const [filterType, setFilterType] = useState<TaskType | 'All'>('All');
   const [search, setSearch] = useState('');
@@ -170,10 +187,13 @@ export function RecommendedTasksTab() {
         {visible.map((template) => {
           const id = template.id ?? '';
           // Active if: in user.lists.taskLibrary, seeded into scheduleStore.taskTemplates,
-          // OR referenced in any PlannedEvent taskPool
+          // referenced in any PlannedEvent taskPool, OR used by a quest Marker
           const active =
             id !== '' &&
-            (taskLibrary.includes(id) || id in customTemplates || pooledTemplateIds.has(id));
+            (taskLibrary.includes(id) ||
+              id in customTemplates ||
+              pooledTemplateIds.has(id) ||
+              markerTemplateIds.has(id));
           return (
             <TaskTemplateRow
               key={template.id ?? template.name}
