@@ -9,6 +9,7 @@ import { useState, useMemo } from 'react';
 import { taskTemplateLibrary } from '../../../../coach';
 import { starterTaskTemplates } from '../../../../coach/StarterQuestLibrary';
 import { useUserStore } from '../../../../stores/useUserStore';
+import { useScheduleStore } from '../../../../stores/useScheduleStore';
 import type { TaskTemplate, TaskType } from '../../../../types/taskTemplate';
 import type { StatGroupKey } from '../../../../types/user';
 
@@ -87,6 +88,8 @@ export function RecommendedTasksTab() {
   const taskLibrary = useUserStore((s) => s.user?.lists.taskLibrary ?? []);
   const addTaskTemplateRef = useUserStore((s) => s.addTaskTemplateRef);
   const removeTaskTemplateRef = useUserStore((s) => s.removeTaskTemplateRef);
+  // Seeded starter templates live in scheduleStore.taskTemplates — treat them as active too
+  const customTemplates = useScheduleStore((s) => s.taskTemplates);
 
   const [filterType, setFilterType] = useState<TaskType | 'All'>('All');
   const [search, setSearch] = useState('');
@@ -156,7 +159,9 @@ export function RecommendedTasksTab() {
           </p>
         )}
         {visible.map((template) => {
-          const active = template.id ? taskLibrary.includes(template.id) : false;
+          const id = template.id ?? '';
+          // Active if: explicitly in user.lists.taskLibrary OR seeded into scheduleStore.taskTemplates
+          const active = id !== '' && (taskLibrary.includes(id) || id in customTemplates);
           return (
             <TaskTemplateRow
               key={template.id ?? template.name}
