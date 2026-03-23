@@ -25,7 +25,7 @@ import { fireMarker } from './markerEngine';
 import { evaluateMarkerCondition, evaluateTaskCountMarker } from './questEngine';
 import { ribbet } from '../coach/ribbet';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
-import { localISODate } from '../utils/dateUtils';
+import { localISODate, addDays } from '../utils/dateUtils';
 
 // ── DATE HELPERS ──────────────────────────────────────────────────────────────
 
@@ -420,7 +420,9 @@ export async function executeRollover(
  * Call this on app boot, before hydrating any UI.
  *
  * - If a rollover was interrupted (rolloverStep is set), resume it.
- * - If lastRollover < today, run a fresh rollover.
+ * - If lastRollover < today, run a rollover for EACH missed day up to and
+ *   including today. This ensures a QA event and step-3 materialisation are
+ *   created for every skipped day (e.g. a week-long gap = 7 rollovers).
  * - Otherwise no-op.
  */
 export async function checkAndRunRolloverOnBoot(): Promise<void> {
@@ -434,6 +436,17 @@ export async function checkAndRunRolloverOnBoot(): Promise<void> {
   }
 
   if (!lastRollover || lastRollover < today) {
-    await executeRollover(today, 1);
+    // Determine the first day to roll forward: day after last completed rollover,
+    // or today when there is no prior rollover record.
+    const startISO = lastRollover
+      ? localISODate(addDays(new Date(lastRollover + 'T00:00:00'), 1))
+      : today;
+
+    let current = startISO;
+    while (current <= today) {
+      await executeRollover(current, 1);
+      if (current === today) break;
+      current = localISODate(addDays(new Date(current + 'T00:00:00'), 1));
+    }
   }
 }

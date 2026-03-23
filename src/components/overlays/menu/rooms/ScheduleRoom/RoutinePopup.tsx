@@ -14,7 +14,7 @@ import { materialisePlannedEvent } from '../../../../../engine/materialise';
 import { storageDelete, storageKey } from '../../../../../storage';
 import { localISODate } from '../../../../../utils/dateUtils';
 import type { PlannedEvent, ConflictMode } from '../../../../../types/plannedEvent';
-import type { RecurrenceFrequency, Weekday } from '../../../../../types/taskTemplate';
+import type { RecurrenceFrequency, RecurrenceRule, Weekday } from '../../../../../types/taskTemplate';
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 
@@ -52,6 +52,27 @@ const CONFLICT_MODES: { value: ConflictMode; label: string }[] = [
 
 function todayISO(): string {
   return localISODate(new Date());
+}
+
+// ── RECURRENCE DAY GUARD ──────────────────────────────────────────────────────
+
+const WEEKDAY_KEYS: Weekday[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+/**
+ * Return true when today's weekday is a valid recurrence day for the rule.
+ * Used to guard same-day materialisation: a weekly routine set to Wed/Thu/Fri
+ * must not materialise immediately if today is Mon.
+ */
+function isTodayARecurrenceDay(rule: RecurrenceRule): boolean {
+  if (rule.frequency === 'daily') return true;
+  if (rule.frequency === 'monthly') return true;
+  if (rule.frequency === 'weekly') {
+    if (!rule.days || rule.days.length === 0) return true;
+    const todayKey = WEEKDAY_KEYS[new Date().getDay()];
+    return todayKey !== undefined && rule.days.includes(todayKey);
+  }
+  // custom or unknown — do not block
+  return true;
 }
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
@@ -212,8 +233,9 @@ export function RoutinePopup({ editRoutine, onClose }: RoutinePopupProps) {
       setPlannedEvent(newRoutine);
       addRoutineRef(id);
 
-      // D14 — same-day creation triggers immediate materialisation
-      if (seedDate <= today) {
+      // D14 — same-day creation triggers immediate materialisation only when
+      // today is a valid recurrence day for this routine's frequency/days filter.
+      if (seedDate <= today && isTodayARecurrenceDay(recurrenceInterval)) {
         const currentTemplates = useScheduleStore.getState().taskTemplates;
         materialisePlannedEvent(newRoutine, today, currentTemplates);
       }

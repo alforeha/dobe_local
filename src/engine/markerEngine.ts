@@ -16,7 +16,6 @@ import type { GTDItem } from '../types/task';
 import { useProgressionStore } from '../stores/useProgressionStore';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useUserStore } from '../stores/useUserStore';
-import { storageSet, storageKey } from '../storage';
 import { evaluateQuestSpecific, updateQuestProgress, countTasksForScope } from './questEngine';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
 import { localISODate } from '../utils/dateUtils';
@@ -141,7 +140,6 @@ export function fireMarker(params: FireMarkerParams): void {
   };
 
   scheduleStore.setTask(task);
-  storageSet(storageKey.task(task.id), task);
 
   // Enqueue in gtdList so the task surfaces for the user (D05)
   const user = userStore.user;
@@ -232,7 +230,6 @@ export function fireMarker(params: FireMarkerParams): void {
   };
 
   progressionStore.setAct(updatedAct);
-  storageSet(storageKey.act(actId), updatedAct);
 }
 
 // ── PLANNED EVENT CREATED TRIGGER (D80) ──────────────────────────────────────
@@ -374,7 +371,6 @@ export function completeMilestone(completedTask: Task): void {
   };
 
   progressionStore.setAct(updatedAct);
-  storageSet(storageKey.act(actId), updatedAct);
 
   // Derive and persist progressPercent + projectedFinish unless just completed
   if (!isFinished) {
@@ -408,7 +404,6 @@ export function completeMilestone(completedTask: Task): void {
   }
 
   progressionStore.setAct(propagatedAct);
-  storageSet(storageKey.act(actId), propagatedAct);
 
   // D79 — Unlock Daily Adventure when Onboarding Act completes
   if (actNowComplete && actId === STARTER_ACT_IDS.onboarding) {
@@ -420,7 +415,6 @@ export function completeMilestone(completedTask: Task): void {
       const chain1 = makeDailyChain(STARTER_ACT_IDS.daily, 1, today);
       const dailyWithChain = { ...unlockedDaily, chains: [chain1] };
       freshStore.setAct(dailyWithChain);
-      storageSet(storageKey.act(STARTER_ACT_IDS.daily), dailyWithChain);
     }
   }
 }
