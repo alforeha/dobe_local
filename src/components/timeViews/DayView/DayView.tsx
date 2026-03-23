@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAppDate } from '../../../utils/useAppDate';
 import { DayViewHeader } from './DayViewHeader';
 import { DayViewBody } from './DayViewBody';
 
@@ -8,11 +9,8 @@ interface DayViewProps {
 }
 
 export function DayView({ onEventOpen, onEditPlanned }: DayViewProps) {
-  const [currentDate, setCurrentDate] = useState(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
+  const appDate = useAppDate();
+  const [currentDate, setCurrentDate] = useState(appDate);
 
   const goBack = () =>
     setCurrentDate((d) => {
@@ -28,11 +26,7 @@ export function DayView({ onEventOpen, onEditPlanned }: DayViewProps) {
       return n;
     });
 
-  const goToday = () => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    setCurrentDate(d);
-  };
+  const goToday = () => setCurrentDate(appDate);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">

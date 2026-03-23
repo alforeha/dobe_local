@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAppDate } from '../../../utils/useAppDate';
 import { WeekExplorerHeader } from './WeekExplorerHeader';
 import { WeekExplorerSubHeader } from './WeekExplorerSubHeader';
 import { WeekExplorerBody } from './WeekExplorerBody';
@@ -10,12 +11,9 @@ interface WeekExplorerProps {
 
 /** 57-week rolling window explorer. Seed date defaults to today. */
 export function WeekExplorer({ onWeekSelect }: WeekExplorerProps) {
+  const appDate = useAppDate();
   // Seed date — user can shift the entire window (UI-07)
-  const [seedDate, setSeedDate] = useState(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
+  const [seedDate, setSeedDate] = useState(appDate);
 
   const windowStart = addDays(getPrevMonday(seedDate), -13 * 7); // -13 weeks
   const windowEnd = addDays(windowStart, 57 * 7 - 1);            // +57 weeks total

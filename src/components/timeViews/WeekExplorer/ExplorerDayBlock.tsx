@@ -1,3 +1,4 @@
+import { useAppDate } from '../../../utils/useAppDate';
 import { useScheduleStore } from '../../../stores/useScheduleStore';
 import { useShallow } from 'zustand/react/shallow';
 import { format, isSameDay } from '../../../utils/dateUtils';
@@ -16,8 +17,7 @@ export function ExplorerDayBlock({ date }: ExplorerDayBlockProps) {
     plannedEvents: s.plannedEvents,
   })));
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = useAppDate();
   const isPast = date < today;
   const isToday = isSameDay(date, today);
   const isFuture = date > today;

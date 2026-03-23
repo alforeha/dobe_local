@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAppDate } from '../../../utils/useAppDate';
 import { useScheduleStore } from '../../../stores/useScheduleStore';
 import { useShallow } from 'zustand/react/shallow';
 import { EventBlock } from './EventBlock';
@@ -42,8 +43,7 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
   })));
 
   const dateIso = format(date, 'iso');
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = useAppDate();
   const isPast = date < today;
   const isToday = isSameDay(date, today);
   const isFuture = date > today;

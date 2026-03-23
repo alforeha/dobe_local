@@ -1,3 +1,4 @@
+import { useAppDate } from '../../../utils/useAppDate';
 import { format } from '../../../utils/dateUtils';
 
 interface DayViewHeaderProps {
@@ -8,7 +9,8 @@ interface DayViewHeaderProps {
 }
 
 export function DayViewHeader({ date, onBack, onForward, onToday }: DayViewHeaderProps) {
-  const isToday = format(date, 'iso') === format(new Date(), 'iso');
+  const appDate = useAppDate();
+  const isToday = format(date, 'iso') === format(appDate, 'iso');
 
   return (
     <div className="flex shrink-0 items-center border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2">

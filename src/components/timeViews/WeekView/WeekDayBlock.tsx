@@ -1,3 +1,4 @@
+import { useAppDate } from '../../../utils/useAppDate';
 import { useScheduleStore } from '../../../stores/useScheduleStore';
 import { useShallow } from 'zustand/react/shallow';
 import { WeekEventCard } from './WeekEventCard';
@@ -15,8 +16,7 @@ export function WeekDayBlock({ date }: WeekDayBlockProps) {
     plannedEvents: s.plannedEvents,
   })));
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = useAppDate();
   const isPast = date < today;
   const isToday = isSameDay(date, today);
   const isFuture = date > today;
