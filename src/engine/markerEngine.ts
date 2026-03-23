@@ -20,6 +20,7 @@ import { storageSet, storageKey } from '../storage';
 import { evaluateQuestSpecific, updateQuestProgress, countTasksForScope } from './questEngine';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
 import { localISODate } from '../utils/dateUtils';
+import { unlockAct, makeDailyChain, STARTER_ACT_IDS } from '../coach/StarterQuestLibrary';
 
 // ── QUESTREF ENCODING ─────────────────────────────────────────────────────────
 
@@ -378,5 +379,48 @@ export function completeMilestone(completedTask: Task): void {
   // Derive and persist progressPercent + projectedFinish unless just completed
   if (!isFinished) {
     updateQuestProgress(actId, chainIndex, questIndex);
+    return;
+  }
+
+  // Quest just completed — propagate completion up to chain and act (D87)
+  const completedChain = updatedAct.chains[chainIndex];
+  if (!completedChain) return;
+
+  const chainNowComplete = completedChain.quests.every(
+    (q) => q.completionState === 'complete',
+  );
+  if (!chainNowComplete) return;
+
+  // All quests in chain done — mark chain complete
+  let propagatedAct = {
+    ...updatedAct,
+    chains: updatedAct.chains.map((c, ci) =>
+      ci === chainIndex ? { ...c, completionState: 'complete' as const } : c,
+    ),
+  };
+
+  // If every chain is complete, mark act complete
+  const actNowComplete = propagatedAct.chains.every(
+    (c) => c.completionState === 'complete',
+  );
+  if (actNowComplete) {
+    propagatedAct = { ...propagatedAct, completionState: 'complete' as const };
+  }
+
+  progressionStore.setAct(propagatedAct);
+  storageSet(storageKey.act(actId), propagatedAct);
+
+  // D79 — Unlock Daily Adventure when Onboarding Act completes
+  if (actNowComplete && actId === STARTER_ACT_IDS.onboarding) {
+    unlockAct(STARTER_ACT_IDS.daily);
+    const freshStore = useProgressionStore.getState();
+    const unlockedDaily = freshStore.acts[STARTER_ACT_IDS.daily];
+    if (unlockedDaily) {
+      const today = localISODate(new Date());
+      const chain1 = makeDailyChain(STARTER_ACT_IDS.daily, 1, today);
+      const dailyWithChain = { ...unlockedDaily, chains: [chain1] };
+      freshStore.setAct(dailyWithChain);
+      storageSet(storageKey.act(STARTER_ACT_IDS.daily), dailyWithChain);
+    }
   }
 }

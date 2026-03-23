@@ -76,7 +76,7 @@ export async function seedTestDataset(): Promise<TestDatasetResult> {
   const { useSystemStore }      = await import('../../stores/useSystemStore');
   const { useResourceStore }    = await import('../../stores/useResourceStore');
 
-  const { seedStarterContent }              = await import('../../coach/StarterQuestLibrary');
+  const { seedStarterContent, unlockAct, coachActs } = await import('../../coach/StarterQuestLibrary');
   const { awardXP, awardStat }              = await import('../awardPipeline');
   const { checkAchievements }               = await import('../../coach/checkAchievements');
   const { awardBadge }                      = await import('../../coach/rewardPipeline');
@@ -93,8 +93,11 @@ export async function seedTestDataset(): Promise<TestDatasetResult> {
   // Clear localStorage if available (standalone execution)
   try { localStorage.clear(); } catch { /* no-op */ }
 
-  // ── Seed Acts + templates ─────────────────────────────────────────────
+  // ── Seed Acts + templates (D87: seed onboarding, then unlock all for dataset) ──
   seedStarterContent(false);
+  for (const act of coachActs) {
+    unlockAct(act.id);
+  }
 
   // ── Create 30-day user ────────────────────────────────────────────────
   const dsUserId = 'user-dataset-w33-0000-0000-0000-0001';

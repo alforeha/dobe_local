@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { useSystemStore } from '../../stores/useSystemStore';
 import { useScheduleStore } from '../../stores/useScheduleStore';
 import { useUserStore } from '../../stores/useUserStore';
-import { useProgressionStore } from '../../stores/useProgressionStore';
 import { localISODate } from '../../utils/dateUtils';
 import { Header } from './Header';
 import { Body } from './Body';
@@ -17,8 +16,6 @@ import { MenuOverlay } from '../overlays/menu/MenuOverlay';
 import { OneOffEventPopup } from '../overlays/menu/rooms/ScheduleRoom/OneOffEventPopup';
 import {
   seedStarterContent,
-  makeDailyChain,
-  STARTER_ACT_IDS,
   STARTER_TEMPLATE_IDS,
 } from '../../coach/StarterQuestLibrary';
 import { evaluatePlannedEventCreatedMarkers } from '../../engine/markerEngine';
@@ -157,18 +154,10 @@ export function AppShell() {
     // 2. Apply dark theme (default per D72)
     useSystemStore.getState().setThemeMode('dark');
 
-    // 3. Seed all 8 Acts and starter TaskTemplates
+    // 3. Seed Onboarding Act and starter TaskTemplates (D87 — other Acts unlock on game events)
     seedStarterContent();
 
-    // 4. Seed today's Daily Adventure chain (chain index 1 — chain 0 is onboarding)
-    const progressionStore = useProgressionStore.getState();
-    const dailyAct = progressionStore.acts[STARTER_ACT_IDS.daily];
-    if (dailyAct) {
-      const dailyChain = makeDailyChain(STARTER_ACT_IDS.daily, 1, today);
-      progressionStore.setAct({ ...dailyAct, chains: [...dailyAct.chains, dailyChain] });
-    }
-
-    // 5. Create Welcome Event and Task directly in schedule store (D86)
+    // 4. Create Welcome Event and Task directly in schedule store (D86)
     const scheduleStore = useScheduleStore.getState();
     const welcomeTaskId = uuidv4();
     const welcomeTask: Task = {
@@ -208,10 +197,10 @@ export function AppShell() {
     scheduleStore.setTask(welcomeTask);
     scheduleStore.setActiveEvent(welcomeEvent);
 
-    // 6. Set onboardingComplete: false (quest sets it true on completion)
+    // 5. Set onboardingComplete: false (quest sets it true on completion)
     useSystemStore.getState().setOnboardingComplete(false);
 
-    // 7. Navigate into app — DAY view
+    // 6. Navigate into app — DAY view
     setIsBooted(true);
   };
 

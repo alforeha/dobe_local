@@ -3,6 +3,8 @@ import { useProgressionStore } from '../../../../../stores/useProgressionStore';
 import { GoalRoomHeader } from './GoalRoomHeader';
 import { GoalRoomBody } from './GoalRoomBody';
 import { ActPopup } from './ActPopup';
+import { ChooseYourPath } from './ChooseYourPath';
+import { STARTER_ACT_IDS } from '../../../../../coach/StarterQuestLibrary';
 import type { Act, ActHabitat } from '../../../../../types';
 
 type GoalTab = 'habitats' | 'adventures';
@@ -27,10 +29,14 @@ export function GoalRoom() {
   const popupAct = editAct;
   const defaultHabitat: ActHabitat = tab;
 
+  // Show Choose Your Path section when Daily Adventure is unlocked (D87)
+  const showChooseYourPath = tab === 'adventures' && !!acts[STARTER_ACT_IDS.daily];
+
   return (
     <div className="flex flex-col h-full">
       <GoalRoomHeader activeTab={tab} onTabChange={setTab} onAdd={() => setAddOpen(true)} />
       <GoalRoomBody acts={filteredActs} onEdit={(act) => setEditAct(act)} />
+      {showChooseYourPath && <ChooseYourPath />}
       {popupOpen && (
         <ActPopup
           editAct={popupAct}

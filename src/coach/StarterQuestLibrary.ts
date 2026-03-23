@@ -904,42 +904,67 @@ const wisdomAct = makeStatPathAct(
   ],
 );
 
+// ── SPLIT ACT EXPORTS (D87) ───────────────────────────────────────────────────
+
+/** Acts seeded on first run — Onboarding only (D87). */
+export const starterActs: Act[] = [onboardingAct];
+
+/** Acts held in the coach bundle until triggered by game events (D87). */
+export const coachActs: Act[] = [
+  dailyAct,
+  healthAct,
+  strengthAct,
+  agilityAct,
+  defenseAct,
+  charismaAct,
+  wisdomAct,
+];
+
 // ── LIBRARY EXPORT ────────────────────────────────────────────────────────────
 
 export const starterQuestLibrary = {
-  acts: [
-    onboardingAct,
-    dailyAct,
-    healthAct,
-    strengthAct,
-    agilityAct,
-    defenseAct,
-    charismaAct,
-    wisdomAct,
-  ] as Act[],
+  /** All starter acts — used by test utilities that need the full set. */
+  acts: [...starterActs, ...coachActs] as Act[],
   taskTemplates: starterTaskTemplates,
 };
 
 // ── SEED FUNCTION ─────────────────────────────────────────────────────────────
 
 /**
- * Write all starter Acts and TaskTemplates to their respective stores.
+ * Write the Onboarding Act and all starter TaskTemplates to their stores.
  * Idempotent — skips items already present when skipExisting is true (default).
+ *
+ * Per D87: only starterActs (Onboarding) is seeded here.
+ * Other Acts (Daily, stat paths) unlock via unlockAct() when triggered.
  */
 export function seedStarterContent(skipExisting = true): void {
   const progressionStore = useProgressionStore.getState();
   const scheduleStore = useScheduleStore.getState();
 
-  // Seed Acts
-  for (const act of starterQuestLibrary.acts) {
+  // Seed Acts — Onboarding only (D87)
+  for (const act of starterActs) {
     if (skipExisting && progressionStore.acts[act.id]) continue;
     progressionStore.setAct(act);
   }
 
-  // Seed TaskTemplates
+  // Seed TaskTemplates — all templates are available regardless of act unlock state
   for (const template of starterQuestLibrary.taskTemplates) {
     if (!template.id) continue;
     if (skipExisting && scheduleStore.taskTemplates[template.id]) continue;
     scheduleStore.setTaskTemplate(template.id, template);
   }
+}
+
+// ── UNLOCK ACT (D87) ──────────────────────────────────────────────────────────
+
+/**
+ * Unlock a coach bundle Act and add it to progressionStore.
+ * Called when game events trigger an Act to become available (D87).
+ *
+ * @param actId  One of STARTER_ACT_IDS values for a coach bundle act
+ */
+export function unlockAct(actId: string): void {
+  const act = coachActs.find((a) => a.id === actId);
+  if (!act) return;
+  useProgressionStore.getState().setAct(act);
 }

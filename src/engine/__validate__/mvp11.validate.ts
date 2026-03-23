@@ -194,8 +194,10 @@ async function main(): Promise<void> {
 
   const {
     seedStarterContent,
+    unlockAct,
     STARTER_ACT_IDS,
     makeDailyChain,
+    coachActs,
   } = await import('../../coach/StarterQuestLibrary');
 
   const { materialisePlannedEvent } = await import('../materialise');
@@ -267,14 +269,25 @@ async function main(): Promise<void> {
     obAct?.chains[0]?.quests[0]?.timely.markers[0]?.nextFire === DAY1,
   );
 
-  // ── Daily Adventure Act exists — add today's chain ────────────────────
+  // ── Daily Adventure Act — gated by D87, not in store after seed ──────────
   const dailyActId = STARTER_ACT_IDS.daily;
+
+  assert(
+    'Daily Adventure Act — NOT in progressionStore after seed (D87 gating)',
+    !useProgressionStore.getState().acts[dailyActId],
+  );
+
+  // Simulate Onboarding Act completion trigger: unlock Daily + all coach acts for testing
+  for (const act of coachActs) {
+    unlockAct(act.id);
+  }
+
   const dailyActRaw = useProgressionStore.getState().acts[dailyActId];
 
-  assert('Daily Adventure Act — exists in progressionStore', !!dailyActRaw);
+  assert('Daily Adventure Act — exists in progressionStore after unlockAct()', !!dailyActRaw);
   assert('Daily Adventure Act — completionState is active',  dailyActRaw?.completionState === 'active');
 
-  // Simulate what AppShell does: add day 1 chain (chain index 1)
+  // Simulate what onboarding completion does: add day 1 chain
   if (dailyActRaw) {
     const chain1 = makeDailyChain(dailyActId, 1, DAY1);
     useProgressionStore.getState().setAct({
@@ -651,8 +664,11 @@ async function main(): Promise<void> {
   useUserStore.setState({ user: dsUser as never });
   storageSet('user', dsUser);
 
-  // Seed Acts so achievement checks have context
+  // Seed Acts so achievement checks have context (D87: seed then unlock all)
   seedStarterContent(false);
+  for (const act of coachActs) {
+    unlockAct(act.id);
+  }
 
   // ── Award XP from 3 stat groups ───────────────────────────────────────
   awardXP(dsUserId, 500);
