@@ -189,6 +189,7 @@ export function AppShell() {
       id: welcomeEventId,
       eventType: 'planned',
       plannedEventRef: null,
+      color: '#10b981',
       name: 'Welcome to CAN-DO-BE',
       startDate: today,
       endDate: today,

@@ -219,6 +219,23 @@ export function completeTask(
       }
     }
   }
+
+  // Auto-complete: if every task in the parent event is done, complete the event.
+  // Re-read schedule state AFTER setTask() so the just-committed completion is visible.
+  const freshSchedule = useScheduleStore.getState();
+  const parentEvent = freshSchedule.activeEvents[eventId];
+  if (parentEvent && parentEvent.eventType !== 'quickActions') {
+    const typedParent = parentEvent as Event;
+    if (typedParent.completionState !== 'complete') {
+      const allTasksDone = typedParent.tasks.every((tid) => {
+        const t = freshSchedule.tasks[tid];
+        return t?.completionState === 'complete' || t?.completionState === 'skipped';
+      });
+      if (allTasksDone) {
+        completeEvent(eventId);
+      }
+    }
+  }
 }
 
 // ── COMPLETE EVENT ────────────────────────────────────────────────────────────

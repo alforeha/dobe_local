@@ -34,6 +34,8 @@ export interface Event {
   eventType: EventType;
   /** Optional — null for manually created events */
   plannedEventRef: string | null;
+  /** Direct event color — used when no plannedEventRef; overrides PlannedEvent lookup when set */
+  color?: string | null;
   name: string;
   startDate: string; // ISO date
   startTime: string; // HH:MM

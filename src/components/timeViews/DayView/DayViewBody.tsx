@@ -94,12 +94,20 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
                     ? () => onEditPlanned!(eventId)
                     : () => onEventOpen(eventId)
                   : undefined;
+                // Resolve color: direct Event.color → PlannedEvent lookup → fallback
+                const resolvedColor = isPlanned
+                  ? (ev as PlannedEvent).color
+                  : (ev as Event).color
+                    ? (ev as Event).color!
+                    : (ev as Event).plannedEventRef
+                      ? (plannedEvents[(ev as Event).plannedEventRef!]?.color ?? '#9333ea')
+                      : '#9333ea';
                 return (
                   <EventBlock
                     key={eventId}
                     eventId={eventId}
                     name={'name' in ev ? ev.name : '—'}
-                    color={'color' in ev ? (ev as PlannedEvent).color : '#9333ea'}
+                    color={resolvedColor}
                     startTime={'startTime' in ev ? ev.startTime : ''}
                     endTime={'endTime' in ev ? ev.endTime : ''}
                     taskCount={isPlanned ? (ev as PlannedEvent).taskList.length : 0}
