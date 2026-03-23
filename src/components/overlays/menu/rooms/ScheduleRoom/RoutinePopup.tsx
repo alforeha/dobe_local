@@ -79,9 +79,19 @@ function isTodayARecurrenceDay(rule: RecurrenceRule): boolean {
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
 
+/** Pre-fill values for add mode — sourced from prebuilt routines in RecommendationsRoom */
+export interface RoutinePopupPrefill {
+  name: string;
+  color: string;
+  taskPool: string[];
+  recurrenceInterval: RecurrenceRule;
+}
+
 interface RoutinePopupProps {
   /** null = add mode; PlannedEvent = edit mode */
   editRoutine: PlannedEvent | null;
+  /** Optional pre-fill for add mode from prebuilt routines */
+  prefill?: RoutinePopupPrefill;
   onClose: () => void;
 }
 
@@ -105,7 +115,7 @@ function Field({ label, hint, children }: FieldProps) {
 
 // ── COMPONENT ─────────────────────────────────────────────────────────────────
 
-export function RoutinePopup({ editRoutine, onClose }: RoutinePopupProps) {
+export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProps) {
   const setPlannedEvent = useScheduleStore((s) => s.setPlannedEvent);
   const removePlannedEvent = useScheduleStore((s) => s.removePlannedEvent);
   const taskTemplates = useScheduleStore((s) => s.taskTemplates);
@@ -132,29 +142,39 @@ export function RoutinePopup({ editRoutine, onClose }: RoutinePopupProps) {
   }, [taskTemplates]);
 
   // ── Form state ────────────────────────────────────────────────────────────
-  const [name, setName] = useState(isEditMode ? editRoutine.name : '');
-  const [color, setColor] = useState(isEditMode ? editRoutine.color : COLOUR_SWATCHES[0]);
+  const [name, setName] = useState(
+    isEditMode ? editRoutine.name : (prefill?.name ?? ''),
+  );
+  const [color, setColor] = useState(
+    isEditMode ? editRoutine.color : (prefill?.color ?? COLOUR_SWATCHES[0]),
+  );
   const [taskPool, setTaskPool] = useState<string[]>(
-    isEditMode ? editRoutine.taskPool : [],
+    isEditMode ? editRoutine.taskPool : (prefill?.taskPool ?? []),
   );
   const [frequency, setFrequency] = useState<RecurrenceFrequency>(
-    isEditMode ? editRoutine.recurrenceInterval.frequency : 'daily',
+    isEditMode
+      ? editRoutine.recurrenceInterval.frequency
+      : (prefill?.recurrenceInterval.frequency ?? 'daily'),
   );
   const [days, setDays] = useState<Weekday[]>(
-    isEditMode ? editRoutine.recurrenceInterval.days : [],
+    isEditMode
+      ? editRoutine.recurrenceInterval.days
+      : (prefill?.recurrenceInterval.days ?? []),
   );
   const [interval, setInterval] = useState<number | ''>(
-    isEditMode ? editRoutine.recurrenceInterval.interval : 1,
+    isEditMode
+      ? editRoutine.recurrenceInterval.interval
+      : (prefill?.recurrenceInterval.interval ?? 1),
   );
   const [endsOn, setEndsOn] = useState<string>(
     isEditMode && editRoutine.recurrenceInterval.endsOn
       ? editRoutine.recurrenceInterval.endsOn
-      : '',
+      : (prefill?.recurrenceInterval.endsOn ?? ''),
   );
   const [customCondition, setCustomCondition] = useState<string>(
     isEditMode && editRoutine.recurrenceInterval.customCondition
       ? editRoutine.recurrenceInterval.customCondition
-      : '',
+      : (prefill?.recurrenceInterval.customCondition ?? ''),
   );
   const [conflictMode, setConflictMode] = useState<ConflictMode>(
     isEditMode ? editRoutine.conflictMode : 'concurrent',
