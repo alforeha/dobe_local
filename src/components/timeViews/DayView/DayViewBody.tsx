@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { useScheduleStore } from '../../../stores/useScheduleStore';
 import { useShallow } from 'zustand/react/shallow';
 import { EventBlock } from './EventBlock';
+import { QACompletionIcon } from './QACompletionIcon';
+import { QACompletionPopup } from './QACompletionPopup';
+import { resolveTaskIcon, resolveTemplate, findQAEventForDate } from './qaUtils';
 import { format, hourLabel, isSameDay } from '../../../utils/dateUtils';
 import { isOneOffEvent } from '../../../utils/isOneOffEvent';
-import type { Event, PlannedEvent } from '../../../types';
+import type { Event, PlannedEvent, QuickActionsCompletion } from '../../../types';
 
 interface DayViewBodyProps {
   date: Date;
@@ -19,11 +23,22 @@ function parseHour(time: string): number {
   return parseInt(time.split(':')[0], 10);
 }
 
+/** Extract local hour (0–23) from a full ISO datetime string */
+function extractHour(iso: string): number {
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? 0 : d.getHours();
+}
+
+
 export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyProps) {
-  const { activeEvents, historyEvents, plannedEvents } = useScheduleStore(useShallow((s) => ({
+  const [openCompletion, setOpenCompletion] = useState<QuickActionsCompletion | null>(null);
+
+  const { activeEvents, historyEvents, plannedEvents, tasks, taskTemplates } = useScheduleStore(useShallow((s) => ({
     activeEvents: s.activeEvents,
     historyEvents: s.historyEvents,
     plannedEvents: s.plannedEvents,
+    tasks: s.tasks,
+    taskTemplates: s.taskTemplates,
   })));
 
   const dateIso = format(date, 'iso');
@@ -32,6 +47,19 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
   const isPast = date < today;
   const isToday = isSameDay(date, today);
   const isFuture = date > today;
+
+  // QA completions for this date — read-only display only
+  // Uses robust finder that handles UTC vs local date key mismatch (LuckyDice stores UTC key)
+  const qaEvent = findQAEventForDate(activeEvents, historyEvents, dateIso);
+  const qaCompletions: QuickActionsCompletion[] = qaEvent?.completions ?? [];
+
+  // Group QA completions by hour slot for rendering
+  const qaByHour = new Map<number, QuickActionsCompletion[]>();
+  for (const c of qaCompletions) {
+    const h = extractHour(c.completedAt);
+    if (!qaByHour.has(h)) qaByHour.set(h, []);
+    qaByHour.get(h)!.push(c);
+  }
 
   // Collect events for this date
   const dayEvents: Array<Event | PlannedEvent> = [];
@@ -118,10 +146,33 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
                   />
                 );
               })}
+
+              {/* QA completion badges — small circular icons at completion time */}
+              {(qaByHour.get(h) ?? []).map((c, idx) => {
+                const task = tasks[c.taskRef];
+                const tmpl = task ? resolveTemplate(task.templateRef, taskTemplates) : null;
+                const icon = resolveTaskIcon(tmpl);
+                return (
+                  <QACompletionIcon
+                    key={`${c.taskRef}-${c.completedAt}`}
+                    icon={icon}
+                    offsetIndex={idx}
+                    onClick={() => setOpenCompletion(c)}
+                  />
+                );
+              })}
             </div>
           </div>
         );
       })}
+
+      {/* QA completion detail popup */}
+      {openCompletion && (
+        <QACompletionPopup
+          completion={openCompletion}
+          onClose={() => setOpenCompletion(null)}
+        />
+      )}
     </div>
   );
 }
