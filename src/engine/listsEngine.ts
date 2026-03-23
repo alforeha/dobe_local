@@ -40,7 +40,6 @@ function todayISO(): string {
  */
 function persistUser(user: User): void {
   useUserStore.getState().setUser(user);
-  storageSet('user', user);
 }
 
 // ── FAVOURITES LIST ───────────────────────────────────────────────────────────

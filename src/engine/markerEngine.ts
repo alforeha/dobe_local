@@ -153,7 +153,6 @@ export function fireMarker(params: FireMarkerParams): void {
       },
     };
     userStore.setUser(updatedUser);
-    storageSet('user', updatedUser);
   }
 
   // Feed entry for marker fire
@@ -193,7 +192,6 @@ export function fireMarker(params: FireMarkerParams): void {
       }
     }
     userStore.setUser(sideEffectUserMut);
-    storageSet('user', sideEffectUserMut);
   }
 
   if (!act) return;
