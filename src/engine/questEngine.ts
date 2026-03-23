@@ -139,8 +139,10 @@ export function evaluateQuestSpecific(quest: Quest, completedTask: Task): boolea
 
   if (specific.sourceType === 'taskInput') {
     const value = extractNumericFromResult(completedTask);
-    if (value === null) return false;
-    return value >= specific.targetValue;
+    if (value !== null) return value >= specific.targetValue;
+    // Fallback: milestone count for non-numeric tasks (e.g. CHECK).
+    // quest.milestones is pre-addition at call time; add 1 for the task being completed now.
+    return (quest.milestones.length + 1) >= specific.targetValue;
   }
 
   if (

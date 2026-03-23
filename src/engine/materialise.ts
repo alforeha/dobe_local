@@ -15,6 +15,8 @@ import type { Event } from '../types/event';
 import type { Task } from '../types/task';
 import type { TaskTemplate, TaskSecondaryTag } from '../types/taskTemplate';
 import { useScheduleStore } from '../stores/useScheduleStore';
+import { useProgressionStore } from '../stores/useProgressionStore';
+import { encodeQuestRef } from './markerEngine';
 
 
 // ── RESULT SHAPE ─────────────────────────────────────────────────────────────
@@ -70,6 +72,37 @@ function instantiateTask(templateRef: string, secondaryTag: TaskSecondaryTag | n
   };
 }
 
+// ── QUEST REF LOOKUP ─────────────────────────────────────────────────────────
+
+/**
+ * Scan all active Quests in progressionStore to find the first Marker whose
+ * taskTemplateRef matches the given templateRef.
+ * Returns { questRef, actId } when found, or null when no match.
+ *
+ * Called during task materialisation so the task carries the correct questRef
+ * and actRef fields for completeMilestone() routing (D04).
+ */
+function findQuestRefForTemplate(
+  templateRef: string,
+): { questRef: string; actId: string } | null {
+  const { acts } = useProgressionStore.getState();
+  for (const act of Object.values(acts)) {
+    for (let ci = 0; ci < act.chains.length; ci++) {
+      const chain = act.chains[ci]!;
+      for (let qi = 0; qi < chain.quests.length; qi++) {
+        const quest = chain.quests[qi]!;
+        if (quest.completionState !== 'active') continue;
+        for (const marker of quest.timely.markers) {
+          if (marker.activeState && marker.taskTemplateRef === templateRef) {
+            return { questRef: encodeQuestRef(act.id, ci, qi), actId: act.id };
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
 // ── MATERIALISE ───────────────────────────────────────────────────────────────
 
 /**
@@ -99,7 +132,14 @@ export function materialisePlannedEvent(
     const templateExists = templateRef in taskTemplates;
     if (templateExists) {
       const tmpl = taskTemplates[templateRef];
-      tasks.push(instantiateTask(templateRef, tmpl.secondaryTag ?? null));
+      const task = instantiateTask(templateRef, tmpl.secondaryTag ?? null);
+      // Populate questRef/actRef if this template matches an active Quest Marker
+      const questMatch = findQuestRefForTemplate(templateRef);
+      if (questMatch) {
+        task.questRef = questMatch.questRef;
+        task.actRef = questMatch.actId;
+      }
+      tasks.push(task);
     } else {
       console.warn(
         `[materialise] TaskTemplate "${templateRef}" not found in store — task skipped for PlannedEvent "${pe.id}"`,

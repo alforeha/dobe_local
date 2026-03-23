@@ -17,6 +17,7 @@ import { OneOffEventPopup } from '../overlays/menu/rooms/ScheduleRoom/OneOffEven
 import {
   seedStarterContent,
   STARTER_TEMPLATE_IDS,
+  STARTER_ACT_IDS,
 } from '../../coach/StarterQuestLibrary';
 import { evaluatePlannedEventCreatedMarkers } from '../../engine/markerEngine';
 import type { User } from '../../types/user';
@@ -171,8 +172,8 @@ export function AppShell() {
       resourceRef: null,
       location: null,
       sharedWith: null,
-      questRef: null,
-      actRef: null,
+      questRef: `${STARTER_ACT_IDS.onboarding}|0|0`,
+      actRef: STARTER_ACT_IDS.onboarding,
       secondaryTag: null,
     };
     const welcomeEventId = uuidv4();
