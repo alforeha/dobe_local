@@ -29,10 +29,6 @@ interface UserActions {
   markAllFeedRead: () => void;
   /** Toggle a reaction key on a feed entry */
   toggleFeedReaction: (index: number, reaction: string) => void;
-  /** Add a custom TaskTemplate UUID ref to User.lists.taskLibrary (D34) */
-  addTaskTemplateRef: (id: string) => void;
-  /** Remove a custom TaskTemplate UUID ref from User.lists.taskLibrary (D34) */
-  removeTaskTemplateRef: (id: string) => void;
   /** Add a PlannedEvent (Routine) UUID ref to User.lists.routineRefs */
   addRoutineRef: (id: string) => void;
   /** Remove a PlannedEvent (Routine) UUID ref from User.lists.routineRefs */
@@ -139,38 +135,6 @@ export const useUserStore = create<UserState & UserActions>()(
             },
           };
         }),
-
-      addTaskTemplateRef: (id) =>
-        set((state) =>
-          state.user
-            ? {
-                user: {
-                  ...state.user,
-                  lists: {
-                    ...state.user.lists,
-                    taskLibrary: state.user.lists.taskLibrary.includes(id)
-                      ? state.user.lists.taskLibrary
-                      : [...state.user.lists.taskLibrary, id],
-                  },
-                },
-              }
-            : {},
-        ),
-
-      removeTaskTemplateRef: (id) =>
-        set((state) =>
-          state.user
-            ? {
-                user: {
-                  ...state.user,
-                  lists: {
-                    ...state.user.lists,
-                    taskLibrary: state.user.lists.taskLibrary.filter((ref) => ref !== id),
-                  },
-                },
-              }
-            : {},
-        ),
 
       addRoutineRef: (id) =>
         set((state) =>

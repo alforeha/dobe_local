@@ -86,7 +86,6 @@ function makeDefaultUser(): User {
       talentTree: null,
     },
     lists: {
-      taskLibrary: [],
       favouritesList: [],
       gtdList: [],
       shoppingLists: [],

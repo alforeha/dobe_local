@@ -8,6 +8,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { PlannedEvent, Event, QuickActionsEvent, Task, TaskTemplate } from '../types';
+import { isTemplateQuestLocked } from '../utils/isTemplateQuestLocked';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 
@@ -116,6 +117,10 @@ export const useScheduleStore = create<ScheduleState & ScheduleActions>()(
       },
 
       removeTaskTemplate: (key) => {
+        if (isTemplateQuestLocked(key)) {
+          console.warn(`[scheduleStore] removeTaskTemplate blocked — "${key}" is required by an active quest Marker`);
+          return;
+        }
         set((state) => {
           const taskTemplates = { ...state.taskTemplates };
           delete taskTemplates[key];

@@ -149,7 +149,6 @@ export async function seedTestDataset(): Promise<TestDatasetResult> {
     schedule: { planned: [], routines: [] },
     events:   { active: [], history: [] },
     lists: {
-      taskLibrary: [],
       favouritesList: [],
       gtdList: [],
       shoppingLists: [],

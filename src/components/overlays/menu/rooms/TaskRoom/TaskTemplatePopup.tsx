@@ -9,7 +9,6 @@ import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { PopupShell } from '../../../../shared/popups/PopupShell';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
-import { useUserStore } from '../../../../../stores/useUserStore';
 import type {
   TaskTemplate,
   TaskType,
@@ -169,8 +168,6 @@ function Field({ label, hint, children }: FormField) {
 export function TaskTemplatePopup({ editKey, editTemplate, onClose }: TaskTemplatePopupProps) {
   const setTaskTemplate = useScheduleStore((s) => s.setTaskTemplate);
   const removeTaskTemplate = useScheduleStore((s) => s.removeTaskTemplate);
-  const addTaskTemplateRef = useUserStore((s) => s.addTaskTemplateRef);
-  const removeTaskTemplateRef = useUserStore((s) => s.removeTaskTemplateRef);
 
   const isEditMode = editKey !== null && editTemplate !== null;
 
@@ -235,10 +232,9 @@ export function TaskTemplatePopup({ editKey, editTemplate, onClose }: TaskTempla
       const updated: TaskTemplate = { ...template, id: editTemplate?.id };
       setTaskTemplate(editKey, updated);
     } else {
-      // Add: generate UUID, write to schedule store and user ref list
+      // Add: generate UUID, write to schedule store (D88)
       const id = uuidv4();
       setTaskTemplate(id, template);
-      addTaskTemplateRef(id);
     }
 
     onClose();
@@ -251,7 +247,6 @@ export function TaskTemplatePopup({ editKey, editTemplate, onClose }: TaskTempla
     }
     if (editKey) {
       removeTaskTemplate(editKey);
-      removeTaskTemplateRef(editKey);
     }
     onClose();
   }

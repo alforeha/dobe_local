@@ -100,7 +100,7 @@ function makeDefaultUser(): Record<string, unknown> {
       statGroups: { health: 0, strength: 0, agility: 0, defense: 0, charisma: 0, wisdom: 0 },
       talentTree: null,
     },
-    lists:     { taskLibrary: [], favouritesList: [], gtdList: [], shoppingLists: [], manualGtdList: [] },
+    lists:     { favouritesList: [], gtdList: [], shoppingLists: [], manualGtdList: [] },
     resources: { homes: [], vehicles: [], contacts: [], accounts: [], inventory: [], docs: [] },
     feed:      { entries: [], unreadCount: 0, sharedActivityEntries: null },
     publicProfile: null,

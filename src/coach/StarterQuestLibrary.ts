@@ -19,7 +19,6 @@ import type { QuestMeasurable } from '../types/quest/measurable';
 import type { QuestExigency } from '../types/quest/exigency';
 import type { TaskTemplate, XpAward, TaskSecondaryTag, RecurrenceRule } from '../types/taskTemplate';
 import { useProgressionStore } from '../stores/useProgressionStore';
-import { useScheduleStore } from '../stores/useScheduleStore';
 import { localISODate } from '../utils/dateUtils';
 
 // ── STABLE ACT IDs ────────────────────────────────────────────────────────────
@@ -939,19 +938,11 @@ export const starterQuestLibrary = {
  */
 export function seedStarterContent(skipExisting = true): void {
   const progressionStore = useProgressionStore.getState();
-  const scheduleStore = useScheduleStore.getState();
 
   // Seed Acts — Onboarding only (D87)
   for (const act of starterActs) {
     if (skipExisting && progressionStore.acts[act.id]) continue;
     progressionStore.setAct(act);
-  }
-
-  // Seed TaskTemplates — all templates are available regardless of act unlock state
-  for (const template of starterQuestLibrary.taskTemplates) {
-    if (!template.id) continue;
-    if (skipExisting && scheduleStore.taskTemplates[template.id]) continue;
-    scheduleStore.setTaskTemplate(template.id, template);
   }
 }
 

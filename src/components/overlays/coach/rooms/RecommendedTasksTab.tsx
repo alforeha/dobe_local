@@ -2,13 +2,13 @@
 // RecommendedTasksTab — Tasks sub-view for RecommendationsRoom
 // Shows all prebuilt TaskTemplates (library JSON + starter templates).
 // Filter by TaskType and search by name.
-// Toggle adds/removes from user.lists.taskLibrary[].
+// Activating copies a template to scheduleStore.taskTemplates (D88).
+// Quest-locked templates cannot be deactivated (D89).
 // ─────────────────────────────────────────
 
 import { useState, useMemo } from 'react';
 import { taskTemplateLibrary } from '../../../../coach';
 import { starterTaskTemplates } from '../../../../coach/StarterQuestLibrary';
-import { useUserStore } from '../../../../stores/useUserStore';
 import { useScheduleStore } from '../../../../stores/useScheduleStore';
 import { useProgressionStore } from '../../../../stores/useProgressionStore';
 import type { TaskTemplate, TaskType, XpAward } from '../../../../types/taskTemplate';
@@ -86,30 +86,19 @@ function getMergedTemplates(): TaskTemplate[] {
 // ── COMPONENT ─────────────────────────────────────────────────────────────────
 
 export function RecommendedTasksTab() {
-  const taskLibrary = useUserStore((s) => s.user?.lists.taskLibrary ?? []);
-  const addTaskTemplateRef = useUserStore((s) => s.addTaskTemplateRef);
-  const removeTaskTemplateRef = useUserStore((s) => s.removeTaskTemplateRef);
-  // Seeded starter templates live in scheduleStore.taskTemplates
-  const customTemplates = useScheduleStore((s) => s.taskTemplates);
-  // Collect all PlannedEvent taskPool ids — select the stable object, derive Set in useMemo
-  const plannedEvents = useScheduleStore((s) => s.plannedEvents);
-  const pooledTemplateIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const pe of Object.values(plannedEvents)) {
-      for (const id of pe.taskPool) ids.add(id);
-    }
-    return ids;
-  }, [plannedEvents]);
-  // Collect all Marker taskTemplateRefs from active quest acts
-  // Path: acts → chains[] → quests[] → timely.markers[] → taskTemplateRef
+  const taskTemplates = useScheduleStore((s) => s.taskTemplates);
+  const setTaskTemplate = useScheduleStore((s) => s.setTaskTemplate);
+  const removeTaskTemplate = useScheduleStore((s) => s.removeTaskTemplate);
+  // Quest-locked: any active Marker referencing this template id (D89)
+  // Path: acts → chains[] → quests[] → timely.markers[] (activeState) → taskTemplateRef
   const acts = useProgressionStore((s) => s.acts);
-  const markerTemplateIds = useMemo(() => {
+  const lockedTemplateIds = useMemo(() => {
     const ids = new Set<string>();
     for (const act of Object.values(acts)) {
       for (const chain of act.chains) {
         for (const quest of chain.quests) {
           for (const marker of quest.timely.markers) {
-            if (marker.taskTemplateRef) ids.add(marker.taskTemplateRef);
+            if (marker.activeState && marker.taskTemplateRef) ids.add(marker.taskTemplateRef);
           }
         }
       }
@@ -186,25 +175,21 @@ export function RecommendedTasksTab() {
         )}
         {visible.map((template) => {
           const id = template.id ?? '';
-          // Active if: in user.lists.taskLibrary, seeded into scheduleStore.taskTemplates,
-          // referenced in any PlannedEvent taskPool, OR used by a quest Marker
-          const active =
-            id !== '' &&
-            (taskLibrary.includes(id) ||
-              id in customTemplates ||
-              pooledTemplateIds.has(id) ||
-              markerTemplateIds.has(id));
+          // Active: template has been copied into scheduleStore.taskTemplates (D88)
+          const active = id !== '' && id in taskTemplates;
+          const locked = active && lockedTemplateIds.has(id);
           return (
             <TaskTemplateRow
               key={template.id ?? template.name}
               template={template}
               active={active}
+              locked={locked}
               onToggle={() => {
                 if (!template.id) return;
                 if (active) {
-                  removeTaskTemplateRef(template.id);
+                  removeTaskTemplate(template.id);
                 } else {
-                  addTaskTemplateRef(template.id);
+                  setTaskTemplate(template.id, template);
                 }
               }}
             />
@@ -244,10 +229,11 @@ function TypePill({ label, active, onClick }: TypePillProps) {
 interface TaskTemplateRowProps {
   template: TaskTemplate;
   active: boolean;
+  locked: boolean;
   onToggle: () => void;
 }
 
-function TaskTemplateRow({ template, active, onToggle }: TaskTemplateRowProps) {
+function TaskTemplateRow({ template, active, locked, onToggle }: TaskTemplateRowProps) {
   const statIcon = getPrimaryStatIcon(template.xpAward);
   const typeLabel = TYPE_LABELS[template.taskType as TaskType] ?? template.taskType;
 
@@ -268,19 +254,29 @@ function TaskTemplateRow({ template, active, onToggle }: TaskTemplateRowProps) {
         </span>
       </div>
 
-      {/* Toggle */}
-      <button
-        type="button"
-        onClick={onToggle}
-        className={`shrink-0 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
-          active
-            ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/60'
-            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-        }`}
-        aria-label={active ? `Remove ${template.name} from library` : `Add ${template.name} to library`}
-      >
-        {active ? 'Active' : 'Add'}
-      </button>
+      {/* Toggle / Lock */}
+      {locked ? (
+        <div
+          className="shrink-0 flex flex-col items-center gap-0.5"
+          title="Required by active quest"
+        >
+          <span className="text-base leading-none" aria-hidden="true">🔒</span>
+          <span className="text-[9px] text-gray-400 dark:text-gray-500 leading-none">Quest</span>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onToggle}
+          className={`shrink-0 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+            active
+              ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/60'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+          }`}
+          aria-label={active ? `Remove ${template.name} from library` : `Add ${template.name} to library`}
+        >
+          {active ? 'Active' : 'Add'}
+        </button>
+      )}
     </div>
   );
 }

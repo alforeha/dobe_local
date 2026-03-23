@@ -48,8 +48,6 @@ export interface UserProgression {
 }
 
 export interface UserLists {
-  /** User custom TaskTemplate refs (D34) */
-  taskLibrary: string[];
   /** TaskTemplate refs */
   favouritesList: string[];
   /** Task refs (D05) — system/resource/quest-generated */
