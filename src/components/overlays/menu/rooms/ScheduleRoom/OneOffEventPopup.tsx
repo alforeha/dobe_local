@@ -13,6 +13,7 @@ import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { taskTemplateLibrary } from '../../../../../coach';
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
 import { storageDelete, storageKey } from '../../../../../storage';
+import { localISODate } from '../../../../../utils/dateUtils';
 import type { PlannedEvent, ConflictMode } from '../../../../../types/plannedEvent';
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
@@ -40,7 +41,7 @@ const CONFLICT_MODES: { value: ConflictMode; label: string }[] = [
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localISODate(new Date());
 }
 
 function formatDateLabel(iso: string): string {

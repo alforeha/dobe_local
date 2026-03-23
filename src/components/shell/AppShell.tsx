@@ -29,7 +29,7 @@ export type ActiveOverlay = 'event' | 'coach' | 'profile' | 'menu' | null;
 
 function makeDefaultUser(): User {
   const id = uuidv4();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localISODate(new Date());
   return {
     system: {
       id,

@@ -12,6 +12,7 @@ import { useUserStore } from '../../../../../stores/useUserStore';
 import { taskTemplateLibrary } from '../../../../../coach';
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
 import { storageDelete, storageKey } from '../../../../../storage';
+import { localISODate } from '../../../../../utils/dateUtils';
 import type { PlannedEvent, ConflictMode } from '../../../../../types/plannedEvent';
 import type { RecurrenceFrequency, Weekday } from '../../../../../types/taskTemplate';
 
@@ -50,7 +51,7 @@ const CONFLICT_MODES: { value: ConflictMode; label: string }[] = [
 // ── TODAY ISO ─────────────────────────────────────────────────────────────────
 
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localISODate(new Date());
 }
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────

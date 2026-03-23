@@ -1,4 +1,5 @@
 import { useScheduleStore } from '../../../../stores/useScheduleStore';
+import { localISODate } from '../../../../utils/dateUtils';
 import type { Event } from '../../../../types/event';
 import type { PlannedEvent } from '../../../../types/plannedEvent';
 
@@ -41,7 +42,7 @@ export function TrackingRoom({ onOpenEvent }: TrackingRoomProps) {
     (e): e is Event => e.eventType !== 'quickActions',
   );
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localISODate(new Date());
   const upcoming = Object.values(plannedEvents)
     .filter((pe: PlannedEvent) => pe.seedDate > today)
     .sort((a, b) => a.seedDate.localeCompare(b.seedDate))
