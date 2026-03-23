@@ -3,6 +3,7 @@ import { useScheduleStore } from '../../../stores/useScheduleStore';
 import { useShallow } from 'zustand/react/shallow';
 import { WeekEventCard } from './WeekEventCard';
 import { format, isSameDay } from '../../../utils/dateUtils';
+import { isPlannedEventDue } from '../../../engine/rollover';
 import type { Event, PlannedEvent } from '../../../types';
 
 interface WeekDayBlockProps {
@@ -27,7 +28,7 @@ export function WeekDayBlock({ date }: WeekDayBlockProps) {
     Object.values(activeEvents).forEach((e) => { if ((e as Event).startDate === dateIso) dayEvents.push(e as Event); });
     Object.values(historyEvents).forEach((e) => { if ((e as Event).startDate === dateIso) dayEvents.push(e as Event); });
   } else if (isFuture) {
-    Object.values(plannedEvents).forEach((pe) => { if (pe.seedDate === dateIso) dayEvents.push(pe); });
+    Object.values(plannedEvents).forEach((pe) => { if (isPlannedEventDue(pe, dateIso)) dayEvents.push(pe); });
   }
 
   return (

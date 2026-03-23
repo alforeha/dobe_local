@@ -8,6 +8,7 @@ import { QACompletionPopup } from './QACompletionPopup';
 import { resolveTaskIcon, resolveTemplate, findQAEventForDate } from './qaUtils';
 import { format, hourLabel, isSameDay } from '../../../utils/dateUtils';
 import { isOneOffEvent } from '../../../utils/isOneOffEvent';
+import { isPlannedEventDue } from '../../../engine/rollover';
 import type { Event, PlannedEvent, QuickActionsCompletion } from '../../../types';
 
 interface DayViewBodyProps {
@@ -75,9 +76,9 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
       if (ev.startDate === dateIso) dayEvents.push(ev);
     });
   } else if (isFuture) {
-    // Future: from planned
+    // Future: project recurring PEs onto every matching day via recurrence rule
     Object.values(plannedEvents).forEach((pe) => {
-      if (pe.seedDate === dateIso) dayEvents.push(pe);
+      if (isPlannedEventDue(pe, dateIso)) dayEvents.push(pe);
     });
   }
 

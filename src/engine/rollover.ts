@@ -49,8 +49,11 @@ const WEEKDAY_MAP: Record<string, number> = {
  * Return true if a PlannedEvent is due on the given date.
  * Checks activeState, seedDate ≤ targetDate, dieDate not passed,
  * and recurrence pattern.
+ *
+ * Exported so view components can project recurring PE previews onto
+ * every matching day in the visible range (not just pe.seedDate).
  */
-function isPlannedEventDue(pe: PlannedEvent, targetDate: string): boolean {
+export function isPlannedEventDue(pe: PlannedEvent, targetDate: string): boolean {
   if (pe.activeState !== 'active') return false;
   if (pe.seedDate > targetDate) return false;
   if (pe.dieDate && pe.dieDate < targetDate) return false;
