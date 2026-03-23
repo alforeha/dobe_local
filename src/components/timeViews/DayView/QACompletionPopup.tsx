@@ -1,4 +1,5 @@
 import { useScheduleStore } from '../../../stores/useScheduleStore';
+import { useShallow } from 'zustand/react/shallow';
 import { resolveTemplate } from './qaUtils';
 import { PopupShell } from '../../shared/popups/PopupShell';
 import type { QuickActionsCompletion, RollInputFields } from '../../../types';
@@ -26,10 +27,10 @@ function resultSummaryPairs(resultFields: Record<string, unknown>): Array<[strin
 }
 
 export function QACompletionPopup({ completion, onClose }: QACompletionPopupProps) {
-  const { tasks, taskTemplates } = useScheduleStore((s) => ({
+  const { tasks, taskTemplates } = useScheduleStore(useShallow((s) => ({
     tasks: s.tasks,
     taskTemplates: s.taskTemplates,
-  }));
+  })));
 
   const task = tasks[completion.taskRef];
   const template = task ? resolveTemplate(task.templateRef, taskTemplates) : null;
