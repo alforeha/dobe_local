@@ -126,18 +126,20 @@ export function WeekDayBlock({ date, onDaySelect }: WeekDayBlockProps) {
   }
 
   return (
-    <div className={`flex min-w-[240px] flex-col rounded-lg border bg-white dark:bg-gray-800 ${isToday ? 'border-purple-400' : 'border-gray-200 dark:border-gray-700'}`}>
-      {/* Day header — tapping navigates to Day view */}
-      <button
-        type="button"
-        className={`flex w-full items-center justify-between border-b border-gray-100 dark:border-gray-700 px-2 py-1 text-left ${onDaySelect ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50' : ''}`}
-        onClick={() => onDaySelect?.(date)}
-      >
+    <div
+      className={`flex min-w-[240px] flex-col rounded-lg border bg-white dark:bg-gray-800 ${isToday ? 'border-purple-400' : 'border-gray-200 dark:border-gray-700'} ${onDaySelect ? 'cursor-pointer' : ''}`}
+      role={onDaySelect ? 'button' : undefined}
+      tabIndex={onDaySelect ? 0 : undefined}
+      onClick={() => onDaySelect?.(date)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onDaySelect?.(date); }}
+    >
+      {/* Day header */}
+      <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-2 py-1">
         <span className={`text-xs font-semibold ${isToday ? 'text-purple-600' : 'text-gray-700 dark:text-gray-200'}`}>
           {format(date, 'display')}
         </span>
         <span className="w-4" />
-      </button>
+      </div>
 
       {/* Absolutely-positioned event grid — no time column */}
       <div className="relative w-full overflow-y-auto" style={{ height: GRID_HEIGHT }}>
