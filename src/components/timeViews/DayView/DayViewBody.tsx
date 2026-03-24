@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppDate } from '../../../utils/useAppDate';
 import { useScheduleStore } from '../../../stores/useScheduleStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -34,6 +34,13 @@ function extractHour(iso: string): number {
 
 export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyProps) {
   const [openCompletion, setOpenCompletion] = useState<QuickActionsCompletion | null>(null);
+
+  // Tick every minute so the time indicator stays accurate (Part 2)
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const { activeEvents, historyEvents, plannedEvents, tasks, taskTemplates } = useScheduleStore(useShallow((s) => ({
     activeEvents: s.activeEvents,
@@ -82,7 +89,9 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
     });
   }
 
-  const nowHour = isToday ? new Date().getHours() : -1;
+  const now = new Date();
+  const nowHour = isToday ? now.getHours() : -1;
+  const nowMinutes = isToday ? now.getMinutes() : 0;
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -94,7 +103,7 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
         });
 
         return (
-          <div key={h} className="relative flex min-h-14 border-b border-gray-100 dark:border-gray-700">
+          <div key={h} className="relative flex w-full min-h-14 border-b border-gray-100 dark:border-gray-700">
             {/* Hour label */}
             <div className="w-12 shrink-0 py-1 pr-2 text-right text-xs text-gray-400 dark:text-gray-500">
               {hourLabel(h)}
@@ -102,9 +111,12 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
 
             {/* Content column */}
             <div className="relative flex-1 py-0.5">
-              {/* Current time indicator */}
+              {/* Current time indicator — positioned to the exact minute (Part 2) */}
               {h === nowHour && (
-                <div className="absolute left-0 right-0 top-0 z-10 border-t-2 border-purple-500" />
+                <div
+                  className="absolute left-0 right-0 z-10 border-t-2 border-purple-500"
+                  style={{ top: `${(nowMinutes / 60) * 100}%` }}
+                />
               )}
 
               {/* Event blocks — overlapping events offset horizontally per UI-05 */}
@@ -131,6 +143,16 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
                     : (ev as Event).plannedEventRef
                       ? (plannedEvents[(ev as Event).plannedEventRef!]?.color ?? '#9333ea')
                       : '#9333ea';
+                // Task progress: real events resolve completions from store (Part 4)
+                const taskTotal = isPlanned
+                  ? (ev as PlannedEvent).taskList.length
+                  : (ev as Event).tasks.length;
+                const taskDone = isPlanned
+                  ? 0
+                  : (ev as Event).tasks.filter(
+                      (id) => tasks[id]?.completionState === 'complete',
+                    ).length;
+                const evCompletionState = isPlanned ? undefined : (ev as Event).completionState;
                 return (
                   <EventBlock
                     key={eventId}
@@ -139,8 +161,9 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
                     color={resolvedColor}
                     startTime={'startTime' in ev ? ev.startTime : ''}
                     endTime={'endTime' in ev ? ev.endTime : ''}
-                    taskCount={isPlanned ? (ev as PlannedEvent).taskList.length : 0}
-                    taskComplete={0}
+                    taskCount={taskTotal}
+                    taskComplete={taskDone}
+                    completionState={evCompletionState}
                     offsetIndex={idx}
                     interactive={isInteractive}
                     onOpen={handleOpen}
