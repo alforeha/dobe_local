@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useAppDate } from '../../../utils/useAppDate';
 import { DayViewHeader } from './DayViewHeader';
 import { DayViewBody } from './DayViewBody';
@@ -6,10 +6,15 @@ import { DayViewBody } from './DayViewBody';
 interface DayViewProps {
   onEventOpen: (eventId: string) => void;
   onEditPlanned?: (plannedId: string) => void;
+  todaySignal?: number;
 }
 
-export function DayView({ onEventOpen, onEditPlanned }: DayViewProps) {
+export function DayView({ onEventOpen, onEditPlanned, todaySignal }: DayViewProps) {
   const appDate = useAppDate();
+  const appDateRef = useRef(appDate);
+  // Sync ref after every render so the effect always sees the latest appDate
+  useLayoutEffect(() => { appDateRef.current = appDate; });
+
   const [currentDate, setCurrentDate] = useState(appDate);
 
   const goBack = () =>
@@ -26,7 +31,10 @@ export function DayView({ onEventOpen, onEditPlanned }: DayViewProps) {
       return n;
     });
 
-  const goToday = () => setCurrentDate(appDate);
+  // Reset to today when footer tab is tapped while already on day view
+  useEffect(() => {
+    if (todaySignal) setCurrentDate(appDateRef.current);
+  }, [todaySignal]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -34,7 +42,6 @@ export function DayView({ onEventOpen, onEditPlanned }: DayViewProps) {
         date={currentDate}
         onBack={goBack}
         onForward={goForward}
-        onToday={goToday}
       />
       <DayViewBody date={currentDate} onEventOpen={onEventOpen} onEditPlanned={onEditPlanned} />
     </div>

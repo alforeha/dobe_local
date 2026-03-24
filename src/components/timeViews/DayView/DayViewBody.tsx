@@ -94,9 +94,9 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
         });
 
         return (
-          <div key={h} className="relative flex min-h-14 border-b border-gray-100">
+          <div key={h} className="relative flex min-h-14 border-b border-gray-100 dark:border-gray-700">
             {/* Hour label */}
-            <div className="w-12 shrink-0 py-1 pr-2 text-right text-xs text-gray-400">
+            <div className="w-12 shrink-0 py-1 pr-2 text-right text-xs text-gray-400 dark:text-gray-500">
               {hourLabel(h)}
             </div>
 

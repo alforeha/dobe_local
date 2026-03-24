@@ -118,6 +118,7 @@ export function AppShell() {
   const [editPlannedId, setEditPlannedId] = useState<string | null>(null);
   const [weekViewSeed, setWeekViewSeed] = useState<Date | null>(null);
   const [overlayClosing, setOverlayClosing] = useState(false);
+  const [todaySignals, setTodaySignals] = useState({ day: 0, week: 0, explorer: 0 });
   const [isBooted, setIsBooted] = useState(!showWelcome);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -217,6 +218,11 @@ export function AppShell() {
   // ── OVERLAY HELPERS ──────────────────────────────────────────────────────────
 
   const handleViewChange = (newView: TimeView) => {
+    if (newView === activeView) {
+      // Same tab tapped while already on this view — refresh to today
+      setTodaySignals((prev) => ({ ...prev, [newView]: prev[newView] + 1 }));
+      return;
+    }
     setActiveView(newView);
     if (newView === 'week') {
       autoCheckQuestItem(STARTER_TEMPLATE_IDS.setupSchedule, 'week_view');
@@ -275,6 +281,7 @@ export function AppShell() {
         onWeekSelect={handleWeekSelect}
         weekViewSeed={weekViewSeed}
         onEditPlanned={(id) => setEditPlannedId(id)}
+        todaySignals={todaySignals}
       />
       <Footer
         activeView={activeView}

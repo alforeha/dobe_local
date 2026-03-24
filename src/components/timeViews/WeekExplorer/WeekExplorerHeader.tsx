@@ -17,20 +17,20 @@ export function WeekExplorerHeader({ seedDate, windowStart, windowEnd, onSeedCha
     <div className="flex shrink-0 items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2">
       {/* Left */}
       <div className="flex flex-col">
-        <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">57 Week Explorer</span>
-        <div className="flex items-center gap-1 text-xs text-gray-500">
+        <span className="text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wide">57 Week Explorer</span>
+        <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
           <span>SEED:</span>
           <input
             type="date"
             value={format(seedDate, 'iso')}
             onChange={handleInput}
-            className="border-b border-gray-300 bg-transparent text-xs focus:outline-none"
+            className="border-b border-gray-300 dark:border-gray-600 bg-transparent dark:text-gray-300 text-xs focus:outline-none"
           />
         </div>
       </div>
 
       {/* Right: range display */}
-      <div className="flex flex-col items-end text-xs text-gray-400">
+      <div className="flex flex-col items-end text-xs text-gray-400 dark:text-gray-500">
         <span>−13w → {format(windowStart, 'iso')}</span>
         <span>+44w → {format(windowEnd, 'iso')}</span>
       </div>

@@ -34,8 +34,8 @@ export function WeekDayBlock({ date }: WeekDayBlockProps) {
   return (
     <div className={`flex min-w-[120px] flex-col rounded-lg border bg-white dark:bg-gray-800 ${isToday ? 'border-purple-400' : 'border-gray-200 dark:border-gray-700'}`}>
       {/* Block header */}
-      <div className="flex items-center justify-between border-b border-gray-100 px-2 py-1">
-        <span className={`text-xs font-semibold ${isToday ? 'text-purple-600' : 'text-gray-700'}`}>
+      <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-2 py-1">
+        <span className={`text-xs font-semibold ${isToday ? 'text-purple-600' : 'text-gray-700 dark:text-gray-200'}`}>
           {format(date, 'short')}
         </span>
         {/* Weather icon placeholder — empty per spec */}

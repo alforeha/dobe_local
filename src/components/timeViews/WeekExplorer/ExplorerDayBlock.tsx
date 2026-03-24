@@ -34,10 +34,10 @@ export function ExplorerDayBlock({ date }: ExplorerDayBlockProps) {
   }
 
   return (
-    <div className={`flex flex-1 flex-col min-h-12 border-r border-gray-100 p-0.5 ${isToday ? 'bg-purple-50' : ''}`}>
+    <div className={`flex flex-1 flex-col min-h-12 border-r border-gray-100 dark:border-gray-700 p-0.5 ${isToday ? 'bg-purple-50 dark:bg-purple-900/20' : ''}`}>
       {/* Block header */}
       <div className="flex items-center justify-between">
-        <span className={`text-[10px] leading-none ${isToday ? 'text-purple-600 font-bold' : 'text-gray-500'}`}>
+        <span className={`text-[10px] leading-none ${isToday ? 'text-purple-600 font-bold' : 'text-gray-500 dark:text-gray-400'}`}>
           {isFirstOfMonth ? MONTH_NAMES[date.getMonth()] : date.getDate()}
         </span>
         {/* Weather placeholder — empty per spec */}
