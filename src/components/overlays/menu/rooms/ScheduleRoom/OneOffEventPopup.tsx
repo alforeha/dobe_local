@@ -10,7 +10,7 @@ import { useState, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { PopupShell } from '../../../../shared/popups/PopupShell';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
-import { SYSTEM_TASK_IDS } from '../../../../../coach/StarterQuestLibrary';
+
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
 import { storageDelete, storageKey } from '../../../../../storage';
 import { localISODate } from '../../../../../utils/dateUtils';
@@ -94,7 +94,7 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
   // ── Build template list from user-owned templates only ───────────────────
   const allTemplates = useMemo(() => {
     return Object.entries(taskTemplates)
-      .filter(([k, t]) => !SYSTEM_TASK_IDS.has(k) && !SYSTEM_TASK_IDS.has(t.id ?? ''))
+      .filter(([, t]) => t.isSystem !== true)
       .map(([id, t]) => ({ id, name: t.name }));
   }, [taskTemplates]);
 

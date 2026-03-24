@@ -11,7 +11,7 @@ import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { useUserStore } from '../../../../../stores/useUserStore';
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
 import { autoCheckQuestItem } from '../../../../../engine/resourceEngine';
-import { STARTER_TEMPLATE_IDS, SYSTEM_TASK_IDS } from '../../../../../coach/StarterQuestLibrary';
+import { STARTER_TEMPLATE_IDS } from '../../../../../coach/StarterQuestLibrary';
 import { storageDelete, storageKey } from '../../../../../storage';
 import { localISODate } from '../../../../../utils/dateUtils';
 import type { PlannedEvent, ConflictMode } from '../../../../../types/plannedEvent';
@@ -127,7 +127,7 @@ export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProp
   // ── Build template list from user-owned templates only ───────────────────
   const allTemplates = useMemo(() => {
     return Object.entries(taskTemplates)
-      .filter(([k, t]) => !SYSTEM_TASK_IDS.has(k) && !SYSTEM_TASK_IDS.has(t.id ?? ''))
+      .filter(([, t]) => t.isSystem !== true)
       .map(([id, t]) => ({ id, name: t.name }));
   }, [taskTemplates]);
 

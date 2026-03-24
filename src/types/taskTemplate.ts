@@ -258,6 +258,12 @@ export interface TaskTemplate {
    * false / undefined = seeded prebuilt template (read-only in Task Room).
    */
   isCustom?: boolean;
+  /**
+   * true  = onboarding/system template seeded by the coach engine.
+   * System templates are hidden from all user-facing task pickers.
+   * false / undefined = regular prebuilt or user template.
+   */
+  isSystem?: boolean;
   name: string;
   description: string;
   /** Ref to icon asset */

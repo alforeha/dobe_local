@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
-import { SYSTEM_TASK_IDS } from '../../../../../coach/StarterQuestLibrary';
 import { TaskRoomHeader } from './TaskRoomHeader';
 import { TaskRoomBody } from './TaskRoomBody';
 import { TaskTemplatePopup } from './TaskTemplatePopup';
@@ -13,9 +12,6 @@ type PopupState =
   | { mode: 'edit'; key: string; template: TaskTemplate }
   | null;
 
-// Onboarding quest tasks — seeded for the quest engine, not user-facing.
-// Sourced from StarterQuestLibrary to stay in sync.
-
 export function TaskRoom() {
   const [tab, setTab] = useState<TaskTab>('stat');
   const [popup, setPopup] = useState<PopupState>(null);
@@ -26,7 +22,7 @@ export function TaskRoom() {
   const filtered: [string, TaskTemplate, boolean][] =
     tab === 'stat'
       ? Object.entries(taskTemplates)
-          .filter(([k, t]) => !SYSTEM_TASK_IDS.has(k) && !SYSTEM_TASK_IDS.has(t.id ?? ''))
+          .filter(([, t]) => t.isSystem !== true)
           .map(([k, t]): [string, TaskTemplate, boolean] => [k, t, t.isCustom === true])
       : [];
 
