@@ -992,10 +992,11 @@ export function seedStarterTemplates(): void {
 
   for (const [id, template] of allTemplates) {
     if (idSet.has(id)) {
+      if (SYSTEM_TASK_IDS.has(id)) continue; // system templates stay in coach bundle only
       scheduleStore.setTaskTemplate(id, {
         ...template,
         isCustom: false,
-        isSystem: SYSTEM_TASK_IDS.has(id),
+        isSystem: false,
       });
     }
   }

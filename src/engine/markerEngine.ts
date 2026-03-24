@@ -19,7 +19,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { evaluateQuestSpecific, updateQuestProgress, countTasksForScope } from './questEngine';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
 import { localISODate, getAppDate } from '../utils/dateUtils';
-import { unlockAct, makeDailyChain, STARTER_ACT_IDS } from '../coach/StarterQuestLibrary';
+import { unlockAct, makeDailyChain, STARTER_ACT_IDS, starterTaskTemplates } from '../coach/StarterQuestLibrary';
 
 // ── QUESTREF ENCODING ─────────────────────────────────────────────────────────
 
@@ -323,11 +323,15 @@ export function completeMilestone(completedTask: Task): void {
   }
   if (quest.completionState !== 'active') return;
 
-  // Resolve TaskTemplate shape — stored inline in Milestone for immutability (D03)
-  const template = scheduleStore.taskTemplates[completedTask.templateRef];
+  // Resolve TaskTemplate shape — stored inline in Milestone for immutability (D03).
+  // System templates are not written to the store; fall back to the coach bundle.
+  const template =
+    scheduleStore.taskTemplates[completedTask.templateRef] ??
+    starterTaskTemplates.find((t) => t.id === completedTask.templateRef) ??
+    null;
   if (!template) {
     console.warn(
-      `[markerEngine] completeMilestone: TaskTemplate "${completedTask.templateRef}" not in store (D34 — system templates not stored). Skipping Milestone.`,
+      `[markerEngine] completeMilestone: TaskTemplate "${completedTask.templateRef}" not found in store or coach bundle. Skipping Milestone.`,
     );
     return;
   }

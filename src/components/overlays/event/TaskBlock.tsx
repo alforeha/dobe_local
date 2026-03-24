@@ -1,5 +1,6 @@
 import { useScheduleStore } from '../../../stores/useScheduleStore';
 import { completeTask } from '../../../engine/eventExecution';
+import { starterTaskTemplates } from '../../../coach/StarterQuestLibrary';
 import type { TaskType, InputFields, CheckInputFields, CounterInputFields, RatingInputFields, TextInputFields, ChoiceInputFields, ChecklistInputFields, LogInputFields, SetsRepsInputFields, CircuitInputFields, DurationInputFields, TimerInputFields, FormInputFields, ScanInputFields, LocationPointInputFields, LocationTrailInputFields, RollInputFields } from '../../../types/taskTemplate';
 import { CheckInput } from './inputs/CheckInput';
 import { CounterInput } from './inputs/CounterInput';
@@ -55,7 +56,11 @@ export function TaskBlock({ taskId, eventId, playMode, onTaskComplete }: TaskBlo
   }
 
   const task = tasks[taskId];
-  const template = task ? taskTemplates[task.templateRef] : null;
+  const template = task
+    ? (taskTemplates[task.templateRef] ??
+       starterTaskTemplates.find((t) => t.id === task.templateRef) ??
+       null)
+    : null;
   const taskType: TaskType = template?.taskType ?? 'CHECK';
   const secondaryTag = task?.secondaryTag ?? template?.secondaryTag ?? null;
 

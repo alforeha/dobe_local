@@ -17,6 +17,7 @@ import { useScheduleStore } from '../stores/useScheduleStore';
 import { useResourceStore } from '../stores/useResourceStore';
 import { useUserStore } from '../stores/useUserStore';
 import { localISODate, getAppDate } from '../utils/dateUtils';
+import { starterTaskTemplates } from '../coach/StarterQuestLibrary';
 
 // ── HELPERS ────────────────────────────────────────────────────────────────────────────────
 
@@ -101,9 +102,13 @@ export function countTasksForScope(marker: Marker): number {
     // We compare templateRef against prebuilt templates from the coach library —
     // stat group is stored on the template itself.
     const { taskTemplates } = useScheduleStore.getState();
+    // Fallback map for system templates excluded from the store (coach bundle only).
+    const coachBundleById = new Map(
+      starterTaskTemplates.filter((t): t is typeof t & { id: string } => !!t.id).map((t) => [t.id, t]),
+    );
     return Object.values(tasks).filter((t) => {
       if (t.completionState !== 'complete') return false;
-      const template = taskTemplates[t.templateRef];
+      const template = taskTemplates[t.templateRef] ?? coachBundleById.get(t.templateRef);
       if (!template) return false;
       // XP award fields: the primary stat group is the one with the highest value
       const { xpAward } = template;

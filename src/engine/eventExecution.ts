@@ -22,6 +22,7 @@ import { EVENT_MAX_ATTACHMENTS } from '../storage/storageBudget';
 
 import { awardXP, awardStat } from './awardPipeline';
 import { completeMilestone, decodeQuestRef } from './markerEngine';
+import { starterTaskTemplates } from '../coach/StarterQuestLibrary';
 import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge, checkQuestReward } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
@@ -135,8 +136,12 @@ export function completeTask(
   const hasResourceRef =
     Boolean(result.resourceRef) || Boolean(task.resourceRef);
 
-  // Fetch template to get xpAward and stat group
-  const template = scheduleStore.taskTemplates[task.templateRef];
+  // Fetch template to get xpAward and stat group.
+  // System templates are not in the store — fall back to the coach bundle.
+  const template =
+    scheduleStore.taskTemplates[task.templateRef] ??
+    starterTaskTemplates.find((t) => t.id === task.templateRef) ??
+    null;
 
   if (userStore.user) {
     const userId = userStore.user.system.id;
