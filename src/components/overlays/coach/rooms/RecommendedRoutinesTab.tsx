@@ -41,6 +41,7 @@ export function RecommendedRoutinesTab() {
   function handleAddToSchedule(routine: PrebuiltRoutine) {
     setPrefill({
       name: routine.name,
+      icon: routine.icon,
       color: routine.color,
       taskPool: routine.taskPool,
       recurrenceInterval: routine.recurrenceInterval,

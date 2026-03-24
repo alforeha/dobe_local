@@ -10,7 +10,7 @@ import { useState, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { PopupShell } from '../../../../shared/popups/PopupShell';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
-import { taskTemplateLibrary } from '../../../../../coach';
+import { SYSTEM_TASK_IDS } from '../../../../../coach/StarterQuestLibrary';
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
 import { storageDelete, storageKey } from '../../../../../storage';
 import { localISODate } from '../../../../../utils/dateUtils';
@@ -91,20 +91,11 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
 
   const isEditMode = editEvent !== null;
 
-  // ── Build merged template list: prebuilt + user custom ────────────────────
+  // ── Build template list from user-owned templates only ───────────────────
   const allTemplates = useMemo(() => {
-    const prebuilt = taskTemplateLibrary.map((t) => ({
-      id: t.id ?? t.name,
-      name: t.name,
-    }));
-    const custom = Object.entries(taskTemplates).map(([k, t]) => ({
-      id: k,
-      name: t.name,
-    }));
-    const map = new Map<string, string>();
-    for (const t of prebuilt) map.set(t.id, t.name);
-    for (const t of custom) map.set(t.id, t.name);
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+    return Object.entries(taskTemplates)
+      .filter(([k, t]) => !SYSTEM_TASK_IDS.has(k) && !SYSTEM_TASK_IDS.has(t.id ?? ''))
+      .map(([id, t]) => ({ id, name: t.name }));
   }, [taskTemplates]);
 
   // ── Form state ────────────────────────────────────────────────────────────
@@ -376,7 +367,7 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
             onClick={handleSave}
             className="text-sm px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
           >
-            {isEditMode ? 'Save Changes' : 'Add Event'}
+            Save
           </button>
         </div>
       </div>

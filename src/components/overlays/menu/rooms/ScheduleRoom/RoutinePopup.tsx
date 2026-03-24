@@ -9,10 +9,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { PopupShell } from '../../../../shared/popups/PopupShell';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { useUserStore } from '../../../../../stores/useUserStore';
-import { taskTemplateLibrary } from '../../../../../coach';
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
 import { autoCheckQuestItem } from '../../../../../engine/resourceEngine';
-import { STARTER_TEMPLATE_IDS } from '../../../../../coach/StarterQuestLibrary';
+import { STARTER_TEMPLATE_IDS, SYSTEM_TASK_IDS } from '../../../../../coach/StarterQuestLibrary';
 import { storageDelete, storageKey } from '../../../../../storage';
 import { localISODate } from '../../../../../utils/dateUtils';
 import type { PlannedEvent, ConflictMode } from '../../../../../types/plannedEvent';
@@ -82,6 +81,7 @@ function isTodayARecurrenceDay(rule: RecurrenceRule): boolean {
 /** Pre-fill values for add mode — sourced from prebuilt routines in RecommendationsRoom */
 export interface RoutinePopupPrefill {
   name: string;
+  icon: string;
   color: string;
   taskPool: string[];
   recurrenceInterval: RecurrenceRule;
@@ -124,27 +124,18 @@ export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProp
 
   const isEditMode = editRoutine !== null;
 
-  // ── Build merged template list: prebuilt + user custom ────────────────────
+  // ── Build template list from user-owned templates only ───────────────────
   const allTemplates = useMemo(() => {
-    const prebuilt = taskTemplateLibrary.map((t) => ({
-      id: t.id ?? t.name,
-      name: t.name,
-    }));
-    const custom = Object.entries(taskTemplates).map(([k, t]) => ({
-      id: k,
-      name: t.name,
-    }));
-    // Deduplicate by id — custom shadows prebuilt if same id
-    const map = new Map<string, string>();
-    for (const t of prebuilt) map.set(t.id, t.name);
-    for (const t of custom) map.set(t.id, t.name);
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+    return Object.entries(taskTemplates)
+      .filter(([k, t]) => !SYSTEM_TASK_IDS.has(k) && !SYSTEM_TASK_IDS.has(t.id ?? ''))
+      .map(([id, t]) => ({ id, name: t.name }));
   }, [taskTemplates]);
 
   // ── Form state ────────────────────────────────────────────────────────────
   const [name, setName] = useState(
     isEditMode ? editRoutine.name : (prefill?.name ?? ''),
   );
+  const icon = isEditMode ? editRoutine.icon : (prefill?.icon ?? 'routine');
   const [color, setColor] = useState(
     isEditMode ? editRoutine.color : (prefill?.color ?? COLOUR_SWATCHES[0]),
   );
@@ -235,7 +226,7 @@ export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProp
         id,
         name: name.trim(),
         description: '',
-        icon: 'routine',
+        icon,
         color,
         seedDate,
         dieDate: null,
@@ -483,7 +474,7 @@ export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProp
             onClick={handleSave}
             className="text-sm px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
           >
-            {isEditMode ? 'Save Changes' : 'Add Routine'}
+            Save
           </button>
         </div>
       </div>

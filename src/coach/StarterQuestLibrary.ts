@@ -37,6 +37,16 @@ export const STARTER_ACT_IDS = {
   wisdom:      'act-wisdom-00000000-0000-0000-00007',
 } as const;
 
+// ── SYSTEM TASK IDs ────────────────────────────────────────────────────────────
+// Onboarding quest tasks — seeded for the quest/coach engine, not user-facing.
+// Excluded from user-selectable task pools and the Task Room list.
+export const SYSTEM_TASK_IDS = new Set([
+  'tmpl-open-welcome-0000-0000-0000-0001',
+  'tmpl-setup-schedule-000-0000-0000-01',
+  'tmpl-learn-grounds-000-0000-0000-0001',
+  'tmpl-claim-identity-00-0000-0000-0001',
+]);
+
 // ── STABLE TASK TEMPLATE IDs ─────────────────────────────────────────────────
 
 export const STARTER_TEMPLATE_IDS = {

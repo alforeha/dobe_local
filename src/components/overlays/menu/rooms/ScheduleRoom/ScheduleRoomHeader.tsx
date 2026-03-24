@@ -1,4 +1,4 @@
-type ScheduleTab = 'routines' | 'leagues';
+type ScheduleTab = 'routines' | 'events' | 'leagues';
 
 interface ScheduleRoomHeaderProps {
   activeTab: ScheduleTab;
@@ -10,7 +10,7 @@ export function ScheduleRoomHeader({ activeTab, onTabChange }: ScheduleRoomHeade
     <div className="px-4 pt-4 pb-2 border-b border-gray-100 dark:border-gray-700">
       <h2 className="text-base font-semibold text-gray-800">Schedule</h2>
       <div className="flex gap-2 mt-2">
-        {(['routines', 'leagues'] as ScheduleTab[]).map((tab) => (
+        {(['routines', 'events', 'leagues'] as ScheduleTab[]).map((tab) => (
           <button
             key={tab}
             type="button"

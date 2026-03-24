@@ -16,7 +16,12 @@ export function PlannedEventBlock({ event, onEdit }: PlannedEventBlockProps) {
         style={{ backgroundColor: event.color || '#6366f1' }}
       />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{event.name}</p>
+          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+            {event.icon && !/^[\w-]+$/.test(event.icon) && (
+              <span className="mr-1">{event.icon}</span>
+            )}
+            {event.name}
+          </p>
         <p className="text-xs text-gray-400">
           {event.startTime} – {event.endTime}
           {oneOff

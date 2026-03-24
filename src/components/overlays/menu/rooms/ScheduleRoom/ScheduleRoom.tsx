@@ -9,7 +9,7 @@ import { OneOffEventPopup } from './OneOffEventPopup';
 import { isOneOffEvent } from '../../../../../utils/isOneOffEvent';
 import type { PlannedEvent } from '../../../../../types';
 
-type ScheduleTab = 'routines' | 'leagues';
+type ScheduleTab = 'routines' | 'events' | 'leagues';
 
 type PopupState =
   | { mode: 'add-routine' }
@@ -20,14 +20,20 @@ type PopupState =
 
 export function ScheduleRoom() {
   const [tab, setTab] = useState<ScheduleTab>('routines');
-  const [filter, setFilter] = useState('');
+  const [routineFilter, setRoutineFilter] = useState('');
+  const [eventFilter, setEventFilter] = useState('');
   const [popup, setPopup] = useState<PopupState>(null);
   const plannedEvents = useScheduleStore((s) => s.plannedEvents);
 
-  const allEvents = Object.values(plannedEvents).filter((e) => !isOneOffEvent(e));
-  const filtered = filter
-    ? allEvents.filter((e) => e.name.toLowerCase().includes(filter.toLowerCase()))
-    : allEvents;
+  const allRoutines = Object.values(plannedEvents).filter((e) => !isOneOffEvent(e));
+  const filteredRoutines = routineFilter
+    ? allRoutines.filter((e) => e.name.toLowerCase().includes(routineFilter.toLowerCase()))
+    : allRoutines;
+
+  const allOneOffs = Object.values(plannedEvents).filter((e) => isOneOffEvent(e));
+  const filteredOneOffs = eventFilter
+    ? allOneOffs.filter((e) => e.name.toLowerCase().includes(eventFilter.toLowerCase()))
+    : allOneOffs;
 
   function handleEdit(event: PlannedEvent) {
     if (isOneOffEvent(event)) {
@@ -43,12 +49,32 @@ export function ScheduleRoom() {
       {tab === 'routines' && (
         <>
           <ScheduleRoomSubHeader
-            filterValue={filter}
-            onFilterChange={setFilter}
+            filterValue={routineFilter}
+            onFilterChange={setRoutineFilter}
             onAddRoutine={() => setPopup({ mode: 'add-routine' })}
-            onAddEvent={() => setPopup({ mode: 'add-event' })}
           />
-          <ScheduleRoomBody events={filtered} onEdit={handleEdit} />
+          <ScheduleRoomBody events={filteredRoutines} onEdit={handleEdit} />
+        </>
+      )}
+      {tab === 'events' && (
+        <>
+          <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+            <input
+              type="text"
+              value={eventFilter}
+              onChange={(e) => setEventFilter(e.target.value)}
+              placeholder="Filter..."
+              className="flex-1 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1 outline-none focus:border-indigo-300"
+            />
+            <button
+              type="button"
+              onClick={() => setPopup({ mode: 'add-event' })}
+              className="text-xs text-blue-500 hover:text-blue-700 font-medium shrink-0 whitespace-nowrap"
+            >
+              + Event
+            </button>
+          </div>
+          <ScheduleRoomBody events={filteredOneOffs} onEdit={handleEdit} />
         </>
       )}
       {tab === 'leagues' && <LeaguesTabStub />}

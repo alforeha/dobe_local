@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
+import { SYSTEM_TASK_IDS } from '../../../../../coach/StarterQuestLibrary';
 import { TaskRoomHeader } from './TaskRoomHeader';
 import { TaskRoomBody } from './TaskRoomBody';
 import { TaskTemplatePopup } from './TaskTemplatePopup';
@@ -13,12 +14,7 @@ type PopupState =
   | null;
 
 // Onboarding quest tasks — seeded for the quest engine, not user-facing.
-const SYSTEM_TASK_IDS = new Set([
-  'tmpl-open-welcome-0000-0000-0000-0001',
-  'tmpl-setup-schedule-000-0000-0000-01',
-  'tmpl-learn-grounds-000-0000-0000-0001',
-  'tmpl-claim-identity-00-0000-0000-0001',
-]);
+// Sourced from StarterQuestLibrary to stay in sync.
 
 export function TaskRoom() {
   const [tab, setTab] = useState<TaskTab>('stat');
