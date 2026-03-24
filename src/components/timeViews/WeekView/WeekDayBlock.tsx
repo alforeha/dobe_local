@@ -1,3 +1,4 @@
+import { useRef, useState, useLayoutEffect, useEffect } from 'react';
 import { useAppDate } from '../../../utils/useAppDate';
 import { useScheduleStore } from '../../../stores/useScheduleStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -27,6 +28,7 @@ interface LayoutItem {
   heightPx: number;
   colIndex: number;
   colCount: number;
+  colSpan: number;
 }
 
 function computeWeekDayLayout(events: Array<Event | PlannedEvent>): LayoutItem[] {
@@ -81,11 +83,30 @@ function computeWeekDayLayout(events: Array<Event | PlannedEvent>): LayoutItem[]
     for (const idx of members) colCountOf[idx] = totalCols;
   }
 
+  // Expand each event rightward into consecutive free columns
+  const spanOf = new Array<number>(n).fill(1);
+  for (const members of clusters) {
+    const totalCols = colCountOf[members[0]];
+    for (const idx of members) {
+      let span = 1;
+      for (let c = colOf[idx] + 1; c < totalCols; c++) {
+        const blocked = members.some(
+          (j) => j !== idx && colOf[j] === c &&
+            parsed[j].startMin < parsed[idx].endMin &&
+            parsed[idx].startMin < parsed[j].endMin,
+        );
+        if (blocked) break;
+        span++;
+      }
+      spanOf[idx] = span;
+    }
+  }
+
   return parsed.map((p, i) => {
     const topPx = (p.startMin / 60) * HOUR_HEIGHT_PX;
     const durationMin = p.endMin - p.startMin;
     const heightPx = Math.max(MIN_EVENT_HEIGHT, (durationMin / 60) * HOUR_HEIGHT_PX);
-    return { ev: p.ev, topPx, heightPx, colIndex: colOf[i], colCount: colCountOf[i] };
+    return { ev: p.ev, topPx, heightPx, colIndex: colOf[i], colCount: colCountOf[i], colSpan: spanOf[i] };
   });
 }
 
@@ -115,6 +136,31 @@ export function WeekDayBlock({ date, onDaySelect }: WeekDayBlockProps) {
     Object.values(plannedEvents).forEach((pe) => { if (isPlannedEventDue(pe, dateIso)) dayEvents.push(pe); });
   }
 
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [containerHeight, setContainerHeight] = useState(GRID_HEIGHT);
+  useLayoutEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    setContainerHeight(el.clientHeight);
+    const ro = new ResizeObserver(() => setContainerHeight(el.clientHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const scale = containerHeight / GRID_HEIGHT;
+
+  const [nowPct, setNowPct] = useState(() => {
+    const n = new Date();
+    return ((n.getHours() * 60 + n.getMinutes()) / (24 * 60)) * 100;
+  });
+  useEffect(() => {
+    if (!isToday) return;
+    const id = setInterval(() => {
+      const n = new Date();
+      setNowPct(((n.getHours() * 60 + n.getMinutes()) / (24 * 60)) * 100);
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [isToday]);
+
   const layouts = computeWeekDayLayout(dayEvents);
 
   function resolveColor(ev: Event | PlannedEvent): string {
@@ -127,7 +173,7 @@ export function WeekDayBlock({ date, onDaySelect }: WeekDayBlockProps) {
 
   return (
     <div
-      className={`flex min-w-[240px] flex-col rounded-lg border bg-white dark:bg-gray-800 transition-colors ${isToday ? 'border-purple-400' : 'border-gray-200 dark:border-gray-700'} ${onDaySelect ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800' : ''}`}
+      className={`flex flex-1 min-w-[240px] h-full flex-col rounded-lg border bg-white dark:bg-gray-800 transition-colors ${isToday ? 'border-purple-400' : 'border-gray-200 dark:border-gray-700'} ${isPast ? 'opacity-40' : ''} ${onDaySelect ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700' : ''}`}
       role={onDaySelect ? 'button' : undefined}
       tabIndex={onDaySelect ? 0 : undefined}
       onClick={() => onDaySelect?.(date)}
@@ -141,14 +187,14 @@ export function WeekDayBlock({ date, onDaySelect }: WeekDayBlockProps) {
         <span className="w-4" />
       </div>
 
-      {/* Absolutely-positioned event grid — no time column */}
-      <div className="relative w-full overflow-y-auto" style={{ height: GRID_HEIGHT }}>
+      {/* Event grid — scales to fill available height, no scroll */}
+      <div ref={gridRef} className="relative flex-1 w-full overflow-hidden">
         {/* Hour dividers */}
         {Array.from({ length: 24 }, (_, h) => (
           <div
             key={h}
             className="absolute left-0 right-0 border-t border-gray-100 dark:border-gray-700/50"
-            style={{ top: h * HOUR_HEIGHT_PX }}
+            style={{ top: `${(h / 24) * 100}%` }}
           />
         ))}
 
@@ -156,20 +202,41 @@ export function WeekDayBlock({ date, onDaySelect }: WeekDayBlockProps) {
         {layouts.map((layout) => {
           const ev = layout.ev;
           const color = resolveColor(ev);
-          const widthPercent = (1 / layout.colCount) * 100;
+          const widthPercent = (layout.colSpan / layout.colCount) * 100;
           const leftPercent = (layout.colIndex / layout.colCount) * 100;
+          const endMin = (ev as { endTime?: string }).endTime
+            ? (() => { const [h=0,m=0] = ((ev as {endTime?:string}).endTime ?? '').split(':').map(Number); return h*60+m; })()
+            : null;
+          const isPastEvent = isToday && endMin !== null && endMin <= (nowPct / 100) * 24 * 60;
           return (
             <WeekEventCard
               key={ev.id}
-              name={'name' in ev ? ev.name : '—'}
+              name={'name' in ev ? ev.name : '\u2014'}
               color={color}
-              topPx={layout.topPx}
-              heightPx={layout.heightPx}
+              topPx={layout.topPx * scale}
+              heightPx={Math.max(MIN_EVENT_HEIGHT * scale, layout.heightPx * scale)}
               leftPercent={leftPercent}
               widthPercent={widthPercent}
+              muted={isPastEvent}
             />
           );
         })}
+
+        {/* Elapsed time overlay for today */}
+        {isToday && (
+          <div
+            className="absolute left-0 right-0 bg-gray-400/20 dark:bg-gray-900/40 pointer-events-none z-[5]"
+            style={{ top: 0, height: `${nowPct}%` }}
+          />
+        )}
+
+        {/* Current time line */}
+        {isToday && (
+          <div
+            className="absolute left-0 right-0 h-0.5 bg-purple-500 z-10 pointer-events-none"
+            style={{ top: `${nowPct}%` }}
+          />
+        )}
       </div>
     </div>
   );

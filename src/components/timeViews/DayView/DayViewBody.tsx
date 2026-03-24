@@ -497,7 +497,7 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
         </div>
 
         {/* Event area */}
-        <div className="relative flex-1" style={{ height: scaledGridHeight }}>
+        <div className={`relative flex-1 ${isPast ? 'opacity-40' : ''}`} style={{ height: scaledGridHeight }}>
           {/* Hour dividers + half-hour ticks */}
           {HOURS.map((h) => (
             <div key={h}>
@@ -511,6 +511,14 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
               />
             </div>
           ))}
+
+          {/* Elapsed time overlay for today */}
+          {isToday && nowY > 0 && (
+            <div
+              className="absolute left-0 right-0 bg-gray-400/20 dark:bg-gray-900/40 pointer-events-none z-[5]"
+              style={{ top: 0, height: nowY }}
+            />
+          )}
 
           {/* Current time indicator */}
           {nowY >= 0 && (
@@ -582,6 +590,10 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
                 multiDayLabel={mdLabel}
                 interactive={isInteractive}
                 onOpen={handleOpen}
+                muted={isToday && (() => {
+                  const [h=0,m=0] = (displayEnd).split(':').map(Number);
+                  return (h * 60 + m) <= (nowHour * 60 + nowMinutes);
+                })()}
               />
             );
           })}

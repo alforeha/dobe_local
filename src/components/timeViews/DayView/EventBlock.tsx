@@ -21,6 +21,7 @@ interface EventBlockProps {
   multiDayLabel?: string;
   interactive: boolean;
   onOpen?: () => void;
+  muted?: boolean;
 }
 
 /** Event block in DayView — absolutely positioned within the unified day-grid. */
@@ -40,11 +41,12 @@ export function EventBlock({
   multiDayLabel,
   interactive,
   onOpen,
+  muted,
 }: EventBlockProps) {
   const widthPct = (colSpan / colCount) * 100;
   const leftPct = (colIndex / colCount) * 100;
   const isComplete = completionState === 'complete';
-  const opacityClass = isComplete ? 'opacity-50' : (!interactive ? 'opacity-70' : '');
+  const opacityClass = muted ? 'opacity-40' : isComplete ? 'opacity-50' : (!interactive ? 'opacity-70' : '');
 
   return (
     <div

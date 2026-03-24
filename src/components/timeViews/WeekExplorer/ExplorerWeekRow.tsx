@@ -11,6 +11,80 @@ interface ExplorerWeekRowProps {
   onSelect?: () => void;
 }
 
+function parseMinutes(time: string): number {
+  if (!time) return 0;
+  const [h = 0, m = 0] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
+interface ColorBlock {
+  id: string; color: string; dayOfWeek: number; durationDays: number;
+  startTime: string; endTime: string;
+  colIndex: number; colCount: number; colSpan: number;
+}
+
+function assignColumns(blocks: Omit<ColorBlock, 'colIndex' | 'colCount' | 'colSpan'>[]): ColorBlock[] {
+  if (blocks.length === 0) return [];
+  const parsed = blocks.map((b) => {
+    const startMin = parseMinutes(b.startTime);
+    const rawEnd = parseMinutes(b.endTime);
+    const endMin = rawEnd > startMin ? rawEnd : startMin + 60;
+    return { ...b, startMin, endMin };
+  });
+  parsed.sort((a, b) => a.startMin - b.startMin || b.endMin - a.endMin);
+  const n = parsed.length;
+  const clusterIdx = new Array<number>(n).fill(-1);
+  const clusters: number[][] = [];
+  for (let i = 0; i < n; i++) {
+    if (clusterIdx[i] !== -1) continue;
+    const clusterId = clusters.length;
+    const members: number[] = [i];
+    clusterIdx[i] = clusterId;
+    for (let qi = 0; qi < members.length; qi++) {
+      const a = parsed[members[qi]];
+      for (let k = 0; k < n; k++) {
+        if (clusterIdx[k] !== -1) continue;
+        const b = parsed[k];
+        if (a.startMin < b.endMin && b.startMin < a.endMin) { clusterIdx[k] = clusterId; members.push(k); }
+      }
+    }
+    clusters.push(members);
+  }
+  const colOf = new Array<number>(n).fill(0);
+  const colCountOf = new Array<number>(n).fill(1);
+  for (const members of clusters) {
+    const sorted = [...members].sort((a, b) => parsed[a].startMin - parsed[b].startMin);
+    const colEnds: number[] = [];
+    for (const idx of sorted) {
+      let col = colEnds.findIndex((et) => et <= parsed[idx].startMin);
+      if (col === -1) { col = colEnds.length; colEnds.push(0); }
+      colOf[idx] = col;
+      colEnds[col] = parsed[idx].endMin;
+    }
+    const totalCols = colEnds.length;
+    for (const idx of members) colCountOf[idx] = totalCols;
+  }
+  // Expand each event into consecutive free columns to the right
+  const spanOf = new Array<number>(n).fill(1);
+  for (const members of clusters) {
+    const totalCols = colCountOf[members[0]];
+    for (const idx of members) {
+      let span = 1;
+      for (let c = colOf[idx] + 1; c < totalCols; c++) {
+        const blocked = members.some(
+          (j) => j !== idx && colOf[j] === c &&
+            parsed[j].startMin < parsed[idx].endMin &&
+            parsed[idx].startMin < parsed[j].endMin,
+        );
+        if (blocked) break;
+        span++;
+      }
+      spanOf[idx] = span;
+    }
+  }
+  return parsed.map((p, i) => ({ ...p, colIndex: colOf[i], colCount: colCountOf[i], colSpan: spanOf[i] }));
+}
+
 /** One week row in the 57-week explorer. Tapping opens that week in WeekView (UI-07). */
 export function ExplorerWeekRow({ weekStart, onSelect }: ExplorerWeekRowProps) {
   const days = getWeekDays(weekStart);
@@ -22,9 +96,7 @@ export function ExplorerWeekRow({ weekStart, onSelect }: ExplorerWeekRowProps) {
     plannedEvents: s.plannedEvents,
   })));
 
-  // Collect all events for Mon–Sun of this week as color blocks
-  interface ColorBlock { id: string; color: string; dayOfWeek: number; durationDays: number; }
-  const blocks: ColorBlock[] = [];
+  const rawBlocks: Omit<ColorBlock, 'colIndex' | 'colCount'>[] = [];
 
   days.forEach((day, dayOfWeek) => {
     const dateIso = format(day, 'iso');
@@ -32,37 +104,41 @@ export function ExplorerWeekRow({ weekStart, onSelect }: ExplorerWeekRowProps) {
 
     if (isPastOrToday) {
       Object.values(activeEvents).forEach((e) => {
-        const ev = e as Event;
+        const ev = e as Event & { startTime?: string; endTime?: string };
         if (ev.startDate === dateIso) {
-          const start = new Date(ev.startDate);
-          const end = new Date(ev.endDate);
-          const durationDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
+          const durationDays = Math.max(1, Math.round((new Date(ev.endDate).getTime() - new Date(ev.startDate).getTime()) / 86400000) + 1);
           const color = ev.color ?? (ev.plannedEventRef ? (plannedEvents[ev.plannedEventRef]?.color ?? '#9333ea') : '#9333ea');
-          blocks.push({ id: `a-${ev.id}`, color, dayOfWeek, durationDays });
+          rawBlocks.push({ id: `a-${ev.id}`, color, dayOfWeek, durationDays, startTime: ev.startTime ?? '00:00', endTime: ev.endTime ?? '01:00' });
         }
       });
       Object.values(historyEvents).forEach((e) => {
-        const ev = e as Event;
+        const ev = e as Event & { startTime?: string; endTime?: string };
         if (ev.startDate === dateIso) {
-          const start = new Date(ev.startDate);
-          const end = new Date(ev.endDate);
-          const durationDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
+          const durationDays = Math.max(1, Math.round((new Date(ev.endDate).getTime() - new Date(ev.startDate).getTime()) / 86400000) + 1);
           const color = ev.color ?? (ev.plannedEventRef ? (plannedEvents[ev.plannedEventRef]?.color ?? '#9333ea') : '#9333ea');
-          blocks.push({ id: `h-${ev.id}`, color, dayOfWeek, durationDays });
+          rawBlocks.push({ id: `h-${ev.id}`, color, dayOfWeek, durationDays, startTime: ev.startTime ?? '00:00', endTime: ev.endTime ?? '01:00' });
         }
       });
     } else {
       Object.values(plannedEvents).forEach((pe) => {
         if (isPlannedEventDue(pe, dateIso)) {
-          blocks.push({ id: `p-${pe.id}-${dayOfWeek}`, color: pe.color, dayOfWeek, durationDays: 1 });
+          const pex = pe as typeof pe & { startTime?: string; endTime?: string };
+          rawBlocks.push({ id: `p-${pe.id}-${dayOfWeek}`, color: pe.color, dayOfWeek, durationDays: 1, startTime: pex.startTime ?? '00:00', endTime: pex.endTime ?? '01:00' });
         }
       });
     }
   });
 
+  // Run overlap/column algorithm per day
+  const blocks: ColorBlock[] = [];
+  for (let d = 0; d < 7; d++) {
+    const dayBlocks = rawBlocks.filter((b) => b.dayOfWeek === d);
+    blocks.push(...assignColumns(dayBlocks));
+  }
+
   // Week end boundary for saturday (index 6)
   const weekEndIso = format(addDays(weekStart, 6), 'iso');
-  void weekEndIso; // used for future reference if needed
+  void weekEndIso;
 
   return (
     <div
@@ -77,10 +153,14 @@ export function ExplorerWeekRow({ weekStart, onSelect }: ExplorerWeekRowProps) {
         <ExplorerDayBlock key={format(day, 'iso')} date={day} />
       ))}
 
-      {/* Absolute color stripe blocks — positioned by day of week */}
+      {/* Absolute color stripe blocks — split columns within each day slot */}
       {blocks.map((block) => {
-        const leftPercent = (block.dayOfWeek / 7) * 100;
-        const widthPercent = Math.max((1 / 7) * 100, (block.durationDays / 7) * 100);
+        const daySlotWidth = 1 / 7;
+        const colWidth = daySlotWidth / block.colCount;
+        const leftPercent = (block.dayOfWeek / 7 + block.colIndex * colWidth) * 100;
+        const widthPercent = colWidth * block.colSpan * block.durationDays * 100;
+        const [h = 0, m = 0] = block.startTime.split(':').map(Number);
+        const topPercent = ((h * 60 + m) / (24 * 60)) * 100;
         return (
           <div
             key={block.id}
@@ -88,7 +168,7 @@ export function ExplorerWeekRow({ weekStart, onSelect }: ExplorerWeekRowProps) {
             style={{
               left: `${leftPercent}%`,
               width: `${widthPercent}%`,
-              top: 28,
+              top: `${topPercent}%`,
               backgroundColor: block.color,
             }}
           />
@@ -97,3 +177,4 @@ export function ExplorerWeekRow({ weekStart, onSelect }: ExplorerWeekRowProps) {
     </div>
   );
 }
+
