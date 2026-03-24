@@ -50,18 +50,32 @@ interface DayLayout {
   colCount: number;
 }
 
+interface DayLayoutResult {
+  layouts: DayLayout[];
+  /** slotTop[h] = Y of the top of hour h in px. slotTop[24] = total grid height. */
+  slotTop: number[];
+}
+
 /**
- * Lay out all events for the day against a unified 1px-per-minute grid.
+ * Lay out all events for the day using variable-height hour slots.
  *
- * - `topPx`    = startMin × PX_PER_MIN  (absolute from container top)
- * - `heightPx` = max(MIN_BLOCK_H, durationMin × PX_PER_MIN)
- * - Concurrent events (overlapping time ranges) are split into side-by-side columns.
+ * Hour slots expand when stacked short events need more than HOUR_HEIGHT px.
+ * Within each slot, time is scaled linearly so the 9:00–11:00 event grows
+ * to span the full (expanded 9:00 slot) + (10:00 slot).
+ * A push-down pass then resolves any remaining overlap within columns.
  */
 function computeDayLayout(
   events: (Event | PlannedEvent)[],
   getDisplayEnd: (ev: Event | PlannedEvent) => string,
-): DayLayout[] {
-  if (events.length === 0) return [];
+): DayLayoutResult {
+  /** Build a uniform slotTop when there are no events. */
+  function uniformSlotTop(): number[] {
+    const st = new Array<number>(25).fill(0);
+    for (let h = 0; h < 24; h++) st[h + 1] = st[h] + HOUR_HEIGHT;
+    return st;
+  }
+
+  if (events.length === 0) return { layouts: [], slotTop: uniformSlotTop() };
 
   const parsed = events.map((ev) => {
     const startMin = parseMinutesOfDay(
@@ -124,20 +138,64 @@ function computeDayLayout(
     for (const idx of members) colCountOf[idx] = totalCols;
   }
 
-  // ── Pass 1: time-proportional placement with minimum visual height ─────────
-  const layouts: DayLayout[] = parsed.map((p, i) => ({
-    ev: p.ev,
-    topPx: p.startMin * PX_PER_MIN,
-    heightPx: Math.max(MIN_VISUAL_H, (p.endMin - p.startMin) * PX_PER_MIN),
-    colIndex: colOf[i],
-    colCount: colCountOf[i],
-  }));
+  // ── Step: Compute per-hour slot heights ────────────────────────────────────
+  // For each hour slot, simulate stacking the events that START in that slot
+  // per column and find how much vertical space is needed.  Multi-hour events
+  // only consume their within-slot portion so they don't inflate the slot.
+  const slotHeight = new Array<number>(24).fill(HOUR_HEIGHT);
 
-  // ── Pass 2: push-down within each column ──────────────────────────────────
-  // When a short event expands to MIN_VISUAL_H, it may now visually overlap
-  // the next sequential event in the same column.  Scan each column top-to-
-  // bottom and shift any event whose natural topPx falls inside the expanded
-  // block of its predecessor.
+  for (let h = 0; h < 24; h++) {
+    const slotStartMin = h * 60;
+    const slotEndMin = slotStartMin + 60;
+    const colBottoms = new Map<number, number>(); // col → cursor in px from slot start
+
+    // Process events that start in this slot, in time order
+    const inSlot = parsed
+      .map((p, i) => ({ p, i }))
+      .filter(({ p }) => Math.floor(p.startMin / 60) === h)
+      .sort((a, b) => a.p.startMin - b.p.startMin);
+
+    for (const { p, i } of inSlot) {
+      const col = colOf[i];
+      const naturalOffsetPx = (p.startMin - slotStartMin) * PX_PER_MIN;
+      // Only count the portion of the event that lives within this slot
+      const withinSlotMin = Math.min(p.endMin, slotEndMin) - p.startMin;
+      const visualH = Math.max(MIN_VISUAL_H, withinSlotMin * PX_PER_MIN);
+
+      const cursor = Math.max(colBottoms.get(col) ?? 0, naturalOffsetPx);
+      colBottoms.set(col, cursor + visualH);
+    }
+
+    let maxBottom = HOUR_HEIGHT;
+    for (const bottom of colBottoms.values()) maxBottom = Math.max(maxBottom, bottom);
+    slotHeight[h] = maxBottom;
+  }
+
+  // ── Step: Cumulative slot tops ─────────────────────────────────────────────
+  const slotTop = new Array<number>(25).fill(0);
+  for (let h = 0; h < 24; h++) slotTop[h + 1] = slotTop[h] + slotHeight[h];
+
+  // ── Step: Map time → Y using stretched slot coordinates ───────────────────
+  function timeToY(min: number): number {
+    const h = Math.min(23, Math.floor(min / 60));
+    const fraction = (min - h * 60) / 60;
+    return slotTop[h] + fraction * slotHeight[h];
+  }
+
+  // ── Step: Place events ─────────────────────────────────────────────────────
+  const layouts: DayLayout[] = parsed.map((p, i) => {
+    const topPx = timeToY(p.startMin);
+    const rawH = timeToY(p.endMin) - topPx;
+    return {
+      ev: p.ev,
+      topPx,
+      heightPx: Math.max(MIN_VISUAL_H, rawH),
+      colIndex: colOf[i],
+      colCount: colCountOf[i],
+    };
+  });
+
+  // ── Step: Push-down to resolve remaining overlap within columns ────────────
   const byCol = new Map<number, number[]>();
   layouts.forEach((l, i) => {
     if (!byCol.has(l.colIndex)) byCol.set(l.colIndex, []);
@@ -149,13 +207,11 @@ function computeDayLayout(
       const cur = layouts[indices[i]];
       const nxt = layouts[indices[i + 1]];
       const curBottom = cur.topPx + cur.heightPx;
-      if (curBottom > nxt.topPx) {
-        nxt.topPx = curBottom;
-      }
+      if (curBottom > nxt.topPx) nxt.topPx = curBottom;
     }
   }
 
-  return layouts;
+  return { layouts, slotTop };
 }
 
 // ── MULTI-DAY BANNERS (Part 3 — UV-C) ─────────────────────────────────────────
@@ -336,14 +392,15 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
     );
   }
 
-  const dayLayouts = computeDayLayout(dayEvents, getDisplayEnd);
-  // Actual grid height — may exceed TOTAL_HEIGHT if push-down expansion occurs
-  const gridHeight = dayLayouts.reduce(
-    (h, l) => Math.max(h, l.topPx + l.heightPx),
-    TOTAL_HEIGHT,
-  );
+  const { layouts: dayLayouts, slotTop } = computeDayLayout(dayEvents, getDisplayEnd);
+  const gridHeight = slotTop[24];
   const now = new Date();
-  const nowTotalMin = isToday ? now.getHours() * 60 + now.getMinutes() : -1;
+  const nowHour = isToday ? now.getHours() : 0;
+  const nowMinutes = isToday ? now.getMinutes() : 0;
+  // Y of the current time in stretched slot coordinates
+  const nowY = isToday
+    ? slotTop[nowHour] + (nowMinutes / 60) * (slotTop[nowHour + 1] - slotTop[nowHour])
+    : -1;
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -356,7 +413,7 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
             <div
               key={h}
               className="absolute w-full pr-2 text-right text-xs text-gray-400 dark:text-gray-500 leading-none"
-              style={{ top: h * HOUR_HEIGHT + 3 }}
+              style={{ top: slotTop[h] + 3 }}
             >
               {hourLabel(h)}
             </div>
@@ -370,20 +427,20 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
             <div key={h}>
               <div
                 className="absolute inset-x-0 border-t border-gray-100 dark:border-gray-700"
-                style={{ top: h * HOUR_HEIGHT }}
+                style={{ top: slotTop[h] }}
               />
               <div
                 className="absolute inset-x-0 border-t border-gray-50 dark:border-gray-800"
-                style={{ top: h * HOUR_HEIGHT + 30 }}
+                style={{ top: (slotTop[h] + slotTop[h + 1]) / 2 }}
               />
             </div>
           ))}
 
           {/* Current time indicator */}
-          {nowTotalMin >= 0 && (
+          {nowY >= 0 && (
             <div
               className="absolute inset-x-0 z-20 pointer-events-none"
-              style={{ top: nowTotalMin * PX_PER_MIN }}
+              style={{ top: nowY }}
             >
               <div className="relative border-t-2 border-purple-500">
                 <div className="absolute -top-1.5 -left-1 h-3 w-3 rounded-full bg-purple-500" />
@@ -461,7 +518,7 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
                   key={`${c.taskRef}-${c.completedAt}`}
                   icon={icon}
                   offsetIndex={idx}
-                  topPx={h * HOUR_HEIGHT + HOUR_HEIGHT - 32}
+                  topPx={slotTop[h + 1] - 32}
                   onClick={() => setOpenCompletion(c)}
                 />
               );
