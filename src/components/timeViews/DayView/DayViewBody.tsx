@@ -63,9 +63,15 @@ function computeHourLayout(
   events: (Event | PlannedEvent)[],
   getDisplayEnd: (ev: Event | PlannedEvent) => string,
 ): HourLayoutResult {
-  // Row height is capped at each event's within-hour portion so a single
-  // multi-hour event doesn't expand the row. The EventBlock still renders
-  // at its full duration height (overflowing into subsequent rows).
+  // Top position is derived from each event's actual start time offset within
+  // the hour — not from cluster membership. This ensures sequential events in
+  // the same column (e.g. 9:00–9:15 and 9:15–9:30 bridged by a 9:00–11:00
+  // long event) stack at the correct vertical position rather than all landing
+  // at top=0.
+  //
+  // Row height only accounts for each event's within-hour portion so a
+  // multi-hour block doesn't balloon the row; it overflows visually.
+  const hourStartMin = hour * 60;
   const hourEndMin = (hour + 1) * 60;
   if (events.length === 0) return { layouts: [], rowHeight: ROW_HEIGHT_PX };
 
@@ -74,12 +80,11 @@ function computeHourLayout(
       (ev as { startTime?: string }).startTime ?? '00:00',
     );
     const rawEnd = parseMinutesOfDay(getDisplayEnd(ev));
-    // Ensure endMin > startMin so duration is positive
     const endMin = rawEnd > startMin ? rawEnd : startMin + 15;
     return { ev, startMin, endMin };
   });
 
-  // Sort by start time; longer events first on tie
+  // Sort by start time; longer events first on tie (ensures they win col 0)
   parsed.sort((a, b) => a.startMin - b.startMin || b.endMin - a.endMin);
 
   const n = parsed.length;
@@ -98,7 +103,7 @@ function computeHourLayout(
       for (let k = 0; k < n; k++) {
         if (clusterIdx[k] !== -1) continue;
         const b = parsed[k];
-        // Events A and B overlap iff A.start < B.end && B.start < A.end
+        // A and B overlap iff A.start < B.end && B.start < A.end
         if (a.startMin < b.endMin && b.startMin < a.endMin) {
           clusterIdx[k] = clusterId;
           members.push(k);
@@ -116,7 +121,7 @@ function computeHourLayout(
     const sorted = [...members].sort(
       (a, b) => parsed[a].startMin - parsed[b].startMin,
     );
-    const colEnds: number[] = []; // colEnds[col] = end time of last event in that column
+    const colEnds: number[] = []; // colEnds[col] = end-time of last assigned event
     for (const idx of sorted) {
       const s = parsed[idx].startMin;
       let col = colEnds.findIndex((et) => et <= s);
@@ -131,39 +136,25 @@ function computeHourLayout(
     for (const idx of members) colCountOf[idx] = totalCols;
   }
 
-  // ── Order clusters chronologically; assign vertical (top) positions ────────
-  const orderedClusters = clusters
-    .map((members) => ({
-      members,
-      minStart: Math.min(...members.map((m) => parsed[m].startMin)),
-    }))
-    .sort((a, b) => a.minStart - b.minStart);
-
-  const topPxOf = new Array<number>(n).fill(0);
-  let currentTopPx = 0;
-
-  for (const cluster of orderedClusters) {
-    const clusterHeight = Math.max(
-      ...cluster.members.map((m) => {
-        // Use the within-hour portion only for row-height accounting.
-        // This prevents a 9–11 event from making the 9:00 row 112px tall.
-        const withinHourDur =
-          Math.min(parsed[m].endMin, hourEndMin) - parsed[m].startMin;
-        return Math.max(32, (Math.max(0, withinHourDur) / 60) * ROW_HEIGHT_PX);
-      }),
-    );
-    for (const m of cluster.members) topPxOf[m] = currentTopPx;
-    currentTopPx += clusterHeight;
-  }
-
+  // ── Top position: time-based offset within the hour row ───────────────────
+  // Sequential events in the same column (e.g. bridged by a long event) each
+  // land at their own correct vertical position.
   const layouts: HourLayout[] = parsed.map((p, i) => ({
     ev: p.ev,
-    topPx: topPxOf[i],
+    topPx: ((p.startMin - hourStartMin) / 60) * ROW_HEIGHT_PX,
     colIndex: colOf[i],
     colCount: colCountOf[i],
   }));
 
-  return { layouts, rowHeight: Math.max(ROW_HEIGHT_PX, currentTopPx) };
+  // ── Row height: max within-hour bottom-edge across all events ─────────────
+  let rowHeight = ROW_HEIGHT_PX;
+  for (let i = 0; i < n; i++) {
+    const withinHourDur = Math.min(parsed[i].endMin, hourEndMin) - parsed[i].startMin;
+    const blockH = Math.max(32, (Math.max(0, withinHourDur) / 60) * ROW_HEIGHT_PX);
+    rowHeight = Math.max(rowHeight, layouts[i].topPx + blockH);
+  }
+
+  return { layouts, rowHeight };
 }
 
 // ── MULTI-DAY BANNERS (Part 3 — UV-C) ─────────────────────────────────────────
