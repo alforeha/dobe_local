@@ -7,6 +7,7 @@
 import { useState, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { PopupShell } from '../../../../shared/popups/PopupShell';
+import { IconPicker } from '../../../../shared/IconPicker';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { useUserStore } from '../../../../../stores/useUserStore';
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
@@ -135,7 +136,9 @@ export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProp
   const [name, setName] = useState(
     isEditMode ? editRoutine.name : (prefill?.name ?? ''),
   );
-  const icon = isEditMode ? editRoutine.icon : (prefill?.icon ?? 'routine');
+  const [iconKey, setIconKey] = useState(
+    isEditMode ? editRoutine.icon : (prefill?.icon ?? 'routine'),
+  );
   const [color, setColor] = useState(
     isEditMode ? editRoutine.color : (prefill?.color ?? COLOUR_SWATCHES[0]),
   );
@@ -212,6 +215,7 @@ export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProp
       const updated: PlannedEvent = {
         ...editRoutine,
         name: name.trim(),
+        icon: iconKey,
         color,
         taskPool,
         recurrenceInterval,
@@ -226,7 +230,7 @@ export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProp
         id,
         name: name.trim(),
         description: '',
-        icon,
+        icon: iconKey,
         color,
         seedDate,
         dieDate: null,
@@ -291,6 +295,11 @@ export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProp
             placeholder="e.g. Morning routine"
             className={inputCls}
           />
+        </Field>
+
+        {/* Icon */}
+        <Field label="Icon">
+          <IconPicker value={iconKey} onChange={setIconKey} />
         </Field>
 
         {/* Colour */}

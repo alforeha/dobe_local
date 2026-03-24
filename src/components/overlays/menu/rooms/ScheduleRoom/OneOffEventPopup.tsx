@@ -9,6 +9,7 @@
 import { useState, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { PopupShell } from '../../../../shared/popups/PopupShell';
+import { IconPicker } from '../../../../shared/IconPicker';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
@@ -100,6 +101,7 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
 
   // ── Form state ────────────────────────────────────────────────────────────
   const [name, setName] = useState(isEditMode ? editEvent.name : '');
+  const [iconKey, setIconKey] = useState(isEditMode ? editEvent.icon : 'event');
   const [date, setDate] = useState(isEditMode ? editEvent.seedDate : todayISO());
   const [startTime, setStartTime] = useState(isEditMode ? editEvent.startTime : '09:00');
   const [endTime, setEndTime] = useState(isEditMode ? editEvent.endTime : '10:00');
@@ -148,6 +150,7 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
         ...editEvent,
         name: name.trim(),
         description,
+        icon: iconKey,
         color,
         seedDate: date,
         recurrenceInterval,
@@ -169,7 +172,7 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
         id,
         name: name.trim(),
         description,
-        icon: 'event',
+        icon: iconKey,
         color,
         seedDate: date,
         dieDate: date,
@@ -266,6 +269,11 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
             />
           </Field>
         </div>
+
+        {/* Icon */}
+        <Field label="Icon">
+          <IconPicker value={iconKey} onChange={setIconKey} />
+        </Field>
 
         {/* Colour */}
         <Field label="Colour">

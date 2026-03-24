@@ -4,6 +4,8 @@ interface EventBlockProps {
   color: string;
   startTime: string;
   endTime: string;
+  /** Optional icon key resolved via resolveIcon() */
+  icon?: string;
   /** Pre-calculated height in px from the layout engine */
   heightPx: number;
   taskCount: number;
@@ -24,12 +26,15 @@ interface EventBlockProps {
   muted?: boolean;
 }
 
+import { resolveIcon } from '../../../constants/iconMap';
+
 /** Event block in DayView — absolutely positioned within the unified day-grid. */
 export function EventBlock({
   name,
   color,
   startTime,
   endTime,
+  icon,
   heightPx,
   taskCount,
   taskComplete,
@@ -76,7 +81,12 @@ export function EventBlock({
 
       {/* Left: name + time */}
       <div className="flex-1 min-w-0 flex flex-col justify-center">
-        <div className="font-semibold truncate leading-tight text-sm">{name}</div>
+        <div className="font-semibold truncate leading-tight text-sm">
+          {icon && (
+            <span className="mr-1 opacity-90" aria-hidden="true">{resolveIcon(icon)}</span>
+          )}
+          {name}
+        </div>
         {heightPx >= 30 && (
           <div className="text-white/80 text-[11px] leading-tight truncate">{startTime} → {endTime}</div>
         )}

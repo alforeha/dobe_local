@@ -11,19 +11,11 @@ import { taskTemplateLibrary } from '../../../../coach';
 import { starterTaskTemplates } from '../../../../coach/StarterQuestLibrary';
 import { useScheduleStore } from '../../../../stores/useScheduleStore';
 import { useProgressionStore } from '../../../../stores/useProgressionStore';
+import { resolveIcon } from '../../../../constants/iconMap';
 import type { TaskTemplate, TaskType, XpAward } from '../../../../types/taskTemplate';
 import type { StatGroupKey } from '../../../../types/user';
 
 // ── STAT ICONS (mirrors StatIcon.tsx) ────────────────────────────────────────
-
-const STAT_ICONS: Record<StatGroupKey, string> = {
-  health: '❤️',
-  strength: '⚔️',
-  agility: '⚡',
-  defense: '🛡️',
-  charisma: '💬',
-  wisdom: '📖',
-};
 
 const STAT_KEYS: StatGroupKey[] = [
   'health', 'strength', 'agility', 'defense', 'charisma', 'wisdom',
@@ -39,8 +31,8 @@ function getPrimaryStatIcon(xpAward: XpAward): string {
       best = key;
     }
   }
-  if (best === null || bestVal === 0) return '⚡'; // neutral for zero-XP (e.g. ROLL)
-  return STAT_ICONS[best];
+  if (best === null || bestVal === 0) return resolveIcon('agility'); // ⚡ for zero-XP (e.g. ROLL)
+  return resolveIcon(best);
 }
 
 // ── TASK TYPE PILLS ───────────────────────────────────────────────────────────
@@ -78,9 +70,9 @@ function getMergedTemplates(): TaskTemplate[] {
     if (t.id) map.set(t.id, t);
   }
   for (const t of starterTaskTemplates) {
-    if (t.id && !map.has(t.id)) map.set(t.id, t);
+    if (t.id && !map.has(t.id) && t.isSystem !== true) map.set(t.id, t);
   }
-  return Array.from(map.values());
+  return Array.from(map.values()).filter((t) => t.isSystem !== true);
 }
 
 // ── COMPONENT ─────────────────────────────────────────────────────────────────

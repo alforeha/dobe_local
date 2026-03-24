@@ -1,5 +1,6 @@
 import type { PlannedEvent } from '../../../../../types';
 import { isOneOffEvent } from '../../../../../utils/isOneOffEvent';
+import { resolveIcon } from '../../../../../constants/iconMap';
 
 interface PlannedEventBlockProps {
   event: PlannedEvent;
@@ -17,9 +18,7 @@ export function PlannedEventBlock({ event, onEdit }: PlannedEventBlockProps) {
       />
       <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-            {event.icon && !/^[\w-]+$/.test(event.icon) && (
-              <span className="mr-1">{event.icon}</span>
-            )}
+            <span className="mr-1" aria-hidden="true">{resolveIcon(event.icon)}</span>
             {event.name}
           </p>
         <p className="text-xs text-gray-400">

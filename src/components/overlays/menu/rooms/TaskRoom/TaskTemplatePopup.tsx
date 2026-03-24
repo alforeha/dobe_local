@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { PopupShell } from '../../../../shared/popups/PopupShell';
+import { IconPicker } from '../../../../shared/IconPicker';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import type {
   TaskTemplate,
@@ -189,6 +190,9 @@ export function TaskTemplatePopup({ editKey, editTemplate, onClose }: TaskTempla
   const [taskType, setTaskType] = useState<TaskType>(
     isEditMode && editTemplate ? editTemplate.taskType : 'CHECK',
   );
+  const [icon, setIcon] = useState(
+    isEditMode && editTemplate ? editTemplate.icon : 'check',
+  );
   const [secondaryTag, setSecondaryTag] = useState<TaskSecondaryTag | ''>( 
     isEditMode && editTemplate ? (editTemplate.secondaryTag ?? '') : '',
   );
@@ -217,7 +221,7 @@ export function TaskTemplatePopup({ editKey, editTemplate, onClose }: TaskTempla
     const template: TaskTemplate = {
       name: name.trim(),
       description: description.trim(),
-      icon: taskType.toLowerCase(),
+      icon,
       taskType,
       secondaryTag: secondaryTag === '' ? null : secondaryTag,
       inputFields: defaultInputFields(taskType),
@@ -281,6 +285,11 @@ export function TaskTemplatePopup({ editKey, editTemplate, onClose }: TaskTempla
               <option key={t} value={t}>{TASK_TYPE_LABELS[t]}</option>
             ))}
           </select>
+        </Field>
+
+        {/* Icon */}
+        <Field label="Icon">
+          <IconPicker value={icon} onChange={setIcon} />
         </Field>
 
         {/* Secondary Tag */}

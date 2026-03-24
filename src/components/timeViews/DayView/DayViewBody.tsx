@@ -570,6 +570,11 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
               continuesOverride.get(ev.id) ??
               (ev as { endTime?: string }).endTime ??
               '';
+            const evIcon = isPlanned
+              ? (ev as PlannedEvent).icon
+              : (ev as Event).plannedEventRef
+                ? plannedEvents[(ev as Event).plannedEventRef!]?.icon
+                : undefined;
 
             return (
               <EventBlock
@@ -579,6 +584,7 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
                 color={resolvedColor}
                 startTime={'startTime' in ev ? ev.startTime : ''}
                 endTime={displayEnd}
+                icon={evIcon}
                 heightPx={layout.heightPx}
                 taskCount={taskTotal}
                 taskComplete={taskDone}

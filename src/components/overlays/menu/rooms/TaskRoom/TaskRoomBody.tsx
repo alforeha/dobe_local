@@ -20,6 +20,7 @@ export function TaskRoomBody({ templates, onEdit }: TaskRoomBodyProps) {
           key={key}
           templateKey={key}
           name={t.name}
+          icon={t.icon}
           taskType={t.taskType}
           secondaryTag={t.secondaryTag}
           xpTotal={Object.values(t.xpAward).reduce((a, b) => a + b, 0)}

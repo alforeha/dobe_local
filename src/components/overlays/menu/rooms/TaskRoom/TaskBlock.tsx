@@ -1,8 +1,10 @@
 import type { TaskType, TaskSecondaryTag } from '../../../../../types';
+import { resolveIcon } from '../../../../../constants/iconMap';
 
 interface TaskBlockProps {
   templateKey: string;
   name: string;
+  icon: string;
   taskType: TaskType;
   secondaryTag: TaskSecondaryTag | null;
   xpTotal: number;
@@ -12,9 +14,12 @@ interface TaskBlockProps {
   onEdit?: () => void;
 }
 
-export function TaskBlock({ name, taskType, secondaryTag, xpTotal, isCustom, onEdit }: TaskBlockProps) {
+export function TaskBlock({ name, icon, taskType, secondaryTag, xpTotal, isCustom, onEdit }: TaskBlockProps) {
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg">
+    <div className="flex items-center gap-3 px-3 py-2.5 min-h-[44px] bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg">
+      <span className="w-8 shrink-0 text-xl leading-none text-center" aria-hidden="true">
+        {resolveIcon(icon)}
+      </span>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-gray-800 dark:text-gray-200 truncate">{name}</p>
         <div className="flex items-center gap-1.5 mt-0.5">

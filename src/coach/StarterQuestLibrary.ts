@@ -192,9 +192,10 @@ export const starterTaskTemplates: TaskTemplate[] = [
     media: null,
     items: [],
   },
-  // ONBOARDING TASKS
+  // ONBOARDING TASKS — isSystem: true hides them from all user-facing pickers
   {
     id: STARTER_TEMPLATE_IDS.openWelcomeEvent,
+    isSystem: true,
     name: 'Open the Welcome Event',
     description: 'Tap the Welcome Event to begin your first quest.',
     icon: 'check',
@@ -208,6 +209,7 @@ export const starterTaskTemplates: TaskTemplate[] = [
   },
   {
     id: STARTER_TEMPLATE_IDS.setupSchedule,
+    isSystem: true,
     name: 'Set Up Your Schedule',
     description: 'Explore prebuilts, add a default routine, and switch between time views.',
     icon: 'checklist',
@@ -227,6 +229,7 @@ export const starterTaskTemplates: TaskTemplate[] = [
   },
   {
     id: STARTER_TEMPLATE_IDS.learnGrounds,
+    isSystem: true,
     name: 'Learn the Grounds',
     description: 'Explore resources, add a favourite task, and complete the GTD task from Quest 1.',
     icon: 'checklist',
@@ -248,6 +251,7 @@ export const starterTaskTemplates: TaskTemplate[] = [
   },
   {
     id: STARTER_TEMPLATE_IDS.claimIdentity,
+    isSystem: true,
     name: 'Claim Your Identity',
     description: 'Set your display name and establish your presence in the pond.',
     icon: 'form',
