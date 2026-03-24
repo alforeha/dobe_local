@@ -1,6 +1,7 @@
 import { useRef, useState, useLayoutEffect, useEffect } from 'react';
 import { useAppDate } from '../../../utils/useAppDate';
 import { useScheduleStore } from '../../../stores/useScheduleStore';
+import { useSystemStore } from '../../../stores/useSystemStore';
 import { useShallow } from 'zustand/react/shallow';
 import { WeekEventCard } from './WeekEventCard';
 import { format, isSameDay } from '../../../utils/dateUtils';
@@ -163,6 +164,17 @@ export function WeekDayBlock({ date, onDaySelect }: WeekDayBlockProps) {
 
   const layouts = computeWeekDayLayout(dayEvents);
 
+  // ── Time range preference ────────────────────────────────────────────────
+  const timePreferences = useSystemStore((s) => s.settings?.timePreferences);
+  const startHour = parseInt((timePreferences?.weekView?.startTime ?? '06:00').split(':')[0]);
+  const endHour   = parseInt((timePreferences?.weekView?.endTime   ?? '22:00').split(':')[0]);
+  const visibleHours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
+  const clipOffsetPx    = startHour * HOUR_HEIGHT_PX;
+  const visibleGridH    = (endHour - startHour + 1) * HOUR_HEIGHT_PX;
+  const visibleNowPct   = isToday
+    ? Math.max(0, Math.min(100, ((nowPct / 100) * GRID_HEIGHT - clipOffsetPx) / visibleGridH * 100))
+    : 0;
+
   function resolveColor(ev: Event | PlannedEvent): string {
     if ('color' in ev && (ev as PlannedEvent).color) return (ev as PlannedEvent).color;
     const evt = ev as Event;
@@ -190,11 +202,11 @@ export function WeekDayBlock({ date, onDaySelect }: WeekDayBlockProps) {
       {/* Event grid — scales to fill available height, no scroll */}
       <div ref={gridRef} className="relative flex-1 w-full overflow-hidden">
         {/* Hour dividers */}
-        {Array.from({ length: 24 }, (_, h) => (
+        {visibleHours.map((h) => (
           <div
             key={h}
             className="absolute left-0 right-0 border-t border-gray-100 dark:border-gray-700/50"
-            style={{ top: `${(h / 24) * 100}%` }}
+            style={{ top: `${((h - startHour) / (endHour - startHour + 1)) * 100}%` }}
           />
         ))}
 
@@ -208,13 +220,16 @@ export function WeekDayBlock({ date, onDaySelect }: WeekDayBlockProps) {
             ? (() => { const [h=0,m=0] = ((ev as {endTime?:string}).endTime ?? '').split(':').map(Number); return h*60+m; })()
             : null;
           const isPastEvent = isToday && endMin !== null && endMin <= (nowPct / 100) * 24 * 60;
+          // Remap topPx from full 24h grid to the visible range
+          const clippedTopPx = Math.max(0, layout.topPx * scale - clipOffsetPx * scale);
+          const clippedHeightPx = Math.max(MIN_EVENT_HEIGHT * scale, layout.heightPx * scale);
           return (
             <WeekEventCard
               key={ev.id}
               name={'name' in ev ? ev.name : '\u2014'}
               color={color}
-              topPx={layout.topPx * scale}
-              heightPx={Math.max(MIN_EVENT_HEIGHT * scale, layout.heightPx * scale)}
+              topPx={clippedTopPx}
+              heightPx={clippedHeightPx}
               leftPercent={leftPercent}
               widthPercent={widthPercent}
               muted={isPastEvent}
@@ -226,7 +241,7 @@ export function WeekDayBlock({ date, onDaySelect }: WeekDayBlockProps) {
         {isToday && (
           <div
             className="absolute left-0 right-0 bg-gray-400/20 dark:bg-gray-900/40 pointer-events-none z-[5]"
-            style={{ top: 0, height: `${nowPct}%` }}
+            style={{ top: 0, height: `${visibleNowPct}%` }}
           />
         )}
 
@@ -234,7 +249,7 @@ export function WeekDayBlock({ date, onDaySelect }: WeekDayBlockProps) {
         {isToday && (
           <div
             className="absolute left-0 right-0 h-0.5 bg-purple-500 z-10 pointer-events-none"
-            style={{ top: `${nowPct}%` }}
+            style={{ top: `${visibleNowPct}%` }}
           />
         )}
       </div>

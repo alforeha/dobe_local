@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAppDate } from '../../../utils/useAppDate';
+import { useSystemStore } from '../../../stores/useSystemStore';
 import { isSameDay } from '../../../utils/dateUtils';
 
 interface ExplorerDayBlockProps {
@@ -14,18 +15,26 @@ export function ExplorerDayBlock({ date }: ExplorerDayBlockProps) {
   const isPast = !isToday && date < today;
   const isFirstOfMonth = date.getDate() === 1;
 
-  const [nowPct, setNowPct] = useState(() => {
+  const timePreferences = useSystemStore((s) => s.settings?.timePreferences);
+  const [rangeStartH, rangeStartM] = (timePreferences?.explorerView?.startTime ?? '00:00').split(':').map(Number);
+  const [rangeEndH,   rangeEndM]   = (timePreferences?.explorerView?.endTime   ?? '23:59').split(':').map(Number);
+  const rangeStartMin = (rangeStartH ?? 0) * 60 + (rangeStartM ?? 0);
+  const rangeEndMin   = (rangeEndH   ?? 23) * 60 + (rangeEndM   ?? 59);
+  const rangeMinutes  = Math.max(1, rangeEndMin - rangeStartMin);
+
+  const nowToRangePct = () => {
     const n = new Date();
-    return ((n.getHours() * 60 + n.getMinutes()) / (24 * 60)) * 100;
-  });
+    const nowMin = n.getHours() * 60 + n.getMinutes();
+    return ((Math.max(rangeStartMin, Math.min(rangeEndMin, nowMin)) - rangeStartMin) / rangeMinutes) * 100;
+  };
+
+  const [nowPct, setNowPct] = useState(nowToRangePct);
   useEffect(() => {
     if (!isToday) return;
-    const id = setInterval(() => {
-      const n = new Date();
-      setNowPct(((n.getHours() * 60 + n.getMinutes()) / (24 * 60)) * 100);
-    }, 60_000);
+    const id = setInterval(() => setNowPct(nowToRangePct()), 60_000);
     return () => clearInterval(id);
-  }, [isToday]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isToday, rangeStartMin, rangeEndMin, rangeMinutes]);
 
   return (
     <div className={`relative flex flex-1 flex-col h-36 border-r border-gray-100 dark:border-gray-700 p-0.5 ${isToday ? 'bg-purple-50 dark:bg-purple-900/20' : isPast ? 'opacity-40' : ''}`}>

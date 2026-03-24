@@ -4,9 +4,20 @@
 // No id — singleton per device.
 // ─────────────────────────────────────────
 
+export interface ViewTimeRange {
+  startTime: string; // HH:MM
+  endTime: string;   // HH:MM
+}
+
+/** Time range + which days of the week are visible (0=Mon … 6=Sun) */
+export interface WeekViewPreferences extends ViewTimeRange {
+  visibleDays: number[];
+}
+
 export interface TimePreferences {
-  dayStart: string;   // HH:MM
-  weekStart: string;  // mon | tue | ... | sun
+  dayView: ViewTimeRange;
+  weekView: WeekViewPreferences;
+  explorerView: WeekViewPreferences;
 }
 
 export interface TrackingSettings {

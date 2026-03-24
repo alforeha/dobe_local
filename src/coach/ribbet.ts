@@ -54,8 +54,8 @@ function pickComment(contextKey: string, tone: CoachTone, values: DynamicValues 
  * Select and return an ambient coach comment for the rollover step9 feed push.
  *
  * Priority chain:
- *   1. Morning boost window (06:00–11:59)
- *   2. Evening boost window (20:00–23:59)
+ *   1. Morning boost window (05:00–09:59)
+ *   2. Evening boost window (18:00–23:59)
  *   3. Active streak
  *   4. Active quest in progress
  *   5. Recent activity (tasks completed this session)
@@ -69,11 +69,11 @@ export function ribbet(user: User): string {
   const milestones = user.progression.stats.milestones;
   const acts = useProgressionStore.getState().acts;
 
-  if (hour >= 6 && hour < 12) {
+  if (hour >= 5 && hour < 10) {
     return pickComment('ambient.morning', tone);
   }
 
-  if (hour >= 20) {
+  if (hour >= 18) {
     return pickComment('ambient.evening', tone);
   }
 

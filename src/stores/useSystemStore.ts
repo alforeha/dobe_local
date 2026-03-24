@@ -106,7 +106,11 @@ export const useSystemStore = create<SystemState & SystemActions>()(
           }
           return {
             settings: {
-              timePreferences: { dayStart: '06:00', weekStart: 'mon' },
+              timePreferences: {
+                dayView:      { startTime: '06:00', endTime: '23:00' },
+                weekView:     { startTime: '06:00', endTime: '22:00', visibleDays: [0, 1, 2, 3, 4, 5, 6] },
+                explorerView: { startTime: '00:00', endTime: '23:59', visibleDays: [0, 1, 2, 3, 4, 5, 6] },
+              },
               coachPreferences: { tone: 'friendly', trackingSettings: {}, character: 'default' },
               displayPreferences: { mode, theme: 'default' },
               socialPreferences: null,

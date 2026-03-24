@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { WeekDayBlock } from './WeekDayBlock';
 import { getWeekDays } from '../../../utils/dateUtils';
+import { useSystemStore } from '../../../stores/useSystemStore';
 
 interface WeekViewBodyProps {
   weekStart: Date;
@@ -9,6 +10,8 @@ interface WeekViewBodyProps {
 
 export function WeekViewBody({ weekStart, onDaySelect }: WeekViewBodyProps) {
   const days = getWeekDays(weekStart);
+  const visibleDays = useSystemStore((s) => s.settings?.timePreferences?.weekView?.visibleDays ?? [0, 1, 2, 3, 4, 5, 6]);
+  const filteredDays = days.filter((_, i) => visibleDays.includes(i));
   const scrollRef = useRef<HTMLDivElement>(null);
 
   function handleWheel(e: React.WheelEvent<HTMLDivElement>) {
@@ -20,8 +23,8 @@ export function WeekViewBody({ weekStart, onDaySelect }: WeekViewBodyProps) {
 
   return (
     <div ref={scrollRef} className="flex-1 overflow-x-auto" onWheel={handleWheel}>
-      <div className="flex h-full w-full gap-1 p-2" style={{ minWidth: `${days.length * 240}px` }}>
-        {days.map((day) => (
+      <div className="flex h-full w-full gap-1 p-2" style={{ minWidth: `${filteredDays.length * 240}px` }}>
+        {filteredDays.map((day) => (
           <WeekDayBlock key={day.toISOString()} date={day} onDaySelect={onDaySelect} />
         ))}
       </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppDate } from '../../../utils/useAppDate';
 import { useScheduleStore } from '../../../stores/useScheduleStore';
+import { useSystemStore } from '../../../stores/useSystemStore';
 import { useShallow } from 'zustand/react/shallow';
 import { EventBlock } from './EventBlock';
 import { QACompletionIcon } from './QACompletionIcon';
@@ -321,6 +322,12 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
     return () => ro.disconnect();
   }, []);
 
+  // ── Time range preference ─────────────────────────────────────────────────
+  const timePreferences = useSystemStore((s) => s.settings?.timePreferences);
+  const startHour = parseInt((timePreferences?.dayView?.startTime ?? '06:00').split(':')[0]);
+  const endHour   = parseInt((timePreferences?.dayView?.endTime   ?? '23:00').split(':')[0]);
+  const visibleHours = HOURS.filter((h) => h >= startHour && h <= endHour);
+
   const { activeEvents, historyEvents, plannedEvents, tasks, taskTemplates } = useScheduleStore(
     useShallow((s) => ({
       activeEvents: s.activeEvents,
@@ -448,13 +455,17 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
   }
 
   const { layouts: dayLayouts, slotTop } = computeDayLayout(dayEvents, getDisplayEnd);
-  const gridHeight = slotTop[24];
 
-  // Scale the time axis up to fill the container when content is shorter than
-  // the available vertical space (avoids blank padding below the last hour row).
-  const yScale = containerH > 0 && containerH > gridHeight ? containerH / gridHeight : 1;
-  const scaledSlotTop = slotTop.map((y) => y * yScale);
-  const scaledGridHeight = gridHeight * yScale;
+  // Clip the rendered grid to [startHour, endHour]
+  const clipTopRaw       = slotTop[startHour];
+  const clipBottomRaw    = slotTop[Math.min(endHour + 1, 24)];
+  const visibleHeightRaw = clipBottomRaw - clipTopRaw;
+
+  // Scale the visible range up to fill the container when it's shorter than the available height.
+  const yScale = containerH > 0 && containerH > visibleHeightRaw ? containerH / visibleHeightRaw : 1;
+  const scaledSlotTop     = slotTop.map((y) => y * yScale);
+  const clipOffsetPx      = scaledSlotTop[startHour];
+  const scaledVisibleHeight = visibleHeightRaw * yScale;
   const scaledLayouts = dayLayouts.map((l) => ({
     ...l,
     topPx: l.topPx * yScale,
@@ -467,9 +478,9 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
   const nowTimeLabel = isToday
     ? `${String(nowHour).padStart(2, '0')}:${String(nowMinutes).padStart(2, '0')}`
     : '';
-  // Y of the current time in stretched slot coordinates
+  // Y of the current time in the clipped + stretched coordinate space
   const nowY = isToday
-    ? scaledSlotTop[nowHour] + (nowMinutes / 60) * (scaledSlotTop[nowHour + 1] - scaledSlotTop[nowHour])
+    ? scaledSlotTop[nowHour] + (nowMinutes / 60) * (scaledSlotTop[nowHour + 1] - scaledSlotTop[nowHour]) - clipOffsetPx
     : -1;
 
   return (
@@ -478,13 +489,13 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
 
       <div className="flex">
         {/* Hour label gutter */}
-        <div className="relative w-12 shrink-0" style={{ height: scaledGridHeight }}>
-          {HOURS.map((h) => (
+        <div className="relative w-12 shrink-0" style={{ height: scaledVisibleHeight }}>
+          {visibleHours.map((h) => (
             <div
               key={h}
               className="absolute w-full flex items-center justify-center text-gray-400 dark:text-gray-500 leading-none"
               style={{
-                top: scaledSlotTop[h],
+                top: scaledSlotTop[h] - clipOffsetPx,
                 height: scaledSlotTop[h + 1] - scaledSlotTop[h],
                 fontSize: '16px',
                 fontFamily: '"Gill Sans Nova", "Gill Sans Ultra Bold", "Gill Sans MT", "Gill Sans", sans-serif',
@@ -497,17 +508,17 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
         </div>
 
         {/* Event area */}
-        <div className={`relative flex-1 ${isPast ? 'opacity-40' : ''}`} style={{ height: scaledGridHeight }}>
+        <div className={`relative flex-1 ${isPast ? 'opacity-40' : ''}`} style={{ height: scaledVisibleHeight }}>
           {/* Hour dividers + half-hour ticks */}
-          {HOURS.map((h) => (
+          {visibleHours.map((h) => (
             <div key={h}>
               <div
                 className="absolute right-0 border-t border-gray-100 dark:border-gray-700"
-                style={{ top: scaledSlotTop[h], left: '-3rem' }}
+                style={{ top: scaledSlotTop[h] - clipOffsetPx, left: '-3rem' }}
               />
               <div
                 className="absolute right-0 border-t border-gray-50 dark:border-gray-800"
-                style={{ top: (scaledSlotTop[h] + scaledSlotTop[h + 1]) / 2 }}
+                style={{ top: (scaledSlotTop[h] + scaledSlotTop[h + 1]) / 2 - clipOffsetPx }}
               />
             </div>
           ))}
@@ -589,7 +600,7 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
                 taskCount={taskTotal}
                 taskComplete={taskDone}
                 completionState={evCompletionState}
-                topOffset={layout.topPx}
+                topOffset={layout.topPx - clipOffsetPx}
                 colIndex={layout.colIndex}
                 colCount={layout.colCount}
                 colSpan={layout.colSpan}
@@ -615,7 +626,7 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
                   key={`${c.taskRef}-${c.completedAt}`}
                   icon={icon}
                   offsetIndex={idx}
-                  topPx={scaledSlotTop[h + 1] - 32}
+                  topPx={scaledSlotTop[h + 1] - 32 - clipOffsetPx}
                   onClick={() => setOpenCompletion(c)}
                 />
               );
