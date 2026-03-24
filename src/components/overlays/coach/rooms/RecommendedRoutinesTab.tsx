@@ -115,6 +115,7 @@ export function RecommendedRoutinesTab() {
           editRoutine={null}
           prefill={prefill}
           onClose={() => setPrefill(null)}
+          isPrebuilt={true}
         />
       )}
     </>

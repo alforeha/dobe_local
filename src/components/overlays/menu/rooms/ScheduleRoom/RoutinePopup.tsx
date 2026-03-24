@@ -94,6 +94,8 @@ interface RoutinePopupProps {
   /** Optional pre-fill for add mode from prebuilt routines */
   prefill?: RoutinePopupPrefill;
   onClose: () => void;
+  /** If true, task pool is read-only and coach note is shown */
+  isPrebuilt?: boolean;
 }
 
 // ── FORM FIELD WRAPPER ────────────────────────────────────────────────────────
@@ -116,7 +118,7 @@ function Field({ label, hint, children }: FieldProps) {
 
 // ── COMPONENT ─────────────────────────────────────────────────────────────────
 
-export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProps) {
+export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false }: RoutinePopupProps) {
   const setPlannedEvent = useScheduleStore((s) => s.setPlannedEvent);
   const removePlannedEvent = useScheduleStore((s) => s.removePlannedEvent);
   const taskTemplates = useScheduleStore((s) => s.taskTemplates);
@@ -178,6 +180,11 @@ export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProp
 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
+  // Seed date state
+  const getAppDate = todayISO; // alias for clarity
+  const [seedDate, setSeedDate] = useState(
+    isEditMode ? editRoutine.seedDate : getAppDate()
+  );
 
   // ── Task pool toggle ──────────────────────────────────────────────────────
   function togglePoolItem(id: string) {
@@ -201,7 +208,8 @@ export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProp
     }
 
     const today = todayISO();
-    const seedDate = isEditMode ? editRoutine.seedDate : today;
+    // Use selected seedDate (string, YYYY-MM-DD)
+    const selectedSeedDate = seedDate;
 
     const recurrenceInterval = {
       frequency,
@@ -232,7 +240,7 @@ export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProp
         description: '',
         icon: iconKey,
         color,
-        seedDate,
+        seedDate: selectedSeedDate,
         dieDate: null,
         recurrenceInterval,
         activeState: 'active',
@@ -253,7 +261,7 @@ export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProp
 
       // D14 — same-day creation triggers immediate materialisation only when
       // today is a valid recurrence day for this routine's frequency/days filter.
-      if (seedDate <= today && isTodayARecurrenceDay(recurrenceInterval)) {
+      if (selectedSeedDate <= today && isTodayARecurrenceDay(recurrenceInterval)) {
         const currentTemplates = useScheduleStore.getState().taskTemplates;
         materialisePlannedEvent(newRoutine, today, currentTemplates);
       }
@@ -341,32 +349,6 @@ export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProp
           </Field>
         </div>
 
-        {/* Task Pool */}
-        <Field
-          label="Task pool"
-          hint="Tasks are drawn from this pool one at a time, cycling through in order."
-        >
-          <div className="max-h-36 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md divide-y divide-gray-100 dark:divide-gray-700">
-            {allTemplates.length === 0 && (
-              <p className="text-xs text-gray-400 italic p-3">No templates available yet.</p>
-            )}
-            {allTemplates.map(({ id, name: tName }) => (
-              <label
-                key={id}
-                className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                <input
-                  type="checkbox"
-                  checked={taskPool.includes(id)}
-                  onChange={() => togglePoolItem(id)}
-                  className="accent-indigo-500"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{tName}</span>
-              </label>
-            ))}
-          </div>
-        </Field>
-
         {/* Recurrence — frequency */}
         <Field label="Recurrence">
           <select
@@ -380,6 +362,123 @@ export function RoutinePopup({ editRoutine, prefill, onClose }: RoutinePopupProp
             <option value="custom">Custom</option>
           </select>
         </Field>
+
+        {/* Days — only for weekly */}
+        {frequency === 'weekly' && (
+          <Field label="Days">
+            <div className="flex gap-1.5 flex-wrap">
+              {WEEKDAYS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggleDay(key)}
+                  className={`w-8 h-8 rounded-full text-xs font-medium border transition-colors ${
+                    days.includes(key)
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </Field>
+        )}
+
+        {/* Interval */}
+        <Field label="Repeat every (interval)" hint="e.g. 2 = every 2 days/weeks/months">
+          <input
+            type="number"
+            value={interval}
+            onChange={(e) => setInterval(e.target.value === '' ? '' : Number(e.target.value))}
+            min={1}
+            step={1}
+            placeholder="1"
+            className={inputCls}
+          />
+        </Field>
+
+        {/* Custom condition — only for custom frequency */}
+        {frequency === 'custom' && (
+          <Field label="Custom condition" hint='e.g. "friday-13th", "last-monday-of-month"'>
+            <input
+              type="text"
+              value={customCondition}
+              onChange={(e) => setCustomCondition(e.target.value)}
+              placeholder="Describe the custom rule"
+              className={inputCls}
+            />
+          </Field>
+        )}
+
+        {/* Ends on */}
+        <Field label="Ends on (optional)" hint="Leave empty for no end date (indefinite)">
+          <input
+            type="date"
+            value={endsOn}
+            onChange={(e) => setEndsOn(e.target.value)}
+            className={inputCls}
+          />
+        </Field>
+
+        {/* Seed date */}
+        <Field label="Start date" hint="Date when this routine will first appear. Default: today.">
+          <input
+            type="date"
+            value={seedDate}
+            onChange={(e) => setSeedDate(e.target.value)}
+            className={inputCls}
+            min={getAppDate()}
+          />
+        </Field>
+
+        {/* Task Pool */}
+        {isPrebuilt ? (
+          <Field
+            label="Task pool"
+            hint="Task pool set by coach — edit anytime from your Schedule room"
+          >
+            <div className="max-h-36 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md divide-y divide-gray-100 dark:divide-gray-700">
+              {taskPool.length === 0 && (
+                <p className="text-xs text-gray-400 italic p-3">No tasks in this routine.</p>
+              )}
+              {taskPool.map((id) => {
+                const template = allTemplates.find((t) => t.id === id);
+                return template ? (
+                  <div key={id} className="flex items-center gap-2 px-3 py-2">
+                    <span className="text-base">📋</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{template.name}</span>
+                  </div>
+                ) : null;
+              })}
+            </div>
+          </Field>
+        ) : (
+          <Field
+            label="Task pool"
+            hint="Tasks are drawn from this pool one at a time, cycling through in order."
+          >
+            <div className="max-h-36 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md divide-y divide-gray-100 dark:divide-gray-700">
+              {allTemplates.length === 0 && (
+                <p className="text-xs text-gray-400 italic p-3">No templates available yet.</p>
+              )}
+              {allTemplates.map(({ id, name: tName }) => (
+                <label
+                  key={id}
+                  className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  <input
+                    type="checkbox"
+                    checked={taskPool.includes(id)}
+                    onChange={() => togglePoolItem(id)}
+                    className="accent-indigo-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{tName}</span>
+                </label>
+              ))}
+            </div>
+          </Field>
+        )}
 
         {/* Days — only for weekly */}
         {frequency === 'weekly' && (
