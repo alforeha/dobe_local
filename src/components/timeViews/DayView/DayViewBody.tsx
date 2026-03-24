@@ -166,9 +166,21 @@ function computeDayLayout(
       colBottoms.set(col, cursor + visualH);
     }
 
-    let maxBottom = HOUR_HEIGHT;
-    for (const bottom of colBottoms.values()) maxBottom = Math.max(maxBottom, bottom);
-    slotHeight[h] = maxBottom;
+    // Tail: natural empty time from the last event's actual end to the hour
+    // boundary. Adding this after the expanded stacks keeps the grid readable
+    // — events that end at 9:10 leave 50px of visible empty space before 10:00.
+    let lastNaturalEndMin = slotStartMin;
+    for (const { p } of inSlot) {
+      lastNaturalEndMin = Math.max(
+        lastNaturalEndMin,
+        Math.min(p.endMin, slotEndMin),
+      );
+    }
+    const tailPx = (slotEndMin - lastNaturalEndMin) * PX_PER_MIN;
+
+    let maxColBottom = 0;
+    for (const bottom of colBottoms.values()) maxColBottom = Math.max(maxColBottom, bottom);
+    slotHeight[h] = Math.max(HOUR_HEIGHT, maxColBottom + tailPx);
   }
 
   // ── Step: Cumulative slot tops ─────────────────────────────────────────────
