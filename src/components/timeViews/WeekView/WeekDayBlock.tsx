@@ -127,7 +127,7 @@ export function WeekDayBlock({ date, onDaySelect }: WeekDayBlockProps) {
 
   return (
     <div
-      className={`flex min-w-[240px] flex-col rounded-lg border bg-white dark:bg-gray-800 ${isToday ? 'border-purple-400' : 'border-gray-200 dark:border-gray-700'} ${onDaySelect ? 'cursor-pointer' : ''}`}
+      className={`flex min-w-[240px] flex-col rounded-lg border bg-white dark:bg-gray-800 transition-colors ${isToday ? 'border-purple-400' : 'border-gray-200 dark:border-gray-700'} ${onDaySelect ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/40 active:bg-gray-100 dark:active:bg-gray-700/70' : ''}`}
       role={onDaySelect ? 'button' : undefined}
       tabIndex={onDaySelect ? 0 : undefined}
       onClick={() => onDaySelect?.(date)}

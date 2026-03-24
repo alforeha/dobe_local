@@ -9,11 +9,10 @@ import type { Event } from '../../../types';
 interface ExplorerWeekRowProps {
   weekStart: Date;
   onSelect?: () => void;
-  onDaySelect?: (date: Date) => void;
 }
 
 /** One week row in the 57-week explorer. Tapping opens that week in WeekView (UI-07). */
-export function ExplorerWeekRow({ weekStart, onSelect, onDaySelect }: ExplorerWeekRowProps) {
+export function ExplorerWeekRow({ weekStart, onSelect }: ExplorerWeekRowProps) {
   const days = getWeekDays(weekStart);
   const today = useAppDate();
 
@@ -75,7 +74,7 @@ export function ExplorerWeekRow({ weekStart, onSelect, onDaySelect }: ExplorerWe
     >
       {/* Day label columns */}
       {days.map((day) => (
-        <ExplorerDayBlock key={format(day, 'iso')} date={day} onDaySelect={onDaySelect} />
+        <ExplorerDayBlock key={format(day, 'iso')} date={day} />
       ))}
 
       {/* Absolute color stripe blocks — positioned by day of week */}

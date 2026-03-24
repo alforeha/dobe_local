@@ -7,12 +7,11 @@ import { getPrevMonday, addDays } from '../../../utils/dateUtils';
 
 interface WeekExplorerProps {
   onWeekSelect?: (weekStart: Date) => void;
-  onDaySelect?: (date: Date) => void;
   todaySignal?: number;
 }
 
 /** 57-week rolling window explorer. Seed date defaults to today. */
-export function WeekExplorer({ onWeekSelect, onDaySelect, todaySignal }: WeekExplorerProps) {
+export function WeekExplorer({ onWeekSelect, todaySignal }: WeekExplorerProps) {
   const appDate = useAppDate();
   const appDateRef = useRef(appDate);
   // Sync ref after every render so the effect always sees the latest appDate
@@ -38,7 +37,7 @@ export function WeekExplorer({ onWeekSelect, onDaySelect, todaySignal }: WeekExp
         onSeedChange={setSeedDate}
       />
       <WeekExplorerSubHeader />
-      <WeekExplorerBody seedDate={seedDate} windowStart={windowStart} onWeekSelect={onWeekSelect} onDaySelect={onDaySelect} />
+      <WeekExplorerBody seedDate={seedDate} windowStart={windowStart} onWeekSelect={onWeekSelect} />
     </div>
   );
 }
