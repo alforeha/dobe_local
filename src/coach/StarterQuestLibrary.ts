@@ -37,16 +37,6 @@ export const STARTER_ACT_IDS = {
   wisdom:      'act-wisdom-00000000-0000-0000-00007',
 } as const;
 
-// ── SYSTEM TASK IDs (internal) ────────────────────────────────────────────────
-// Onboarding task templates — seeded by the coach engine, not user-facing.
-// Used only within this file to stamp isSystem on seeded templates.
-const SYSTEM_TASK_IDS = new Set([
-  'tmpl-open-welcome-0000-0000-0000-0001',
-  'tmpl-setup-schedule-000-0000-0000-01',
-  'tmpl-learn-grounds-000-0000-0000-0001',
-  'tmpl-claim-identity-00-0000-0000-0001',
-]);
-
 // ── STABLE TASK TEMPLATE IDs ─────────────────────────────────────────────────
 
 export const STARTER_TEMPLATE_IDS = {
@@ -992,7 +982,7 @@ export function seedStarterTemplates(): void {
 
   for (const [id, template] of allTemplates) {
     if (idSet.has(id)) {
-      if (SYSTEM_TASK_IDS.has(id)) continue; // system templates stay in coach bundle only
+      if (template.isSystem === true) continue; // system templates stay in coach bundle only
       scheduleStore.setTaskTemplate(id, {
         ...template,
         isCustom: false,
