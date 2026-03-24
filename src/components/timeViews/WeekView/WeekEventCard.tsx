@@ -1,16 +1,29 @@
 interface WeekEventCardProps {
   name: string;
   color: string;
+  topPx: number;
+  heightPx: number;
+  leftPercent: number;
+  widthPercent: number;
 }
 
-/** Name-only event card in WeekView. Color from PlannedEvent.color. */
-export function WeekEventCard({ name, color }: WeekEventCardProps) {
+/** Absolutely-positioned event card in WeekView. Left border color swatch, name truncated. */
+export function WeekEventCard({ name, color, topPx, heightPx, leftPercent, widthPercent }: WeekEventCardProps) {
   return (
     <div
-      className="truncate rounded px-1 py-0.5 text-xs font-medium text-white"
-      style={{ backgroundColor: color }}
+      className="absolute overflow-hidden rounded text-xs font-medium text-white"
+      style={{
+        top: topPx,
+        height: heightPx,
+        left: `${leftPercent}%`,
+        width: `${widthPercent}%`,
+        borderLeft: `4px solid ${color}`,
+        backgroundColor: `${color}cc`,
+      }}
     >
-      {name}
+      <span className="block overflow-hidden whitespace-nowrap px-1 leading-tight" style={{ paddingTop: 2 }}>
+        {name}
+      </span>
     </div>
   );
 }

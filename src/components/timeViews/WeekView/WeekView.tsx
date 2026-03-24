@@ -7,9 +7,10 @@ import { getPrevMonday, addDays } from '../../../utils/dateUtils';
 interface WeekViewProps {
   initialWeekStart?: Date;
   todaySignal?: number;
+  onDaySelect?: (date: Date) => void;
 }
 
-export function WeekView({ initialWeekStart, todaySignal }: WeekViewProps) {
+export function WeekView({ initialWeekStart, todaySignal, onDaySelect }: WeekViewProps) {
   const appDate = useAppDate();
   const appDateRef = useRef(appDate);
   // Sync ref after every render so the effect always sees the latest appDate
@@ -32,7 +33,7 @@ export function WeekView({ initialWeekStart, todaySignal }: WeekViewProps) {
         onBack={goBack}
         onForward={goForward}
       />
-      <WeekViewBody weekStart={weekStart} />
+      <WeekViewBody weekStart={weekStart} onDaySelect={onDaySelect} />
     </div>
   );
 }

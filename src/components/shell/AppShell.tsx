@@ -117,6 +117,7 @@ export function AppShell() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [editPlannedId, setEditPlannedId] = useState<string | null>(null);
   const [weekViewSeed, setWeekViewSeed] = useState<Date | null>(null);
+  const [dayViewSeed, setDayViewSeed] = useState<Date | null>(null);
   const [overlayClosing, setOverlayClosing] = useState(false);
   const [todaySignals, setTodaySignals] = useState({ day: 0, week: 0, explorer: 0 });
   const [isBooted, setIsBooted] = useState(!showWelcome);
@@ -237,6 +238,11 @@ export function AppShell() {
     autoCheckQuestItem(STARTER_TEMPLATE_IDS.setupSchedule, 'week_view');
   };
 
+  const handleDaySelect = (date: Date) => {
+    setDayViewSeed(date);
+    setActiveView('day');
+  };
+
   const openEventOverlay = (eventId: string) => {
     if (closeTimerRef.current !== null) {
       clearTimeout(closeTimerRef.current);
@@ -280,6 +286,8 @@ export function AppShell() {
         onEventOpen={openEventOverlay}
         onWeekSelect={handleWeekSelect}
         weekViewSeed={weekViewSeed}
+        onDaySelect={handleDaySelect}
+        dayViewSeed={dayViewSeed}
         onEditPlanned={(id) => setEditPlannedId(id)}
         todaySignals={todaySignals}
       />

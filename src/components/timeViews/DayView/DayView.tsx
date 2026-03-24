@@ -7,15 +7,16 @@ interface DayViewProps {
   onEventOpen: (eventId: string) => void;
   onEditPlanned?: (plannedId: string) => void;
   todaySignal?: number;
+  initialDate?: Date;
 }
 
-export function DayView({ onEventOpen, onEditPlanned, todaySignal }: DayViewProps) {
+export function DayView({ onEventOpen, onEditPlanned, todaySignal, initialDate }: DayViewProps) {
   const appDate = useAppDate();
   const appDateRef = useRef(appDate);
   // Sync ref after every render so the effect always sees the latest appDate
   useLayoutEffect(() => { appDateRef.current = appDate; });
 
-  const [currentDate, setCurrentDate] = useState(appDate);
+  const [currentDate, setCurrentDate] = useState(initialDate ?? appDate);
 
   const goBack = () =>
     setCurrentDate((d) => {

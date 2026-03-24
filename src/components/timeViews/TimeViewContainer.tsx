@@ -15,16 +15,18 @@ interface TimeViewContainerProps {
   onEventOpen: (eventId: string) => void;
   onWeekSelect?: (weekStart: Date) => void;
   weekViewSeed?: Date | null;
+  onDaySelect?: (date: Date) => void;
+  dayViewSeed?: Date | null;
   onEditPlanned?: (plannedId: string) => void;
   todaySignals?: TodaySignals;
 }
 
 /** Single source of truth for active time view. Footer TimeViewTabs dispatches to AppShell which passes here. */
-export function TimeViewContainer({ activeView, onEventOpen, onWeekSelect, weekViewSeed, onEditPlanned, todaySignals }: TimeViewContainerProps) {
+export function TimeViewContainer({ activeView, onEventOpen, onWeekSelect, weekViewSeed, onDaySelect, dayViewSeed, onEditPlanned, todaySignals }: TimeViewContainerProps) {
   return (
     <div className="h-full overflow-hidden">
-      {activeView === 'day' && <DayView onEventOpen={onEventOpen} onEditPlanned={onEditPlanned} todaySignal={todaySignals?.day} />}
-      {activeView === 'week' && <WeekView initialWeekStart={weekViewSeed ?? undefined} todaySignal={todaySignals?.week} />}
+      {activeView === 'day' && <DayView onEventOpen={onEventOpen} onEditPlanned={onEditPlanned} todaySignal={todaySignals?.day} initialDate={dayViewSeed ?? undefined} />}
+      {activeView === 'week' && <WeekView initialWeekStart={weekViewSeed ?? undefined} todaySignal={todaySignals?.week} onDaySelect={onDaySelect} />}
       {activeView === 'explorer' && <WeekExplorer onWeekSelect={onWeekSelect} todaySignal={todaySignals?.explorer} />}
     </div>
   );
