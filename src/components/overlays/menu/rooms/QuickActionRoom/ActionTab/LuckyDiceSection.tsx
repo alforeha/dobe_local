@@ -39,7 +39,7 @@ function getTodayRoll(
   return null;
 }
 
-export function LuckyDiceSection() {
+export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
   const tasks = useScheduleStore((s) => s.tasks);
   const activeEvents = useScheduleStore((s) => s.activeEvents);
   const scheduleStore = useScheduleStore.getState;
@@ -115,55 +115,68 @@ export function LuckyDiceSection() {
     }, 80);
   }, [rolling, todayRoll, user, today, qaId, scheduleStore]);
 
-  const dieFace = todayRoll
-    ? (DIE_FACES[todayRoll.result - 1] ?? '🎲')
-    : rolling
-      ? animFace
-      : '🎲';
+  if (compact) {
+    if (todayRoll) {
+      const face = DIE_FACES[todayRoll.result - 1] ?? String(todayRoll.result);
+      return (
+        <div className="flex flex-col items-center justify-center gap-0.5">
+          <span className="text-3xl select-none leading-none">{face}</span>
+          <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 leading-tight">
+            ×{todayRoll.result} Bonus
+          </p>
+        </div>
+      );
+    }
+    return (
+      <div className="flex flex-col items-center justify-center gap-1">
+        <span className="text-3xl select-none leading-none transition-transform duration-75">
+          {rolling ? animFace : '🎲'}
+        </span>
+        <button
+          type="button"
+          disabled={rolling}
+          onClick={handleRoll}
+          className={`rounded-full px-3 py-0.5 text-xs font-semibold transition-colors ${
+            rolling
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+              : 'bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800'
+          }`}
+        >
+          {rolling ? '…' : 'Roll'}
+        </button>
+      </div>
+    );
+  }
+
+  if (todayRoll) {
+    const face = DIE_FACES[todayRoll.result - 1] ?? String(todayRoll.result);
+    return (
+      <div className="mb-5 flex flex-col items-center gap-2 py-4">
+        <span className="text-6xl select-none">{face}</span>
+        <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">
+          ×{todayRoll.result} Bonus
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="mb-5">
-      <div className="mb-2">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          Lucky Dice
-        </h3>
-      </div>
-
-      <div className="flex items-center gap-4 px-3 py-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg">
-        <span className="text-4xl select-none transition-transform duration-75 shrink-0">
-          {dieFace}
-        </span>
-
-        {todayRoll ? (
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">
-              Rolled {todayRoll.result} — {todayRoll.boostApplied}
-            </p>
-            <p className="text-xs text-gray-400">Today&apos;s roll is locked</p>
-          </div>
-        ) : (
-          <div className="flex-1 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                Daily Roll
-              </p>
-              <p className="text-xs text-gray-400">Roll once per day for an XP boost</p>
-            </div>
-            <button
-              type="button"
-              disabled={rolling}
-              onClick={handleRoll}
-              className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors
-                ${rolling
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
-                  : 'bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800'
-                }`}
-            >
-              {rolling ? '…' : 'Roll'}
-            </button>
-          </div>
-        )}
-      </div>
+    <div className="mb-5 flex flex-col items-center gap-3 py-4">
+      <span className="text-6xl select-none transition-transform duration-75">
+        {rolling ? animFace : '🎲'}
+      </span>
+      <button
+        type="button"
+        disabled={rolling}
+        onClick={handleRoll}
+        className={`rounded-full px-6 py-2 text-sm font-semibold transition-colors ${
+          rolling
+            ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+            : 'bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800'
+        }`}
+      >
+        {rolling ? '…' : 'Roll'}
+      </button>
     </div>
   );
 }
