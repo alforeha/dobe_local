@@ -17,10 +17,13 @@ import type { Event, PlannedEvent, QuickActionsCompletion } from '../../../types
 const PX_PER_MIN = 1.0;
 /** Height of one hour band in px */
 const HOUR_HEIGHT = PX_PER_MIN * 60;
-/** Total scrollable height for 24 hours */
+/** Baseline scrollable height for 24 hours */
 const TOTAL_HEIGHT = HOUR_HEIGHT * 24;
-/** Minimum block height so tiny events remain tappable */
-const MIN_BLOCK_H = 20;
+/**
+ * Minimum visual block height — tall enough to show event name + time label.
+ * Short back-to-back events will push subsequent events down to honour this.
+ */
+const MIN_VISUAL_H = 44;
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
@@ -121,13 +124,38 @@ function computeDayLayout(
     for (const idx of members) colCountOf[idx] = totalCols;
   }
 
-  return parsed.map((p, i) => ({
+  // ── Pass 1: time-proportional placement with minimum visual height ─────────
+  const layouts: DayLayout[] = parsed.map((p, i) => ({
     ev: p.ev,
     topPx: p.startMin * PX_PER_MIN,
-    heightPx: Math.max(MIN_BLOCK_H, (p.endMin - p.startMin) * PX_PER_MIN),
+    heightPx: Math.max(MIN_VISUAL_H, (p.endMin - p.startMin) * PX_PER_MIN),
     colIndex: colOf[i],
     colCount: colCountOf[i],
   }));
+
+  // ── Pass 2: push-down within each column ──────────────────────────────────
+  // When a short event expands to MIN_VISUAL_H, it may now visually overlap
+  // the next sequential event in the same column.  Scan each column top-to-
+  // bottom and shift any event whose natural topPx falls inside the expanded
+  // block of its predecessor.
+  const byCol = new Map<number, number[]>();
+  layouts.forEach((l, i) => {
+    if (!byCol.has(l.colIndex)) byCol.set(l.colIndex, []);
+    byCol.get(l.colIndex)!.push(i);
+  });
+  for (const indices of byCol.values()) {
+    indices.sort((a, b) => layouts[a].topPx - layouts[b].topPx);
+    for (let i = 0; i < indices.length - 1; i++) {
+      const cur = layouts[indices[i]];
+      const nxt = layouts[indices[i + 1]];
+      const curBottom = cur.topPx + cur.heightPx;
+      if (curBottom > nxt.topPx) {
+        nxt.topPx = curBottom;
+      }
+    }
+  }
+
+  return layouts;
 }
 
 // ── MULTI-DAY BANNERS (Part 3 — UV-C) ─────────────────────────────────────────
@@ -309,6 +337,11 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
   }
 
   const dayLayouts = computeDayLayout(dayEvents, getDisplayEnd);
+  // Actual grid height — may exceed TOTAL_HEIGHT if push-down expansion occurs
+  const gridHeight = dayLayouts.reduce(
+    (h, l) => Math.max(h, l.topPx + l.heightPx),
+    TOTAL_HEIGHT,
+  );
   const now = new Date();
   const nowTotalMin = isToday ? now.getHours() * 60 + now.getMinutes() : -1;
 
@@ -318,7 +351,7 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
 
       <div className="flex">
         {/* Hour label gutter */}
-        <div className="relative w-12 shrink-0" style={{ height: TOTAL_HEIGHT }}>
+        <div className="relative w-12 shrink-0" style={{ height: gridHeight }}>
           {HOURS.map((h) => (
             <div
               key={h}
@@ -331,7 +364,7 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
         </div>
 
         {/* Event area */}
-        <div className="relative flex-1" style={{ height: TOTAL_HEIGHT }}>
+        <div className="relative flex-1" style={{ height: gridHeight }}>
           {/* Hour dividers + half-hour ticks */}
           {HOURS.map((h) => (
             <div key={h}>
