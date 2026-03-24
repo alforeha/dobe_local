@@ -59,9 +59,14 @@ interface HourLayoutResult {
  * (allows '23:59' override for continues-tomorrow events).
  */
 function computeHourLayout(
+  hour: number,
   events: (Event | PlannedEvent)[],
   getDisplayEnd: (ev: Event | PlannedEvent) => string,
 ): HourLayoutResult {
+  // Row height is capped at each event's within-hour portion so a single
+  // multi-hour event doesn't expand the row. The EventBlock still renders
+  // at its full duration height (overflowing into subsequent rows).
+  const hourEndMin = (hour + 1) * 60;
   if (events.length === 0) return { layouts: [], rowHeight: ROW_HEIGHT_PX };
 
   const parsed = events.map((ev) => {
@@ -140,8 +145,11 @@ function computeHourLayout(
   for (const cluster of orderedClusters) {
     const clusterHeight = Math.max(
       ...cluster.members.map((m) => {
-        const dur = Math.max(0, parsed[m].endMin - parsed[m].startMin);
-        return Math.max(32, (dur / 60) * ROW_HEIGHT_PX);
+        // Use the within-hour portion only for row-height accounting.
+        // This prevents a 9–11 event from making the 9:00 row 112px tall.
+        const withinHourDur =
+          Math.min(parsed[m].endMin, hourEndMin) - parsed[m].startMin;
+        return Math.max(32, (Math.max(0, withinHourDur) / 60) * ROW_HEIGHT_PX);
       }),
     );
     for (const m of cluster.members) topPxOf[m] = currentTopPx;
@@ -351,7 +359,7 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
           return st ? parseHour(st) === h : false;
         });
 
-        const { layouts, rowHeight } = computeHourLayout(hourEvents, getDisplayEnd);
+        const { layouts, rowHeight } = computeHourLayout(h, hourEvents, getDisplayEnd);
 
         return (
           <div
