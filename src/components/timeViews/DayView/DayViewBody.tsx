@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppDate } from '../../../utils/useAppDate';
 import { useScheduleStore } from '../../../stores/useScheduleStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -17,8 +17,6 @@ import type { Event, PlannedEvent, QuickActionsCompletion } from '../../../types
 const PX_PER_MIN = 1.0;
 /** Height of one hour band in px */
 const HOUR_HEIGHT = PX_PER_MIN * 60;
-/** Baseline scrollable height for 24 hours */
-const TOTAL_HEIGHT = HOUR_HEIGHT * 24;
 /**
  * Minimum visual block height — tall enough to show event name + time label.
  * Short back-to-back events will push subsequent events down to honour this.
@@ -48,6 +46,8 @@ interface DayLayout {
   heightPx: number;
   colIndex: number;
   colCount: number;
+  /** How many columns this event spans to the right (1 = single column, 2 = spans into next, etc.) */
+  colSpan: number;
 }
 
 interface DayLayoutResult {
@@ -138,6 +138,30 @@ function computeDayLayout(
     for (const idx of members) colCountOf[idx] = totalCols;
   }
 
+  // ── Right-expansion: let events fill unused columns to their right ──────────
+  // An event can expand into the next column if NO other event in that column
+  // overlaps with it.  e.g. a 10:00-12:30 event in col 1 of a 3-col cluster
+  // where col 2 only held 9:00-9:30 events can expand to span cols 1-2.
+  const colSpanOf = new Array<number>(n).fill(1);
+
+  for (let i = 0; i < n; i++) {
+    const totalCols = colCountOf[i];
+    const myCol = colOf[i];
+    let span = 1;
+    for (let nextCol = myCol + 1; nextCol < totalCols; nextCol++) {
+      const blocked = parsed.some(
+        (p, j) =>
+          j !== i &&
+          colOf[j] === nextCol &&
+          parsed[i].startMin < p.endMin &&
+          p.startMin < parsed[i].endMin,
+      );
+      if (blocked) break;
+      span++;
+    }
+    colSpanOf[i] = span;
+  }
+
   // ── Step: Compute per-hour slot heights ────────────────────────────────────
   // For each hour slot, simulate stacking the events that START in that slot
   // per column and find how much vertical space is needed.  Multi-hour events
@@ -166,14 +190,17 @@ function computeDayLayout(
       colBottoms.set(col, cursor + visualH);
     }
 
-    // Tail: empty time between the last event that ENDS inside this slot and
-    // the hour boundary. Multi-hour events that span beyond are excluded —
-    // they don't "end" here so they shouldn't consume the gap.
-    // e.g. 9:00-9:15 + 9:15-9:30 alongside 9:00-11:00:
-    //   lastNaturalEndMin = 9:30 → tailPx = 30px of empty grid before 10:00.
-    let lastNaturalEndMin = -1; // -1 = no event ends within this slot
+    // Tail: empty time between the last event that ENDS STRICTLY inside this
+    // slot and the hour boundary.  Use strict < so that an event ending
+    // exactly at the slot boundary (e.g. 9:00-10:00, endMin=600=slotEndMin)
+    // is excluded — it fills the slot naturally and must not zero-out the
+    // tail that shorter co-column events would otherwise produce.
+    // e.g. 9:00-10:00 + 9:15-9:30 in the same slot:
+    //   9-10 excluded (600 not < 600); 9:15-9:30 gives lastNaturalEndMin=570
+    //   → tailPx = 30px → slot grows to 118px → 9-10 clearly taller than 9:30.
+    let lastNaturalEndMin = -1; // -1 = no event ends strictly within this slot
     for (const { p } of inSlot) {
-      if (p.endMin <= slotEndMin) {
+      if (p.endMin < slotEndMin) {
         lastNaturalEndMin = Math.max(lastNaturalEndMin, p.endMin);
       }
     }
@@ -207,6 +234,7 @@ function computeDayLayout(
       heightPx: Math.max(MIN_VISUAL_H, rawH),
       colIndex: colOf[i],
       colCount: colCountOf[i],
+      colSpan: colSpanOf[i],
     };
   });
 
@@ -279,6 +307,18 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60_000);
     return () => clearInterval(id);
+  }, []);
+
+  // Track scroll container height so the grid can fill it when content is shorter
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [containerH, setContainerH] = useState(0);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setContainerH(el.clientHeight));
+    ro.observe(el);
+    setContainerH(el.clientHeight);
+    return () => ro.disconnect();
   }, []);
 
   const { activeEvents, historyEvents, plannedEvents, tasks, taskTemplates } = useScheduleStore(
@@ -409,26 +449,47 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
 
   const { layouts: dayLayouts, slotTop } = computeDayLayout(dayEvents, getDisplayEnd);
   const gridHeight = slotTop[24];
+
+  // Scale the time axis up to fill the container when content is shorter than
+  // the available vertical space (avoids blank padding below the last hour row).
+  const yScale = containerH > 0 && containerH > gridHeight ? containerH / gridHeight : 1;
+  const scaledSlotTop = slotTop.map((y) => y * yScale);
+  const scaledGridHeight = gridHeight * yScale;
+  const scaledLayouts = dayLayouts.map((l) => ({
+    ...l,
+    topPx: l.topPx * yScale,
+    heightPx: l.heightPx * yScale,
+  }));
+
   const now = new Date();
   const nowHour = isToday ? now.getHours() : 0;
   const nowMinutes = isToday ? now.getMinutes() : 0;
+  const nowTimeLabel = isToday
+    ? `${String(nowHour).padStart(2, '0')}:${String(nowMinutes).padStart(2, '0')}`
+    : '';
   // Y of the current time in stretched slot coordinates
   const nowY = isToday
-    ? slotTop[nowHour] + (nowMinutes / 60) * (slotTop[nowHour + 1] - slotTop[nowHour])
+    ? scaledSlotTop[nowHour] + (nowMinutes / 60) * (scaledSlotTop[nowHour + 1] - scaledSlotTop[nowHour])
     : -1;
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div ref={scrollRef} className="flex-1 overflow-y-auto">
       <MultiDayBanner items={multiDayItems} />
 
       <div className="flex">
         {/* Hour label gutter */}
-        <div className="relative w-12 shrink-0" style={{ height: gridHeight }}>
+        <div className="relative w-12 shrink-0" style={{ height: scaledGridHeight }}>
           {HOURS.map((h) => (
             <div
               key={h}
-              className="absolute w-full pr-2 text-right text-xs text-gray-400 dark:text-gray-500 leading-none"
-              style={{ top: slotTop[h] + 3 }}
+              className="absolute w-full flex items-center justify-center text-gray-400 dark:text-gray-500 leading-none"
+              style={{
+                top: scaledSlotTop[h],
+                height: scaledSlotTop[h + 1] - scaledSlotTop[h],
+                fontSize: '16px',
+                fontFamily: '"Gill Sans Nova", "Gill Sans Ultra Bold", "Gill Sans MT", "Gill Sans", sans-serif',
+                fontWeight: 900,
+              }}
             >
               {hourLabel(h)}
             </div>
@@ -436,17 +497,17 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
         </div>
 
         {/* Event area */}
-        <div className="relative flex-1" style={{ height: gridHeight }}>
+        <div className="relative flex-1" style={{ height: scaledGridHeight }}>
           {/* Hour dividers + half-hour ticks */}
           {HOURS.map((h) => (
             <div key={h}>
               <div
-                className="absolute inset-x-0 border-t border-gray-100 dark:border-gray-700"
-                style={{ top: slotTop[h] }}
+                className="absolute right-0 border-t border-gray-100 dark:border-gray-700"
+                style={{ top: scaledSlotTop[h], left: '-3rem' }}
               />
               <div
-                className="absolute inset-x-0 border-t border-gray-50 dark:border-gray-800"
-                style={{ top: (slotTop[h] + slotTop[h + 1]) / 2 }}
+                className="absolute right-0 border-t border-gray-50 dark:border-gray-800"
+                style={{ top: (scaledSlotTop[h] + scaledSlotTop[h + 1]) / 2 }}
               />
             </div>
           ))}
@@ -454,17 +515,19 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
           {/* Current time indicator */}
           {nowY >= 0 && (
             <div
-              className="absolute inset-x-0 z-20 pointer-events-none"
-              style={{ top: nowY }}
+              className="absolute right-0 z-20 pointer-events-none"
+              style={{ top: nowY, left: '-3rem' }}
             >
-              <div className="relative border-t-2 border-purple-500">
-                <div className="absolute -top-1.5 -left-1 h-3 w-3 rounded-full bg-purple-500" />
+              {/* Line renders first (bottom of stacking), chip on top centered on the line */}
+              <div className="relative border-t-2 border-purple-500" />
+              <div className="absolute left-1.5 top-0 -translate-y-1/2 px-2 py-1.5 rounded border border-purple-500 bg-white dark:bg-gray-900 text-purple-600 dark:text-purple-400 font-semibold leading-none whitespace-nowrap" style={{ fontSize: '13px' }}>
+                {nowTimeLabel}
               </div>
             </div>
           )}
 
           {/* Event blocks */}
-          {dayLayouts.map((layout) => {
+          {scaledLayouts.map((layout) => {
             const ev = layout.ev;
             const isRealEvent = 'startDate' in ev;
             const isPlanned = !isRealEvent;
@@ -515,6 +578,7 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
                 topOffset={layout.topPx}
                 colIndex={layout.colIndex}
                 colCount={layout.colCount}
+                colSpan={layout.colSpan}
                 multiDayLabel={mdLabel}
                 interactive={isInteractive}
                 onOpen={handleOpen}
@@ -533,7 +597,7 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
                   key={`${c.taskRef}-${c.completedAt}`}
                   icon={icon}
                   offsetIndex={idx}
-                  topPx={slotTop[h + 1] - 32}
+                  topPx={scaledSlotTop[h + 1] - 32}
                   onClick={() => setOpenCompletion(c)}
                 />
               );

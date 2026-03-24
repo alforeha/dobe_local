@@ -9,8 +9,8 @@ interface PopupShellProps {
 /** Shared wrapper for all ADD/EDIT popups — internal layout is BUILD-time per popup */
 export function PopupShell({ title, onClose, children }: PopupShellProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="relative w-full max-w-md rounded-xl bg-white dark:bg-gray-800 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="relative w-full max-w-md rounded-xl bg-white dark:bg-gray-800 shadow-xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3">
           <h3 className="text-base font-semibold text-gray-800">{title}</h3>

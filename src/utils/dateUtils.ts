@@ -47,7 +47,7 @@ export function format(date: Date, type: FormatType): string {
 
 /** Return HH:MM string for a given hour number */
 export function hourLabel(h: number): string {
-  return `${String(h).padStart(2, '0')}:00`;
+  return String(h).padStart(2, '0');
 }
 
 /** Get the previous Monday from (or equal to) a given date */

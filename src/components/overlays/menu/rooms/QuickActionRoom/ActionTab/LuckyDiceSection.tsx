@@ -5,6 +5,7 @@ import { useUserStore } from '../../../../../../stores/useUserStore';
 
 import { awardXP, awardStat } from '../../../../../../engine/awardPipeline';
 import { STARTER_TEMPLATE_IDS } from '../../../../../../coach/StarterQuestLibrary';
+import { localISODate } from '../../../../../../utils/dateUtils';
 import type { Task } from '../../../../../../types/task';
 import type { QuickActionsEvent } from '../../../../../../types/event';
 import type { RollInputFields } from '../../../../../../types/taskTemplate';
@@ -18,7 +19,7 @@ const DIE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 const SIDES = 6;
 
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localISODate(new Date());
 }
 
 function getTodayRoll(

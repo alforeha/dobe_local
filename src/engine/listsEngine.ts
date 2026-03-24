@@ -435,7 +435,7 @@ export function completeManualGTDItem(itemId: string, user: User): void {
   if (!item || item.completionState !== 'pending') return;
 
   const now = new Date().toISOString();
-  const today = now.slice(0, 10);
+  const today = todayISO();
 
   // Create a stub Task representing this completion for the QA event record
   const task: Task = {
