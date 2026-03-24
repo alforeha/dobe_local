@@ -25,7 +25,7 @@ interface TimeViewContainerProps {
 export function TimeViewContainer({ activeView, onEventOpen, onWeekSelect, weekViewSeed, onDaySelect, dayViewSeed, onEditPlanned, todaySignals }: TimeViewContainerProps) {
   return (
     <div className="h-full overflow-hidden">
-      {activeView === 'day' && <DayView onEventOpen={onEventOpen} onEditPlanned={onEditPlanned} todaySignal={todaySignals?.day} initialDate={dayViewSeed ?? undefined} />}
+      {activeView === 'day' && <DayView key={dayViewSeed?.toISOString() ?? 'default'} onEventOpen={onEventOpen} onEditPlanned={onEditPlanned} todaySignal={todaySignals?.day} initialDate={dayViewSeed ?? undefined} />}
       {activeView === 'week' && <WeekView initialWeekStart={weekViewSeed ?? undefined} todaySignal={todaySignals?.week} onDaySelect={onDaySelect} />}
       {activeView === 'explorer' && <WeekExplorer onWeekSelect={onWeekSelect} todaySignal={todaySignals?.explorer} />}
     </div>
