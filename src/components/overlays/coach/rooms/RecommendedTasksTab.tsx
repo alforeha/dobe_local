@@ -6,7 +6,7 @@
 // Quest-locked templates cannot be deactivated (D89).
 // ─────────────────────────────────────────
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { taskTemplateLibrary } from '../../../../coach';
 import { starterTaskTemplates } from '../../../../coach/StarterQuestLibrary';
 import { useScheduleStore } from '../../../../stores/useScheduleStore';
@@ -33,6 +33,19 @@ function getPrimaryStatIcon(xpAward: XpAward): string {
   }
   if (best === null || bestVal === 0) return resolveIcon('agility'); // ⚡ for zero-XP (e.g. ROLL)
   return resolveIcon(best);
+}
+
+function getPrimaryStatKey(xpAward: XpAward): StatGroupKey | null {
+  let best: StatGroupKey | null = null;
+  let bestVal = 0;
+  for (const key of STAT_KEYS) {
+    const val = xpAward[key];
+    if (val > bestVal) {
+      bestVal = val;
+      best = key;
+    }
+  }
+  return best;
 }
 
 // ── TASK TYPE PILLS ───────────────────────────────────────────────────────────
@@ -98,22 +111,42 @@ export function RecommendedTasksTab() {
     return ids;
   }, [acts]);
 
-  const [filterType, setFilterType] = useState<TaskType | 'All'>('All');
+  const [selectedTypes, setSelectedTypes] = useState<TaskType[]>([]);
+  const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
+  const [filterStat, setFilterStat] = useState<StatGroupKey | 'All'>('All');
+  const [showInactive, setShowInactive] = useState(false);
   const [search, setSearch] = useState('');
+
+  const typeDropdownRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(e.target as Node)) {
+        setTypeDropdownOpen(false);
+      }
+    }
+    if (typeDropdownOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [typeDropdownOpen]);
 
   const allTemplates = useMemo(() => getMergedTemplates(), []);
 
   const visible = useMemo(() => {
     let list = allTemplates;
-    if (filterType !== 'All') {
-      list = list.filter((t) => t.taskType === filterType);
+    if (!showInactive) {
+      list = list.filter((t) => t.id !== undefined && t.id !== '' && t.id in taskTemplates);
+    }
+    if (selectedTypes.length > 0) {
+      list = list.filter((t) => selectedTypes.includes(t.taskType as TaskType));
+    }
+    if (filterStat !== 'All') {
+      list = list.filter((t) => getPrimaryStatKey(t.xpAward) === filterStat);
     }
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       list = list.filter((t) => t.name.toLowerCase().includes(q));
     }
     return list;
-  }, [allTemplates, filterType, search]);
+  }, [allTemplates, showInactive, taskTemplates, selectedTypes, filterStat, search]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -140,19 +173,35 @@ export function RecommendedTasksTab() {
           )}
         </div>
 
-        {/* Type filter pills */}
-        <div className="flex flex-wrap gap-1">
-          <TypePill
-            label="All"
-            active={filterType === 'All'}
-            onClick={() => setFilterType('All')}
+        {/* Type filter dropdown + Show inactive toggle */}
+        <div className="flex items-center gap-2" ref={typeDropdownRef}>
+          <TypeDropdown
+            open={typeDropdownOpen}
+            selectedTypes={selectedTypes}
+            onToggle={() => setTypeDropdownOpen((v) => !v)}
+            onChange={setSelectedTypes}
+            onClose={() => setTypeDropdownOpen(false)}
           />
-          {ALL_TASK_TYPES.map((type) => (
+          <label className="ml-auto flex items-center gap-1.5 cursor-pointer text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap select-none">
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+              className="rounded border-gray-300 dark:border-gray-600 text-purple-600 focus:ring-purple-500"
+            />
+            Show inactive
+          </label>
+        </div>
+
+        {/* Stat group pills */}
+        <div className="flex flex-wrap gap-1">
+          <TypePill label="All" active={filterStat === 'All'} onClick={() => setFilterStat('All')} />
+          {STAT_KEYS.map((key) => (
             <TypePill
-              key={type}
-              label={TYPE_LABELS[type]}
-              active={filterType === type}
-              onClick={() => setFilterType(type)}
+              key={key}
+              label={resolveIcon(key)}
+              active={filterStat === key}
+              onClick={() => setFilterStat(key)}
             />
           ))}
         </div>
@@ -268,6 +317,84 @@ function TaskTemplateRow({ template, active, locked, onToggle }: TaskTemplateRow
         >
           {active ? 'Active' : 'Inactive'}
         </button>
+      )}
+    </div>
+  );
+}
+
+// ── TYPE DROPDOWN (multiselect) ───────────────────────────────────────────────
+
+interface TypeDropdownProps {
+  open: boolean;
+  selectedTypes: TaskType[];
+  onToggle: () => void;
+  onChange: (types: TaskType[]) => void;
+  onClose: () => void;
+}
+
+function TypeDropdown({ open, selectedTypes, onToggle, onChange, onClose }: TypeDropdownProps) {
+  const count = selectedTypes.length;
+  const label = count === 0 ? 'Filter by type' : `${count} type${count !== 1 ? 's' : ''} selected`;
+
+  function toggleType(type: TaskType) {
+    if (selectedTypes.includes(type)) {
+      onChange(selectedTypes.filter((t) => t !== type));
+    } else {
+      onChange([...selectedTypes, type]);
+    }
+  }
+
+  return (
+    <div className="relative flex-1 min-w-0">
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${
+          count > 0
+            ? 'border-purple-400 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
+            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+        }`}
+      >
+        <span className="truncate">{label}</span>
+        <span className="shrink-0 text-[10px] text-gray-400" aria-hidden="true">
+          {open ? '▲' : '▼'}
+        </span>
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 z-20 mt-1 w-full min-w-[160px] rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg">
+          <div className="max-h-48 overflow-y-auto py-1">
+            {ALL_TASK_TYPES.map((type) => (
+              <label
+                key={type}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 select-none"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedTypes.includes(type)}
+                  onChange={() => toggleType(type)}
+                  className="rounded border-gray-300 dark:border-gray-600 text-purple-600 focus:ring-purple-500"
+                />
+                <span className="text-gray-700 dark:text-gray-200">{TYPE_LABELS[type]}</span>
+              </label>
+            ))}
+          </div>
+          <div className="border-t border-gray-100 dark:border-gray-700 px-3 py-1.5 flex justify-between items-center">
+            <button
+              type="button"
+              onClick={() => onChange([])}
+              className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
