@@ -1,4 +1,4 @@
-/** Height of one hour row in px — must match min-h-14 (3.5rem × 16px) in DayViewBody */
+/** Height of one hour row in px — must match DayViewBody ROW_HEIGHT_PX */
 const ROW_HEIGHT_PX = 56;
 
 function parseMinutes(time: string): number {
@@ -12,17 +12,24 @@ interface EventBlockProps {
   name: string;
   color: string;
   startTime: string;
+  /** End time used for height (may be '23:59' for continues-tomorrow events) */
   endTime: string;
   taskCount: number;
   taskComplete: number;
   completionState?: string;
-  /** Horizontal offset index for overlapping events (UI-05) */
-  offsetIndex: number;
+  /** Pixels from top of the hour row content area (set by layout engine) */
+  topOffset: number;
+  /** 0-based column index within concurrent overlap group */
+  colIndex: number;
+  /** Total columns in overlap group — 1 means full width */
+  colCount: number;
+  /** Optional label shown inside the block, e.g. '↓ continues' */
+  multiDayLabel?: string;
   interactive: boolean;
   onOpen?: () => void;
 }
 
-/** Event block in DayView. Color from PlannedEvent.color. Overlapping events offset horizontally (UI-05). */
+/** Event block in DayView — positioned by the UV-C layout engine. */
 export function EventBlock({
   name,
   color,
@@ -31,17 +38,20 @@ export function EventBlock({
   taskCount,
   taskComplete,
   completionState,
-  offsetIndex,
+  topOffset,
+  colIndex,
+  colCount,
+  multiDayLabel,
   interactive,
   onOpen,
 }: EventBlockProps) {
-  const offset = offsetIndex * 8; // px offset per overlapping event
+  const widthPct = 100 / colCount;
+  const leftPct = colIndex * widthPct;
 
-  // Part 3: height proportional to duration; minimum 32px so short events are tappable
+  // Height proportional to duration; minimum 32px so short events are tappable
   const durationMin = Math.max(0, parseMinutes(endTime) - parseMinutes(startTime));
   const heightPx = Math.max(32, (durationMin / 60) * ROW_HEIGHT_PX);
 
-  // Part 4: completion state
   const isComplete = completionState === 'complete';
   const opacityClass = isComplete ? 'opacity-50' : (!interactive ? 'opacity-70' : '');
 
@@ -51,18 +61,19 @@ export function EventBlock({
       tabIndex={interactive ? 0 : undefined}
       onClick={interactive ? onOpen : undefined}
       onKeyDown={interactive && onOpen ? (e) => e.key === 'Enter' && onOpen() : undefined}
-      className={`absolute top-0.5 rounded px-1.5 py-0.5 text-xs text-white shadow-sm
+      className={`absolute rounded px-1.5 py-0.5 text-xs text-white shadow-sm
         ${interactive ? 'cursor-pointer hover:brightness-110' : 'cursor-default'}
         ${opacityClass}`}
       style={{
         backgroundColor: color,
-        left: `${offset}px`,
-        right: '4px',
-        zIndex: offsetIndex,
+        top: `${topOffset + 2}px`,
+        left: `${leftPct}%`,
+        width: `calc(${widthPct}% - 4px)`,
         height: `${heightPx}px`,
+        zIndex: colIndex + 1,
       }}
     >
-      {/* Completed overlay — centered, slightly rotated (Part 4) */}
+      {/* Completed overlay — centered, slightly rotated */}
       {isComplete && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden rounded">
           <span className="font-bold text-[10px] tracking-widest rotate-[-8deg] text-white/90">
@@ -73,6 +84,9 @@ export function EventBlock({
 
       <div className="font-semibold truncate">{name}</div>
       <div className="text-white/80">{startTime} → {endTime}</div>
+      {multiDayLabel && (
+        <div className="text-white/90 text-[9px] font-medium">{multiDayLabel}</div>
+      )}
       {taskCount > 0 && (
         <div className="text-white/80 text-right">{taskComplete}/{taskCount}</div>
       )}
