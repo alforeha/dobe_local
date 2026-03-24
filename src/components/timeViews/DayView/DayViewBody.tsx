@@ -13,14 +13,16 @@ import type { Event, PlannedEvent, QuickActionsCompletion } from '../../../types
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 
-/** Must match EventBlock ROW_HEIGHT_PX (3.5rem × 16px = 56px) */
-const ROW_HEIGHT_PX = 56;
+/** Pixels per minute — 1px/min = 60px/hour */
+const PX_PER_MIN = 1.0;
+/** Height of one hour band in px */
+const HOUR_HEIGHT = PX_PER_MIN * 60;
+/** Total scrollable height for 24 hours */
+const TOTAL_HEIGHT = HOUR_HEIGHT * 24;
+/** Minimum block height so tiny events remain tappable */
+const MIN_BLOCK_H = 20;
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-
-function parseHour(time: string): number {
-  return parseInt(time.split(':')[0], 10);
-}
 
 function extractHour(iso: string): number {
   const d = new Date(iso);
@@ -37,43 +39,26 @@ function parseMinutesOfDay(time: string): number {
 // Part 1 (UV-C): sequential back-to-back events stack vertically; row height expands.
 // Part 2 (UV-C): overlapping concurrent events lay out side by side in columns.
 
-interface HourLayout {
+interface DayLayout {
   ev: Event | PlannedEvent;
   topPx: number;
+  heightPx: number;
   colIndex: number;
   colCount: number;
 }
 
-interface HourLayoutResult {
-  layouts: HourLayout[];
-  rowHeight: number;
-}
-
 /**
- * Compute per-event layout for a single hour row.
+ * Lay out all events for the day against a unified 1px-per-minute grid.
  *
- * - Events whose time ranges overlap → same topPx, each assigned a column (side-by-side).
- * - Events that are sequential → stacked vertically (different topPx).
- *
- * `getDisplayEnd` returns the end-time string to use for sizing
- * (allows '23:59' override for continues-tomorrow events).
+ * - `topPx`    = startMin × PX_PER_MIN  (absolute from container top)
+ * - `heightPx` = max(MIN_BLOCK_H, durationMin × PX_PER_MIN)
+ * - Concurrent events (overlapping time ranges) are split into side-by-side columns.
  */
-function computeHourLayout(
-  hour: number,
+function computeDayLayout(
   events: (Event | PlannedEvent)[],
   getDisplayEnd: (ev: Event | PlannedEvent) => string,
-): HourLayoutResult {
-  // Top position is derived from each event's actual start time offset within
-  // the hour — not from cluster membership. This ensures sequential events in
-  // the same column (e.g. 9:00–9:15 and 9:15–9:30 bridged by a 9:00–11:00
-  // long event) stack at the correct vertical position rather than all landing
-  // at top=0.
-  //
-  // Row height only accounts for each event's within-hour portion so a
-  // multi-hour block doesn't balloon the row; it overflows visually.
-  const hourStartMin = hour * 60;
-  const hourEndMin = (hour + 1) * 60;
-  if (events.length === 0) return { layouts: [], rowHeight: ROW_HEIGHT_PX };
+): DayLayout[] {
+  if (events.length === 0) return [];
 
   const parsed = events.map((ev) => {
     const startMin = parseMinutesOfDay(
@@ -136,25 +121,13 @@ function computeHourLayout(
     for (const idx of members) colCountOf[idx] = totalCols;
   }
 
-  // ── Top position: time-based offset within the hour row ───────────────────
-  // Sequential events in the same column (e.g. bridged by a long event) each
-  // land at their own correct vertical position.
-  const layouts: HourLayout[] = parsed.map((p, i) => ({
+  return parsed.map((p, i) => ({
     ev: p.ev,
-    topPx: ((p.startMin - hourStartMin) / 60) * ROW_HEIGHT_PX,
+    topPx: p.startMin * PX_PER_MIN,
+    heightPx: Math.max(MIN_BLOCK_H, (p.endMin - p.startMin) * PX_PER_MIN),
     colIndex: colOf[i],
     colCount: colCountOf[i],
   }));
-
-  // ── Row height: max within-hour bottom-edge across all events ─────────────
-  let rowHeight = ROW_HEIGHT_PX;
-  for (let i = 0; i < n; i++) {
-    const withinHourDur = Math.min(parsed[i].endMin, hourEndMin) - parsed[i].startMin;
-    const blockH = Math.max(32, (Math.max(0, withinHourDur) / 60) * ROW_HEIGHT_PX);
-    rowHeight = Math.max(rowHeight, layouts[i].topPx + blockH);
-  }
-
-  return { layouts, rowHeight };
 }
 
 // ── MULTI-DAY BANNERS (Part 3 — UV-C) ─────────────────────────────────────────
@@ -335,122 +308,135 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
     );
   }
 
+  const dayLayouts = computeDayLayout(dayEvents, getDisplayEnd);
   const now = new Date();
-  const nowHour = isToday ? now.getHours() : -1;
-  const nowMinutes = isToday ? now.getMinutes() : 0;
+  const nowTotalMin = isToday ? now.getHours() * 60 + now.getMinutes() : -1;
 
   return (
     <div className="flex-1 overflow-y-auto">
-      {/* Multi-day banner — spanning / continued / overnight events */}
       <MultiDayBanner items={multiDayItems} />
 
-      {HOURS.map((h) => {
-        const hourEvents = dayEvents.filter((e) => {
-          const st = 'startTime' in e ? e.startTime : null;
-          return st ? parseHour(st) === h : false;
-        });
-
-        const { layouts, rowHeight } = computeHourLayout(h, hourEvents, getDisplayEnd);
-
-        return (
-          <div
-            key={h}
-            className="relative flex w-full border-b border-gray-100 dark:border-gray-700"
-            style={{ minHeight: `${rowHeight}px` }}
-          >
-            {/* Hour label */}
-            <div className="w-12 shrink-0 py-1 pr-2 text-right text-xs text-gray-400 dark:text-gray-500">
+      <div className="flex">
+        {/* Hour label gutter */}
+        <div className="relative w-12 shrink-0" style={{ height: TOTAL_HEIGHT }}>
+          {HOURS.map((h) => (
+            <div
+              key={h}
+              className="absolute w-full pr-2 text-right text-xs text-gray-400 dark:text-gray-500 leading-none"
+              style={{ top: h * HOUR_HEIGHT + 3 }}
+            >
               {hourLabel(h)}
             </div>
+          ))}
+        </div>
 
-            {/* Content column */}
-            <div className="relative flex-1 py-0.5">
-              {/* Current time indicator — positioned to the exact minute */}
-              {h === nowHour && (
-                <div
-                  className="absolute left-0 right-0 z-10 border-t-2 border-purple-500"
-                  style={{ top: `${(nowMinutes / 60) * 100}%` }}
-                />
-              )}
-
-              {/* Event blocks — laid out by computeHourLayout */}
-              {layouts.map((layout) => {
-                const ev = layout.ev;
-                const isRealEvent = 'startDate' in ev;
-                const isPlanned = !isRealEvent;
-                const eventId = ev.id;
-                const plannedEv = isPlanned ? (ev as PlannedEvent) : null;
-                const isFutureOneOff =
-                  isFuture && plannedEv !== null && isOneOffEvent(plannedEv) && !!onEditPlanned;
-                const isInteractive = (!isPlanned && (isPast || isToday)) || isFutureOneOff;
-                const handleOpen = isInteractive
-                  ? isFutureOneOff
-                    ? () => onEditPlanned!(eventId)
-                    : () => onEventOpen(eventId)
-                  : undefined;
-                const resolvedColor = isPlanned
-                  ? (ev as PlannedEvent).color
-                  : (ev as Event).color
-                    ? (ev as Event).color!
-                    : (ev as Event).plannedEventRef
-                      ? (plannedEvents[(ev as Event).plannedEventRef!]?.color ?? '#9333ea')
-                      : '#9333ea';
-                const taskTotal = isPlanned
-                  ? (ev as PlannedEvent).taskList.length
-                  : (ev as Event).tasks.length;
-                const taskDone = isPlanned
-                  ? 0
-                  : (ev as Event).tasks.filter(
-                      (id) => tasks[id]?.completionState === 'complete',
-                    ).length;
-                const evCompletionState = isPlanned ? undefined : (ev as Event).completionState;
-                const mdLabel = labelOverride.get(ev.id);
-                const displayEnd =
-                  continuesOverride.get(ev.id) ??
-                  (ev as { endTime?: string }).endTime ??
-                  '';
-
-                return (
-                  <EventBlock
-                    key={eventId}
-                    eventId={eventId}
-                    name={'name' in ev ? ev.name : '—'}
-                    color={resolvedColor}
-                    startTime={'startTime' in ev ? ev.startTime : ''}
-                    endTime={displayEnd}
-                    taskCount={taskTotal}
-                    taskComplete={taskDone}
-                    completionState={evCompletionState}
-                    topOffset={layout.topPx}
-                    colIndex={layout.colIndex}
-                    colCount={layout.colCount}
-                    multiDayLabel={mdLabel}
-                    interactive={isInteractive}
-                    onOpen={handleOpen}
-                  />
-                );
-              })}
-
-              {/* QA completion badges — small circular icons at completion time */}
-              {(qaByHour.get(h) ?? []).map((c, idx) => {
-                const task = tasks[c.taskRef];
-                const tmpl = task ? resolveTemplate(task.templateRef, taskTemplates) : null;
-                const icon = resolveTaskIcon(tmpl);
-                return (
-                  <QACompletionIcon
-                    key={`${c.taskRef}-${c.completedAt}`}
-                    icon={icon}
-                    offsetIndex={idx}
-                    onClick={() => setOpenCompletion(c)}
-                  />
-                );
-              })}
+        {/* Event area */}
+        <div className="relative flex-1" style={{ height: TOTAL_HEIGHT }}>
+          {/* Hour dividers + half-hour ticks */}
+          {HOURS.map((h) => (
+            <div key={h}>
+              <div
+                className="absolute inset-x-0 border-t border-gray-100 dark:border-gray-700"
+                style={{ top: h * HOUR_HEIGHT }}
+              />
+              <div
+                className="absolute inset-x-0 border-t border-gray-50 dark:border-gray-800"
+                style={{ top: h * HOUR_HEIGHT + 30 }}
+              />
             </div>
-          </div>
-        );
-      })}
+          ))}
 
-      {/* QA completion detail popup */}
+          {/* Current time indicator */}
+          {nowTotalMin >= 0 && (
+            <div
+              className="absolute inset-x-0 z-20 pointer-events-none"
+              style={{ top: nowTotalMin * PX_PER_MIN }}
+            >
+              <div className="relative border-t-2 border-purple-500">
+                <div className="absolute -top-1.5 -left-1 h-3 w-3 rounded-full bg-purple-500" />
+              </div>
+            </div>
+          )}
+
+          {/* Event blocks */}
+          {dayLayouts.map((layout) => {
+            const ev = layout.ev;
+            const isRealEvent = 'startDate' in ev;
+            const isPlanned = !isRealEvent;
+            const eventId = ev.id;
+            const plannedEv = isPlanned ? (ev as PlannedEvent) : null;
+            const isFutureOneOff =
+              isFuture && plannedEv !== null && isOneOffEvent(plannedEv) && !!onEditPlanned;
+            const isInteractive = (!isPlanned && (isPast || isToday)) || isFutureOneOff;
+            const handleOpen = isInteractive
+              ? isFutureOneOff
+                ? () => onEditPlanned!(eventId)
+                : () => onEventOpen(eventId)
+              : undefined;
+            const resolvedColor = isPlanned
+              ? (ev as PlannedEvent).color
+              : (ev as Event).color
+                ? (ev as Event).color!
+                : (ev as Event).plannedEventRef
+                  ? (plannedEvents[(ev as Event).plannedEventRef!]?.color ?? '#9333ea')
+                  : '#9333ea';
+            const taskTotal = isPlanned
+              ? (ev as PlannedEvent).taskList.length
+              : (ev as Event).tasks.length;
+            const taskDone = isPlanned
+              ? 0
+              : (ev as Event).tasks.filter(
+                  (id) => tasks[id]?.completionState === 'complete',
+                ).length;
+            const evCompletionState = isPlanned ? undefined : (ev as Event).completionState;
+            const mdLabel = labelOverride.get(ev.id);
+            const displayEnd =
+              continuesOverride.get(ev.id) ??
+              (ev as { endTime?: string }).endTime ??
+              '';
+
+            return (
+              <EventBlock
+                key={eventId}
+                eventId={eventId}
+                name={'name' in ev ? ev.name : '\u2014'}
+                color={resolvedColor}
+                startTime={'startTime' in ev ? ev.startTime : ''}
+                endTime={displayEnd}
+                heightPx={layout.heightPx}
+                taskCount={taskTotal}
+                taskComplete={taskDone}
+                completionState={evCompletionState}
+                topOffset={layout.topPx}
+                colIndex={layout.colIndex}
+                colCount={layout.colCount}
+                multiDayLabel={mdLabel}
+                interactive={isInteractive}
+                onOpen={handleOpen}
+              />
+            );
+          })}
+
+          {/* QA completion badges */}
+          {Array.from(qaByHour.entries()).flatMap(([h, completions]) =>
+            completions.map((c, idx) => {
+              const task = tasks[c.taskRef];
+              const tmpl = task ? resolveTemplate(task.templateRef, taskTemplates) : null;
+              const icon = resolveTaskIcon(tmpl);
+              return (
+                <QACompletionIcon
+                  key={`${c.taskRef}-${c.completedAt}`}
+                  icon={icon}
+                  offsetIndex={idx}
+                  topPx={h * HOUR_HEIGHT + HOUR_HEIGHT - 32}
+                  onClick={() => setOpenCompletion(c)}
+                />
+              );
+            })
+          )}
+        </div>
+      </div>
+
       {openCompletion && (
         <QACompletionPopup
           completion={openCompletion}
