@@ -6,10 +6,11 @@ interface WeekExplorerBodyProps {
   seedDate: Date;
   windowStart: Date;
   onWeekSelect?: (weekStart: Date) => void;
+  onDaySelect?: (date: Date) => void;
 }
 
 /** Vertical scroll 57-week grid. Each row = Mon–Sun. */
-export function WeekExplorerBody({ seedDate, windowStart, onWeekSelect }: WeekExplorerBodyProps) {
+export function WeekExplorerBody({ seedDate, windowStart, onWeekSelect, onDaySelect }: WeekExplorerBodyProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const weeks = Array.from({ length: 57 }, (_, i) => addDays(windowStart, i * 7));
@@ -31,6 +32,7 @@ export function WeekExplorerBody({ seedDate, windowStart, onWeekSelect }: WeekEx
           key={weekStart.toISOString()}
           weekStart={weekStart}
           onSelect={onWeekSelect ? () => onWeekSelect(weekStart) : undefined}
+          onDaySelect={onDaySelect}
         />
       ))}
     </div>
