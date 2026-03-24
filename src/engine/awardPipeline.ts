@@ -67,6 +67,25 @@ export function deriveLevelFromXP(xp: number): number {
   return Math.min(level, MAX_LEVEL);
 }
 
+/**
+ * Returns XP progress within the current level.
+ * Use for XP bar displays that show xpSinceLastLevel / xpForThisLevel.
+ */
+export function xpProgress(totalXP: number): {
+  level: number;
+  xpSinceLastLevel: number;
+  xpForThisLevel: number;
+} {
+  const level = deriveLevelFromXP(totalXP);
+  const levelStart = LEVEL_THRESHOLDS[level - 1] ?? 0;
+  const levelEnd = LEVEL_THRESHOLDS[level] ?? levelStart + 1000;
+  return {
+    level,
+    xpSinceLastLevel: totalXP - levelStart,
+    xpForThisLevel: levelEnd - levelStart,
+  };
+}
+
 // ── MULTIPLIER SPEC ───────────────────────────────────────────────────────────
 
 export interface XPMultipliers {

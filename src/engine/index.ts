@@ -11,7 +11,7 @@ export { executeRollover, checkAndRunRolloverOnBoot } from './rollover';
 export { completeTask, completeEvent, recordAttachment } from './eventExecution';
 export type { TaskResult, AttachmentRecord } from './eventExecution';
 
-export { awardXP, awardStat, deriveLevelFromXP } from './awardPipeline';
+export { awardXP, awardStat, deriveLevelFromXP, xpProgress } from './awardPipeline';
 export type { XPMultipliers } from './awardPipeline';
 
 export {

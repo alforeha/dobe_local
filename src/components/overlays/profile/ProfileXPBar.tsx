@@ -1,24 +1,43 @@
-import { XPBarVisual } from '../../shared/XPBarVisual';
+import { xpProgress } from '../../../engine/awardPipeline';
 
 interface ProfileXPBarProps {
   xp: number;
-  level: number;
 }
 
-function xpForLevel(level: number) {
-  return level * 1000;
-}
-
-export function ProfileXPBar({ xp, level }: ProfileXPBarProps) {
-  const base = xpForLevel(level - 1);
-  const cap = xpForLevel(level);
+export function ProfileXPBar({ xp }: ProfileXPBarProps) {
+  const { xpSinceLastLevel, xpForThisLevel } = xpProgress(xp);
+  const pct = xpForThisLevel > 0
+    ? Math.min(100, Math.round((xpSinceLastLevel / xpForThisLevel) * 100))
+    : 0;
 
   return (
-    <div className="px-4 py-2">
-      <XPBarVisual current={Math.max(0, xp - base)} max={Math.max(1, cap - base)} />
-      <p className="mt-1 text-center text-xs text-gray-400">
-        {xp.toLocaleString()} XP total
-      </p>
+    <div className="w-full px-4 pb-3 pt-1">
+      {/* Bar with labels overlaid inside */}
+      <div className="relative h-6 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-purple-500 transition-all duration-300"
+          style={{ width: `${pct}%` }}
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        />
+        {/* Total XP left, level-up target right */}
+        <div className="absolute inset-0 flex items-center justify-between px-3">
+          <span
+            className="text-[11px] font-semibold text-white leading-none"
+            style={{ textShadow: '0 0 4px rgba(0,0,0,0.55)' }}
+          >
+            {xp.toLocaleString()} XP
+          </span>
+          <span
+            className="text-[11px] text-white/80 leading-none"
+            style={{ textShadow: '0 0 4px rgba(0,0,0,0.55)' }}
+          >
+            / {xpForThisLevel.toLocaleString()}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

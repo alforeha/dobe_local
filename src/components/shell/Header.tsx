@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useUserStore } from '../../stores/useUserStore';
+import { xpProgress } from '../../engine/awardPipeline';
 import { ProfileNavButton } from './ProfileNavButton';
 import { XPBar } from './XPBar';
 import { StatRow } from './StatRow';
@@ -8,16 +9,6 @@ import { FloatingDelta } from './FloatingDelta';
 
 interface HeaderProps {
   onProfileOpen: () => void;
-}
-
-function computeLevel(xp: number): number {
-  // Simple level curve: 1000 XP per level
-  return Math.floor(xp / 1000) + 1;
-}
-
-function computeXPProgress(xp: number): { current: number; max: number } {
-  const levelXP = xp % 1000;
-  return { current: levelXP, max: 1000 };
 }
 
 export interface DeltaItem {
@@ -30,10 +21,8 @@ export function Header({ onProfileOpen }: HeaderProps) {
   const [deltas, setDeltas] = useState<DeltaItem[]>([]);
   const prevXP = useRef<number | null>(null);
 
-  const stats = user?.progression?.stats;
-  const xp = stats?.xp ?? 0;
-  const level = computeLevel(xp);
-  const xpProgress = computeXPProgress(xp);
+  const xp = user?.progression?.stats?.xp ?? 0;
+  const { level, xpSinceLastLevel, xpForThisLevel } = xpProgress(xp);
 
   // Detect XP changes and fire floating delta
   useEffect(() => {
@@ -57,8 +46,8 @@ export function Header({ onProfileOpen }: HeaderProps) {
         <XPBar
           displayName={user?.system?.displayName ?? '—'}
           level={level}
-          current={xpProgress.current}
-          max={xpProgress.max}
+          current={xpSinceLastLevel}
+          max={xpForThisLevel}
         />
         <StatRow />
         <BoostRow />
