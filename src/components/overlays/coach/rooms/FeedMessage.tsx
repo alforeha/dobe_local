@@ -23,12 +23,12 @@ interface FeedMessageProps {
   entry: FeedEntry;
   entryIndex: number;
   onMarkRead: (index: number) => void;
-  onToggleReaction: (index: number, reaction: string) => void;
+  onSetReaction: (index: number, reaction: string) => void;
 }
 
-export function FeedMessage({ entry, entryIndex, onMarkRead, onToggleReaction }: FeedMessageProps) {
+export function FeedMessage({ entry, entryIndex, onMarkRead, onSetReaction }: FeedMessageProps) {
   const isRead = entry.read === true;
-  const reactions = entry.reactions ?? [];
+  const activeReaction = entry.reaction;
 
   return (
     <div
@@ -41,55 +41,53 @@ export function FeedMessage({ entry, entryIndex, onMarkRead, onToggleReaction }:
         .filter(Boolean)
         .join(' ')}
     >
-      {/* TOP ROW: icon + timestamp */}
-      <div className="flex items-center gap-2 px-3 pt-3 pb-1">
-        <span className="text-base leading-none select-none" aria-hidden="true">
-          {getFeedSourceIcon(entry.sourceType)}
-        </span>
-        <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
-          {formatTimestamp(entry.timestamp)}
-        </span>
-      </div>
-
-      {/* BODY */}
-      <div className="px-3 py-2">
-        <p className="text-sm text-gray-900 dark:text-gray-100 leading-snug">
-          {entry.commentBlock}
-        </p>
-      </div>
-
-      {/* BOTTOM ROW: reactions + read button */}
-      <div className="flex items-center justify-between px-3 pb-3 pt-1">
-        <div className="flex gap-1">
-          {REACTIONS.map(({ emoji, key }) => (
-            <button
-              key={key}
-              type="button"
-              aria-label={key}
-              onClick={() => onToggleReaction(entryIndex, key)}
-              className={[
-                'text-base leading-none rounded-full w-8 h-8 flex items-center justify-center transition-colors',
-                reactions.includes(key)
-                  ? 'bg-emerald-100 dark:bg-emerald-900/40'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-700',
-              ].join(' ')}
-            >
-              {emoji}
-            </button>
-          ))}
+      <div className="flex gap-2 px-3 py-3">
+        {/* LEFT: source icon + message */}
+        <div className="flex flex-col gap-1 flex-1 min-w-0">
+          <span className="text-base leading-none select-none" aria-hidden="true">
+            {getFeedSourceIcon(entry.sourceType)}
+          </span>
+          <p className="text-sm text-gray-900 dark:text-gray-100 leading-snug">
+            {entry.commentBlock}
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={() => { if (!isRead) onMarkRead(entryIndex); }}
-          className={[
-            'text-xs rounded-lg px-3 py-1 transition-colors',
-            isRead
-              ? 'text-gray-400 dark:text-gray-500 cursor-default'
-              : 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50',
-          ].join(' ')}
-        >
-          {isRead ? '\u2713 Read' : 'Read'}
-        </button>
+
+        {/* RIGHT: timestamp / reactions / read — tight stack */}
+        <div className="flex flex-col items-end shrink-0">
+          <span className="text-xs text-gray-500 dark:text-gray-400 leading-none mb-1">
+            {formatTimestamp(entry.timestamp)}
+          </span>
+          <div className="flex gap-0.5">
+            {REACTIONS.map(({ emoji, key }) => (
+              <button
+                key={key}
+                type="button"
+                aria-label={key}
+                onClick={() => onSetReaction(entryIndex, key)}
+                className={[
+                  'text-base leading-none rounded-full w-7 h-7 flex items-center justify-center transition-colors',
+                  activeReaction === key
+                    ? 'bg-emerald-100 dark:bg-emerald-900/40'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-700',
+                ].join(' ')}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => { if (!isRead) onMarkRead(entryIndex); }}
+            className={[
+              'text-xs rounded-lg px-2 py-0.5 mt-1 transition-colors',
+              isRead
+                ? 'text-gray-400 dark:text-gray-500 cursor-default'
+                : 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50',
+            ].join(' ')}
+          >
+            {isRead ? '\u2713 Read' : 'Read'}
+          </button>
+        </div>
       </div>
     </div>
   );

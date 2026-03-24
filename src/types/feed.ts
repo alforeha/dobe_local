@@ -13,8 +13,8 @@ export interface FeedEntry {
   triggerRef?: string;
   /** Whether the user has read this entry — false / undefined = unread */
   read?: boolean;
-  /** Local-only reaction keys toggled by the user (e.g. 'agree', 'motivated', 'ribbit', 'save') */
-  reactions?: string[];
+  /** Local-only single reaction key selected by the user (e.g. 'agree', 'motivated', 'ribbit', 'save') */
+  reaction?: string;
 }
 
 /** [MULTI-USER] stub — null in LOCAL */

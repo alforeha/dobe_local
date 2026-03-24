@@ -6,7 +6,7 @@ export function FeedRoom() {
   const feed = useUserStore((s) => s.user?.feed);
   const markFeedEntryRead = useUserStore((s) => s.markFeedEntryRead);
   const markAllFeedRead = useUserStore((s) => s.markAllFeedRead);
-  const toggleFeedReaction = useUserStore((s) => s.toggleFeedReaction);
+  const setFeedReaction = useUserStore((s) => s.setFeedReaction);
 
   const entries = feed?.entries ?? [];
   const unreadCount = feed?.unreadCount ?? 0;
@@ -86,7 +86,7 @@ export function FeedRoom() {
               entry={entry}
               entryIndex={idx}
               onMarkRead={markFeedEntryRead}
-              onToggleReaction={toggleFeedReaction}
+              onSetReaction={setFeedReaction}
             />
           ))}
         </div>

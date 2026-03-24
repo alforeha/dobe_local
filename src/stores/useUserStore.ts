@@ -27,8 +27,8 @@ interface UserActions {
   markFeedEntryRead: (index: number) => void;
   /** Mark all feed entries as read and reset unreadCount to 0 */
   markAllFeedRead: () => void;
-  /** Toggle a reaction key on a feed entry */
-  toggleFeedReaction: (index: number, reaction: string) => void;
+  /** Set (or deselect) a single reaction on a feed entry; marks the entry as read */
+  setFeedReaction: (index: number, reaction: string) => void;
   /** Add a PlannedEvent (Routine) UUID ref to User.lists.routineRefs */
   addRoutineRef: (id: string) => void;
   /** Remove a PlannedEvent (Routine) UUID ref from User.lists.routineRefs */
@@ -116,22 +116,28 @@ export const useUserStore = create<UserState & UserActions>()(
           };
         }),
 
-      toggleFeedReaction: (index, reaction) =>
+      setFeedReaction: (index, reaction) =>
         set((state) => {
           if (!state.user) return {};
           const entries = state.user.feed.entries;
           if (!entries[index]) return {};
-          const current = entries[index].reactions ?? [];
-          const next = current.includes(reaction)
-            ? current.filter((r) => r !== reaction)
-            : [...current, reaction];
+          const entry = entries[index];
+          // Toggle off if same reaction already selected
+          const next = entry.reaction === reaction ? undefined : reaction;
+          const wasUnread = !entry.read;
+          const markRead = next !== undefined && wasUnread;
           const updated = entries.map((e, i) =>
-            i === index ? { ...e, reactions: next } : e,
+            i === index
+              ? { ...e, reaction: next, ...(markRead ? { read: true } : {}) }
+              : e,
           );
+          const newUnread = markRead
+            ? Math.max(0, state.user.feed.unreadCount - 1)
+            : state.user.feed.unreadCount;
           return {
             user: {
               ...state.user,
-              feed: { ...state.user.feed, entries: updated },
+              feed: { ...state.user.feed, entries: updated, unreadCount: newUnread },
             },
           };
         }),
