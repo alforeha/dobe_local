@@ -5,9 +5,9 @@ interface StatGroupBottomBarProps {
 
 export function StatGroupBottomBar({ talentPoints, onTalentTree }: StatGroupBottomBarProps) {
   return (
-    <div className="shrink-0 flex items-center justify-between border-t border-gray-100 px-4 py-3">
-      <p className="text-sm text-gray-600">
-        <span className="font-bold text-indigo-600">{talentPoints}</span> talent point{talentPoints !== 1 ? 's' : ''} available
+    <div className="shrink-0 flex items-center justify-between border-t border-gray-100 dark:border-gray-700 px-4 py-3">
+      <p className="text-sm text-gray-600 dark:text-gray-300">
+        <span className="font-bold text-indigo-600 dark:text-indigo-400">{talentPoints}</span> talent point{talentPoints !== 1 ? 's' : ''} available
       </p>
       <button
         type="button"
