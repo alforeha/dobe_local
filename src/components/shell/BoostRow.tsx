@@ -1,30 +1,27 @@
 import { useUserStore } from '../../stores/useUserStore';
 import { useScheduleStore } from '../../stores/useScheduleStore';
 import { useShallow } from 'zustand/react/shallow';
-import { localISODate } from '../../utils/dateUtils';
+import { getAppDate } from '../../utils/dateUtils';
 import { STARTER_TEMPLATE_IDS } from '../../coach/StarterQuestLibrary';
 import type { QuickActionsEvent } from '../../types';
 import type { RollInputFields } from '../../types';
 import type { Event } from '../../types';
 
-/** Scan active + history events for today's QA event, handling UTC/local key mismatch */
+/** Scan active + history events for today's QA event using the app date reference */
 function findTodayQAEvent(
   activeEvents: Record<string, Event | QuickActionsEvent>,
   historyEvents: Record<string, Event | QuickActionsEvent>,
 ): QuickActionsEvent | undefined {
-  const todayLocal = localISODate(new Date());
-  const todayUTC = new Date().toISOString().slice(0, 10);
+  const todayLocal = getAppDate();
 
   for (const source of [activeEvents, historyEvents]) {
-    // Try direct key lookups first (fast path)
-    for (const key of [`qa-${todayLocal}`, `qa-${todayUTC}`]) {
-      const ev = source[key] as QuickActionsEvent | undefined;
-      if (ev?.eventType === 'quickActions') return ev;
-    }
-    // Scan all events for any QA event matching today (handles any key format)
+    // Direct key lookup
+    const byKey = source[`qa-${todayLocal}`] as QuickActionsEvent | undefined;
+    if (byKey?.eventType === 'quickActions') return byKey;
+    // Scan all events (handles legacy UTC-keyed events)
     for (const ev of Object.values(source)) {
       const qa = ev as QuickActionsEvent;
-      if (qa.eventType === 'quickActions' && (qa.date === todayLocal || qa.date === todayUTC)) return qa;
+      if (qa.eventType === 'quickActions' && qa.date === todayLocal) return qa;
     }
   }
   return undefined;

@@ -16,12 +16,12 @@ import { useProgressionStore } from '../stores/useProgressionStore';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useResourceStore } from '../stores/useResourceStore';
 import { useUserStore } from '../stores/useUserStore';
-import { localISODate } from '../utils/dateUtils';
+import { localISODate, getAppDate } from '../utils/dateUtils';
 
-// ── HELPERS ───────────────────────────────────────────────────────────────────
+// ── HELPERS ────────────────────────────────────────────────────────────────────────────────
 
 function todayISO(): string {
-  return localISODate(new Date());
+  return getAppDate();
 }
 
 /**

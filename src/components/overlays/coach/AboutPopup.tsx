@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import { useSystemStore } from '../../../stores/useSystemStore';
 import { executeRollover } from '../../../engine/rollover';
-import { localISODate, addDays } from '../../../utils/dateUtils';
+import { localISODate, addDays, getAppTime } from '../../../utils/dateUtils';
 
 const APP_VERSION = '0.1.0-local';
 
@@ -33,6 +33,9 @@ export function AboutPopup({ onClose }: AboutPopupProps) {
   const devMode = useSystemStore((s) => s.devMode);
   const setDevMode = useSystemStore((s) => s.setDevMode);
   const lastRollover = useSystemStore((s) => s.lastRollover);
+  const appDate = useSystemStore((s) => s.appDate);
+  const timeOffset = useSystemStore((s) => s.timeOffset);
+  const setTimeOffset = useSystemStore((s) => s.setTimeOffset);
   const [versionTaps, setVersionTaps] = useState(0);
   const [clearConfirm, setClearConfirm] = useState(false);
   const [rolling, setRolling] = useState(false);
@@ -80,6 +83,8 @@ export function AboutPopup({ onClose }: AboutPopupProps) {
       setClearConfirm(true);
       return;
     }
+    // Reset dev offset before clearing so it doesn't persist in memory
+    setTimeOffset(0);
     // Explicitly remove Zustand persist keys (source of truth per D83).
     // These are NOT covered by storageClear() which only handles app-layer keys.
     localStorage.removeItem('cdb-system');
@@ -145,9 +150,43 @@ export function AboutPopup({ onClose }: AboutPopupProps) {
             <p className="text-xs text-gray-500 dark:text-gray-400">
               App date:{' '}
               <span className="font-mono text-amber-700 dark:text-amber-300">
-                {lastRollover ?? localISODate(new Date())}
+                {appDate ?? lastRollover ?? localISODate(new Date())}
               </span>
             </p>
+
+            {/* Time offset control */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500 dark:text-gray-400">
+                Time offset (hours)
+              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  aria-label="Decrease time offset"
+                  onClick={() => setTimeOffset(Math.max(-12, timeOffset - 1))}
+                  className="w-8 h-8 rounded bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 font-bold hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors"
+                >
+                  −
+                </button>
+                <span className="w-8 text-center font-mono text-sm text-gray-800 dark:text-gray-200">
+                  {timeOffset >= 0 ? `+${timeOffset}` : String(timeOffset)}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Increase time offset"
+                  onClick={() => setTimeOffset(Math.min(12, timeOffset + 1))}
+                  className="w-8 h-8 rounded bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 font-bold hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors"
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Effective time:{' '}
+                <span className="font-mono text-amber-700 dark:text-amber-300">
+                  {getAppTime()}
+                </span>
+              </p>
+            </div>
 
             <button
               type="button"

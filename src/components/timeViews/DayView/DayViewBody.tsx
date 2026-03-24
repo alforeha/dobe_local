@@ -6,7 +6,7 @@ import { EventBlock } from './EventBlock';
 import { QACompletionIcon } from './QACompletionIcon';
 import { QACompletionPopup } from './QACompletionPopup';
 import { resolveTaskIcon, resolveTemplate, findQAEventForDate } from './qaUtils';
-import { format, hourLabel, isSameDay, addDays } from '../../../utils/dateUtils';
+import { format, hourLabel, isSameDay, addDays, getOffsetNow } from '../../../utils/dateUtils';
 import { isOneOffEvent } from '../../../utils/isOneOffEvent';
 import { isPlannedEventDue } from '../../../engine/rollover';
 import type { Event, PlannedEvent, QuickActionsCompletion } from '../../../types';
@@ -461,7 +461,7 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
     heightPx: l.heightPx * yScale,
   }));
 
-  const now = new Date();
+  const now = getOffsetNow();
   const nowHour = isToday ? now.getHours() : 0;
   const nowMinutes = isToday ? now.getMinutes() : 0;
   const nowTimeLabel = isToday

@@ -14,6 +14,7 @@ import type { User } from '../types/user';
 import type { CoachTone } from '../types/coach';
 import { useSystemStore } from '../stores/useSystemStore';
 import { useProgressionStore } from '../stores/useProgressionStore';
+import { getOffsetNow } from '../utils/dateUtils';
 import { commentLibrary } from './index';
 
 // ── TONE RESOLVER ─────────────────────────────────────────────────────────────
@@ -64,7 +65,7 @@ function pickComment(contextKey: string, tone: CoachTone, values: DynamicValues 
  */
 export function ribbet(user: User): string {
   const tone = activeTone();
-  const hour = new Date().getHours();
+  const hour = getOffsetNow().getHours();
   const milestones = user.progression.stats.milestones;
   const acts = useProgressionStore.getState().acts;
 

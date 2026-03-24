@@ -25,13 +25,13 @@ import { fireMarker } from './markerEngine';
 import { evaluateMarkerCondition, evaluateTaskCountMarker } from './questEngine';
 import { ribbet } from '../coach/ribbet';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
-import { localISODate, addDays } from '../utils/dateUtils';
+import { localISODate, addDays, getAppDate } from '../utils/dateUtils';
 
-// ── DATE HELPERS ──────────────────────────────────────────────────────────────
+// ── DATE HELPERS ────────────────────────────────────────────────────────────────────────────────
 
-/** Returns today as YYYY-MM-DD in local timezone */
+/** Returns today as YYYY-MM-DD — reads from app time reference (D91) */
 function todayISO(): string {
-  return localISODate(new Date());
+  return getAppDate();
 }
 
 /** Returns true if isoDate (YYYY-MM-DD) is on or before the cutoff date */

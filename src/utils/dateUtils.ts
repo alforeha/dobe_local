@@ -1,5 +1,7 @@
 /** Shared date formatting utilities for time views */
 
+import { useSystemStore } from '../stores/useSystemStore';
+
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -76,6 +78,61 @@ export function getWeekDays(date: Date): Date[] {
 /** True if two dates are the same calendar day */
 export function isSameDay(a: Date, b: Date): boolean {
   return format(a, 'iso') === format(b, 'iso');
+}
+
+/** Format a Date to HH:MM string */
+export function formatHHMM(date: Date): string {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+// ── APP TIME REFERENCE (D91) ─────────────────────────────────────────────────
+// All engine and UI code reads "what date/time is it" from these functions.
+// The values are set once on app boot by AppShell and stored in useSystemStore.
+// timeOffset (dev tool) is applied to getAppTime() only — not to getAppDate().
+
+/**
+ * Returns the app's current date as YYYY-MM-DD.
+ * Reads appDate from useSystemStore; falls back to local date if not yet set.
+ */
+export function getAppDate(): string {
+  const { appDate } = useSystemStore.getState();
+  return appDate ?? localISODate(new Date());
+}
+
+/**
+ * Returns the app's current time as HH:MM, with timeOffset applied.
+ * Reads appTime + timeOffset from useSystemStore; falls back to real local time.
+ */
+export function getAppTime(): string {
+  const { appTime, timeOffset } = useSystemStore.getState();
+  const base = appTime ?? formatHHMM(new Date());
+  if (!timeOffset) return base;
+  const [hh, mm] = base.split(':').map(Number) as [number, number];
+  const totalMinutes = hh * 60 + mm + timeOffset * 60;
+  const clamped = ((totalMinutes % 1440) + 1440) % 1440;
+  const h = Math.floor(clamped / 60);
+  const m = clamped % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * Convenience wrapper returning both app date and time.
+ */
+export function getAppDateTime(): { date: string; time: string } {
+  return { date: getAppDate(), time: getAppTime() };
+}
+
+/**
+ * Returns a Date object representing "now" with the dev time offset applied.
+ * Use this anywhere the live clock is needed but should respect the offset
+ * (e.g. the day-view time indicator, coach hour checks).
+ * Does NOT replace the boot-time appDate — it is always real-clock + offset ms.
+ */
+export function getOffsetNow(): Date {
+  const { timeOffset } = useSystemStore.getState();
+  const d = new Date();
+  if (timeOffset) d.setHours(d.getHours() + timeOffset);
+  return d;
 }
 
 /** Return the number of the ISO week */

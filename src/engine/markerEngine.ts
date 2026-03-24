@@ -18,7 +18,7 @@ import { useScheduleStore } from '../stores/useScheduleStore';
 import { useUserStore } from '../stores/useUserStore';
 import { evaluateQuestSpecific, updateQuestProgress, countTasksForScope } from './questEngine';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
-import { localISODate } from '../utils/dateUtils';
+import { localISODate, getAppDate } from '../utils/dateUtils';
 import { unlockAct, makeDailyChain, STARTER_ACT_IDS } from '../coach/StarterQuestLibrary';
 
 // ── QUESTREF ENCODING ─────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ export function decodeQuestRef(
  * Used inside fireMarker to update marker.nextFire after each fire.
  */
 function computeMarkerNextFire(marker: Marker): string {
-  const today = localISODate(new Date());
+  const today = getAppDate();
   if (!marker.lastFired) return today;
   const rule = marker.interval;
   if (!rule) return today; // xpThreshold marker — no calendar anchor
@@ -114,7 +114,7 @@ export function fireMarker(params: FireMarkerParams): void {
   const scheduleStore = useScheduleStore.getState();
   const userStore = useUserStore.getState();
   const progressionStore = useProgressionStore.getState();
-  const now = localISODate(new Date());
+  const now = getAppDate();
 
   // Resolve the Quest to determine resource context
   const act = progressionStore.acts[actId];
@@ -442,7 +442,7 @@ export function completeMilestone(completedTask: Task): void {
     const freshStore = useProgressionStore.getState();
     const unlockedDaily = freshStore.acts[STARTER_ACT_IDS.daily];
     if (unlockedDaily) {
-      const today = localISODate(new Date());
+      const today = getAppDate();
       const chain1 = makeDailyChain(STARTER_ACT_IDS.daily, 1, today);
       const dailyWithChain = { ...unlockedDaily, chains: [chain1] };
       freshStore.setAct(dailyWithChain);

@@ -30,6 +30,12 @@ interface SystemState {
   onboardingComplete: boolean | null;
   /** Developer mode — enables dev tools in About popup. Enabled by 5-tap on version string. */
   devMode: boolean;
+  /** YYYY-MM-DD — set once on app boot, authoritative "what day is it" for all engine code. */
+  appDate: string | null;
+  /** HH:MM — set once on app boot, base time reference. */
+  appTime: string | null;
+  /** Hours offset for dev testing (e.g. +3 to simulate 3am). Default 0. */
+  timeOffset: number;
 }
 
 // ── ACTIONS ───────────────────────────────────────────────────────────────────
@@ -42,6 +48,8 @@ interface SystemActions {
   setThemeMode: (mode: 'light' | 'dark') => void;
   setOnboardingComplete: (complete: boolean) => void;
   setDevMode: (val: boolean) => void;
+  setAppDateTime: (date: string, time: string) => void;
+  setTimeOffset: (offsetHours: number) => void;
   reset: () => void;
 }
 
@@ -54,6 +62,9 @@ const initialState: SystemState = {
   rolloverStep: null,
   onboardingComplete: null,
   devMode: true,
+  appDate: null,
+  appTime: null,
+  timeOffset: 0,
 };
 
 // ── STORE ─────────────────────────────────────────────────────────────────────
@@ -77,6 +88,10 @@ export const useSystemStore = create<SystemState & SystemActions>()(
       setOnboardingComplete: (onboardingComplete) => set({ onboardingComplete }),
 
       setDevMode: (devMode) => set({ devMode }),
+
+      setAppDateTime: (appDate, appTime) => set({ appDate, appTime }),
+
+      setTimeOffset: (timeOffset) => set({ timeOffset }),
 
       setThemeMode: (mode) =>
         set((state) => {

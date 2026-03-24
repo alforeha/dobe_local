@@ -1,16 +1,18 @@
 import { useSystemStore } from '../stores/useSystemStore';
+import { localISODate } from './dateUtils';
 
 /**
  * Returns the app's current date as a midnight-local Date object.
- * Uses lastRollover from the system store when set (dev skip-forward or
- * completed rollover), otherwise falls back to the real local date.
+ * Reads appDate from the system store (set on boot by AppShell — D91).
+ * Falls back to the real local date if appDate is not yet initialised.
  *
  * Use this everywhere a component needs to know "what day is today"
  * so that dev-tool time travel is reflected throughout the UI.
  */
 export function useAppDate(): Date {
-  const lastRollover = useSystemStore((s) => s.lastRollover);
-  const d = lastRollover ? new Date(lastRollover + 'T00:00:00') : new Date();
+  const appDate = useSystemStore((s) => s.appDate);
+  const iso = appDate ?? localISODate(new Date());
+  const d = new Date(iso + 'T00:00:00');
   d.setHours(0, 0, 0, 0);
   return d;
 }

@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { useSystemStore } from '../../stores/useSystemStore';
 import { useScheduleStore } from '../../stores/useScheduleStore';
 import { useUserStore } from '../../stores/useUserStore';
-import { localISODate } from '../../utils/dateUtils';
+import { localISODate, formatHHMM } from '../../utils/dateUtils';
+import { checkAndRunRolloverOnBoot } from '../../engine/rollover';
 import { Header } from './Header';
 import { Body } from './Body';
 import { Footer } from './Footer';
@@ -126,6 +127,17 @@ export function AppShell() {
   const mode = useSystemStore((s) => s.settings?.displayPreferences?.mode ?? 'dark');
   const plannedEvents = useScheduleStore((s) => s.plannedEvents);
   const plannedEventCount = Object.keys(plannedEvents).length;
+
+  // ── BOOT — set app time reference then check rollover ───────────────────────
+  // Order matters: setAppDateTime must run before checkAndRunRolloverOnBoot so
+  // that getAppDate() in rollover.ts reads the correct local date, not null.
+  useEffect(() => {
+    const now = new Date();
+    useSystemStore.getState().setAppDateTime(localISODate(now), formatHHMM(now));
+    checkAndRunRolloverOnBoot().catch((err) => {
+      console.error('[AppShell] rollover on boot failed:', err);
+    });
+  }, []);
 
   // Apply theme on change
   useEffect(() => {
