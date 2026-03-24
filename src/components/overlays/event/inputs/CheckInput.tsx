@@ -11,7 +11,7 @@ export function CheckInput({ inputFields, task, onComplete }: CheckInputProps) {
   const isComplete = task.completionState === 'complete';
 
   return (
-    <div className="flex items-center gap-3 py-2">
+    <div className="h-full flex items-center gap-3">
       <p className="flex-1 text-sm text-gray-700 dark:text-gray-300">{inputFields.label}</p>
       <button
         type="button"

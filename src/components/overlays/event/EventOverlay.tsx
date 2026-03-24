@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useScheduleStore } from '../../../stores/useScheduleStore';
 import { EventOverlayHeader } from './EventOverlayHeader';
 import { TaskBlock } from './TaskBlock';
-import { EventTaskTable } from './EventTaskTable';
+import { TaskList } from './TaskList';
+import { ActionBar } from './ActionBar';
 import type { Event } from '../../../types';
 
 interface EventOverlayProps {
@@ -21,6 +22,26 @@ export function EventOverlay({ eventId, onClose }: EventOverlayProps) {
     event?.tasks?.[0] ?? null
   );
   const [playMode, setPlayMode] = useState(false);
+  const [hideCompleted, setHideCompleted] = useState(false);
+
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track whether the event was already complete when the overlay opened.
+  // Auto-close only fires on a transition TO complete, not on open.
+  const alreadyCompleteOnMount = useRef(event?.completionState === 'complete');
+
+  // FIX 1 — auto-close 1200ms after event completes (transition only)
+  useEffect(() => {
+    if (event?.completionState === 'complete' && !alreadyCompleteOnMount.current) {
+      closeTimerRef.current = setTimeout(() => {
+        onClose();
+      }, 1200);
+    }
+    return () => {
+      if (closeTimerRef.current !== null) {
+        clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, [event?.completionState, onClose]);
 
   const handleTaskComplete = useCallback(() => {
     if (!playMode || !event) return;
@@ -46,6 +67,14 @@ export function EventOverlay({ eventId, onClose }: EventOverlayProps) {
 
   const color = '#9333ea'; // default — PlannedEvent.color resolved via ref in full build
 
+  const totalCount = event.tasks.length;
+  const completedCount = event.tasks.filter(
+    (id) => tasks[id]?.completionState === 'complete',
+  ).length;
+  const visibleTaskIds = hideCompleted
+    ? event.tasks.filter((id) => tasks[id]?.completionState !== 'complete')
+    : event.tasks;
+
   return (
     <div
       className="flex flex-col h-full bg-white dark:bg-gray-900"
@@ -53,24 +82,51 @@ export function EventOverlay({ eventId, onClose }: EventOverlayProps) {
     >
       <EventOverlayHeader event={event} onClose={onClose} />
 
-      <div className="flex-1 overflow-hidden flex flex-col">
-        {/* Task block */}
-        <div className="shrink-0 border-b border-gray-200 p-3">
-          <TaskBlock
-            taskId={selectedTaskId}
-            eventId={eventId}
-            playMode={playMode}
-            onTaskComplete={handleTaskComplete}
-          />
-        </div>
+      {/* TOP SECTION — active task input, ~2/3 */}
+      <div className="flex-1 min-h-0 overflow-hidden p-3">
+        <TaskBlock
+          taskId={selectedTaskId}
+          eventId={eventId}
+          playMode={playMode}
+          onTaskComplete={handleTaskComplete}
+          className="h-full"
+        />
+      </div>
 
-        {/* Event task table */}
-        <EventTaskTable
+      {/* BOTTOM SECTION — task list, ~1/3 */}
+      <div className="flex h-1/3 min-h-0 flex-col shrink-0 border-t border-gray-200 dark:border-gray-700">
+        {/* Action bar */}
+        <ActionBar
           event={event}
-          selectedTaskId={selectedTaskId}
-          onSelectTask={setSelectedTaskId}
           playMode={playMode}
           onTogglePlay={() => setPlayMode((p) => !p)}
+          taskCount={totalCount}
+          completedCount={completedCount}
+        />
+
+        {/* Task list header */}
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs">
+          <span className="font-medium text-gray-600 dark:text-gray-400">
+            {completedCount}/{totalCount} tasks
+          </span>
+          <button
+            type="button"
+            onClick={() => setHideCompleted((h) => !h)}
+            className={`rounded px-2 py-0.5 transition-colors ${
+              hideCompleted
+                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            {hideCompleted ? 'Show all' : 'Hide completed'}
+          </button>
+        </div>
+
+        {/* Scrollable task list */}
+        <TaskList
+          taskIds={visibleTaskIds}
+          selectedTaskId={selectedTaskId}
+          onSelect={setSelectedTaskId}
         />
       </div>
     </div>

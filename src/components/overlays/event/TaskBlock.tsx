@@ -24,6 +24,7 @@ interface TaskBlockProps {
   eventId: string;
   playMode: boolean;
   onTaskComplete: () => void;
+  className?: string;
 }
 
 const SECONDARY_TAG_COLOURS: Record<string, string> = {
@@ -43,13 +44,13 @@ const SECONDARY_TAG_COLOURS: Record<string, string> = {
  * Live task representation in EventOverlay.
  * Renders the correct input shape per TaskType and fires completeTask() on completion.
  */
-export function TaskBlock({ taskId, eventId, playMode, onTaskComplete }: TaskBlockProps) {
+export function TaskBlock({ taskId, eventId, playMode, onTaskComplete, className }: TaskBlockProps) {
   const tasks = useScheduleStore((s) => s.tasks);
   const taskTemplates = useScheduleStore((s) => s.taskTemplates);
 
   if (!taskId) {
     return (
-      <div className="flex min-h-16 items-center justify-center rounded-lg border border-dashed border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+      <div className={`flex items-center justify-center rounded-lg border border-dashed border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 ${className ?? 'min-h-16'}`}>
         <p className="text-xs text-gray-400">Select a task to begin</p>
       </div>
     );
@@ -75,9 +76,9 @@ export function TaskBlock({ taskId, eventId, playMode, onTaskComplete }: TaskBlo
     : null;
 
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-3">
+    <div className={`flex flex-col rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-3 ${className ?? ''}`}>
       {/* Header */}
-      <div className="mb-2 flex items-start justify-between gap-2">
+      <div className="mb-2 shrink-0 flex items-start justify-between gap-2">
         <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
           {template?.name ?? 'Unknown task'}
         </span>
@@ -93,13 +94,15 @@ export function TaskBlock({ taskId, eventId, playMode, onTaskComplete }: TaskBlo
         </div>
       </div>
 
-      {/* Input body */}
-      <TaskTypeInput
-        taskType={taskType}
-        template={template}
-        task={task ?? null}
-        onComplete={handleComplete}
-      />
+      {/* Input body — flex-1 so it fills remaining height */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <TaskTypeInput
+          taskType={taskType}
+          template={template}
+          task={task ?? null}
+          onComplete={handleComplete}
+        />
+      </div>
     </div>
   );
 }

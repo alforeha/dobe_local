@@ -16,7 +16,7 @@ export function RatingInput({ inputFields, task, onComplete }: RatingInputProps)
   if (isComplete) {
     const saved = (task.resultFields as Partial<RatingInputFields>).value;
     return (
-      <div className="flex items-center gap-2 py-2">
+      <div className="h-full flex items-center gap-2">
         <span className="text-sm font-medium text-green-600 dark:text-green-400">✓ Rated</span>
         {saved !== undefined && (
           <span className="text-xs text-gray-400">{saved} / {scale}</span>
@@ -29,7 +29,7 @@ export function RatingInput({ inputFields, task, onComplete }: RatingInputProps)
   const displayVal = hovered;
 
   return (
-    <div className="space-y-2 py-1">
+    <div className="h-full flex flex-col justify-center space-y-2 py-1">
       {label && (
         <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
       )}

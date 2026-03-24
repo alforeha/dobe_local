@@ -21,7 +21,7 @@ export function CounterInput({ inputFields, task, onComplete }: CounterInputProp
 
   if (isComplete) {
     return (
-      <div className="flex items-center gap-2 py-2">
+      <div className="h-full flex items-center gap-2">
         <span className="text-sm font-medium text-green-600 dark:text-green-400">✓ Complete</span>
         <span className="text-xs text-gray-400">{target} {unit}</span>
       </div>
@@ -29,7 +29,7 @@ export function CounterInput({ inputFields, task, onComplete }: CounterInputProp
   }
 
   return (
-    <div className="space-y-3 py-1">
+    <div className="h-full flex flex-col justify-center space-y-3 py-1">
       {/* Progress bar */}
       <div className="h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700">
         <div

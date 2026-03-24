@@ -31,19 +31,18 @@ export function TextInput({ inputFields, task, onComplete }: TextInputProps) {
   };
 
   return (
-    <div className="space-y-2 py-1">
+    <div className="h-full flex flex-col space-y-2 py-1">
       {prompt && (
-        <p className="text-xs text-gray-500 dark:text-gray-400">{prompt}</p>
+        <p className="shrink-0 text-xs text-gray-500 dark:text-gray-400">{prompt}</p>
       )}
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         maxLength={maxLength ?? undefined}
         placeholder="Type your response…"
-        rows={3}
-        className="w-full resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:border-purple-500 focus:outline-none"
+        className="flex-1 min-h-0 w-full resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:border-purple-500 focus:outline-none"
       />
-      <div className="flex items-center justify-between">
+      <div className="flex shrink-0 items-center justify-between">
         {maxLength !== null ? (
           <span className="text-xs text-gray-400">{text.length} / {maxLength}</span>
         ) : (
