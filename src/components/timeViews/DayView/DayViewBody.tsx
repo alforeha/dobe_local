@@ -166,17 +166,20 @@ function computeDayLayout(
       colBottoms.set(col, cursor + visualH);
     }
 
-    // Tail: natural empty time from the last event's actual end to the hour
-    // boundary. Adding this after the expanded stacks keeps the grid readable
-    // — events that end at 9:10 leave 50px of visible empty space before 10:00.
-    let lastNaturalEndMin = slotStartMin;
+    // Tail: empty time between the last event that ENDS inside this slot and
+    // the hour boundary. Multi-hour events that span beyond are excluded —
+    // they don't "end" here so they shouldn't consume the gap.
+    // e.g. 9:00-9:15 + 9:15-9:30 alongside 9:00-11:00:
+    //   lastNaturalEndMin = 9:30 → tailPx = 30px of empty grid before 10:00.
+    let lastNaturalEndMin = -1; // -1 = no event ends within this slot
     for (const { p } of inSlot) {
-      lastNaturalEndMin = Math.max(
-        lastNaturalEndMin,
-        Math.min(p.endMin, slotEndMin),
-      );
+      if (p.endMin <= slotEndMin) {
+        lastNaturalEndMin = Math.max(lastNaturalEndMin, p.endMin);
+      }
     }
-    const tailPx = (slotEndMin - lastNaturalEndMin) * PX_PER_MIN;
+    const tailPx = lastNaturalEndMin >= 0
+      ? (slotEndMin - lastNaturalEndMin) * PX_PER_MIN
+      : 0;
 
     let maxColBottom = 0;
     for (const bottom of colBottoms.values()) maxColBottom = Math.max(maxColBottom, bottom);
