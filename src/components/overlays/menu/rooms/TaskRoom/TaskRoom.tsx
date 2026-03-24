@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
-import { taskTemplateLibrary } from '../../../../../coach';
 import { TaskRoomHeader } from './TaskRoomHeader';
 import { TaskRoomBody } from './TaskRoomBody';
 import { TaskTemplatePopup } from './TaskTemplatePopup';
@@ -13,19 +12,26 @@ type PopupState =
   | { mode: 'edit'; key: string; template: TaskTemplate }
   | null;
 
+// Onboarding quest tasks — seeded for the quest engine, not user-facing.
+const SYSTEM_TASK_IDS = new Set([
+  'tmpl-open-welcome-0000-0000-0000-0001',
+  'tmpl-setup-schedule-000-0000-0000-01',
+  'tmpl-learn-grounds-000-0000-0000-0001',
+  'tmpl-claim-identity-00-0000-0000-0001',
+]);
+
 export function TaskRoom() {
   const [tab, setTab] = useState<TaskTab>('stat');
   const [popup, setPopup] = useState<PopupState>(null);
   const taskTemplates = useScheduleStore((s) => s.taskTemplates);
 
-  // Only show templates the user has activated (in store).
-  // Prebuilt IDs (from coach bundle) are read-only; UUID keys are user-custom.
-  const prebuiltIds = new Set(taskTemplateLibrary.map((t) => t.id ?? t.name));
+  // Filter out system onboarding tasks and map to [key, template, isCustom].
+  // isCustom is determined by the flag written at creation time.
   const filtered: [string, TaskTemplate, boolean][] =
     tab === 'stat'
-      ? Object.entries(taskTemplates).map(
-          ([k, t]): [string, TaskTemplate, boolean] => [k, t, !prebuiltIds.has(k)],
-        )
+      ? Object.entries(taskTemplates)
+          .filter(([k, t]) => !SYSTEM_TASK_IDS.has(k) && !SYSTEM_TASK_IDS.has(t.id ?? ''))
+          .map(([k, t]): [string, TaskTemplate, boolean] => [k, t, t.isCustom === true])
       : [];
 
   function handleEdit(key: string, template: TaskTemplate) {

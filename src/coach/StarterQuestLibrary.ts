@@ -978,7 +978,7 @@ export function seedStarterTemplates(): void {
 
   for (const [id, template] of allTemplates) {
     if (idSet.has(id)) {
-      scheduleStore.setTaskTemplate(id, template);
+      scheduleStore.setTaskTemplate(id, { ...template, isCustom: false });
     }
   }
 }

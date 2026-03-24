@@ -253,6 +253,11 @@ export interface XpAward {
 export interface TaskTemplate {
   /** Identifier used only on prebuilt templates (app bundle). Not present on user custom templates. */
   id?: string;
+  /**
+   * true  = user-created via TaskTemplatePopup (editable in Task Room).
+   * false / undefined = seeded prebuilt template (read-only in Task Room).
+   */
+  isCustom?: boolean;
   name: string;
   description: string;
   /** Ref to icon asset */

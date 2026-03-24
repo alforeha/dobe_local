@@ -228,13 +228,13 @@ export function TaskTemplatePopup({ editKey, editTemplate, onClose }: TaskTempla
     };
 
     if (isEditMode && editKey) {
-      // Edit: preserve id and update in store
-      const updated: TaskTemplate = { ...template, id: editTemplate?.id };
+      // Edit: preserve id and isCustom flag, update in store
+      const updated: TaskTemplate = { ...template, id: editTemplate?.id, isCustom: editTemplate?.isCustom };
       setTaskTemplate(editKey, updated);
     } else {
-      // Add: generate UUID, write to schedule store (D88)
+      // Add: generate UUID, mark as user-custom, write to schedule store (D88)
       const id = uuidv4();
-      setTaskTemplate(id, template);
+      setTaskTemplate(id, { ...template, isCustom: true });
     }
 
     onClose();
