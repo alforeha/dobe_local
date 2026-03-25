@@ -11,6 +11,8 @@ import { format, hourLabel, isSameDay, addDays, getOffsetNow } from '../../../ut
 import { isOneOffEvent } from '../../../utils/isOneOffEvent';
 import { isPlannedEventDue } from '../../../engine/rollover';
 import type { Event, PlannedEvent, QuickActionsCompletion } from '../../../types';
+import { ONBOARDING_GLOW } from '../../../constants/onboardingKeys';
+import { useGlows } from '../../../hooks/useOnboardingGlow';
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 
@@ -302,6 +304,7 @@ interface DayViewBodyProps {
 
 export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyProps) {
   const [openCompletion, setOpenCompletion] = useState<QuickActionsCompletion | null>(null);
+  const welcomeEventGlows = useGlows(ONBOARDING_GLOW.WELCOME_EVENT_CARD);
 
   // Tick every minute so the time indicator stays accurate
   const [, setTick] = useState(0);
@@ -586,6 +589,11 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
               : (ev as Event).plannedEventRef
                 ? plannedEvents[(ev as Event).plannedEventRef!]?.icon
                 : undefined;
+            const welcomeGlow =
+              welcomeEventGlows &&
+              !isPlanned &&
+              (ev as Event).plannedEventRef === null &&
+              ev.name === 'Welcome to CAN-DO-BE';
 
             return (
               <EventBlock
@@ -611,6 +619,7 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
                   const [h=0,m=0] = (displayEnd).split(':').map(Number);
                   return (h * 60 + m) <= (nowHour * 60 + nowMinutes);
                 })()}
+                glow={welcomeGlow}
               />
             );
           })}

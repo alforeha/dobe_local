@@ -27,10 +27,11 @@ import { useResourceStore } from '../stores/useResourceStore';
 import { useProgressionStore } from '../stores/useProgressionStore';
 
 import { awardXP, awardStat } from './awardPipeline';
-import { completeMilestone, decodeQuestRef } from './markerEngine';
+import { completeMilestone, decodeQuestRef, fireMarker } from './markerEngine';
 import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
+import { starterTaskTemplates } from '../coach/StarterQuestLibrary';
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
@@ -566,25 +567,60 @@ export function autoCheckQuestItem(templateRef: string, itemKey: string): void {
   const user = useUserStore.getState().user;
   if (!user) return;
 
-  // Find the first matching pending task in gtdList
-  const taskId = user.lists.gtdList.find((id) => {
-    const t = scheduleStore.tasks[id];
-    return t?.completionState === 'pending' && t.templateRef === templateRef;
-  });
+  const findPendingTaskId = () =>
+    user.lists.gtdList.find((id) => {
+      const t = scheduleStore.tasks[id];
+      return t?.completionState === 'pending' && t.templateRef === templateRef;
+    }) ??
+    Object.values(scheduleStore.tasks).find(
+      (t) => t.completionState === 'pending' && t.templateRef === templateRef,
+    )?.id;
+
+  let taskId = findPendingTaskId();
+
+  if (!taskId) {
+    const acts = useProgressionStore.getState().acts;
+    outer:
+    for (const act of Object.values(acts)) {
+      for (let chainIndex = 0; chainIndex < act.chains.length; chainIndex++) {
+        const chain = act.chains[chainIndex];
+        for (let questIndex = 0; questIndex < chain.quests.length; questIndex++) {
+          const quest = chain.quests[questIndex];
+          if (quest.completionState !== 'active') continue;
+          const markerIndex = quest.timely.markers.findIndex(
+            (marker) => marker.activeState && marker.taskTemplateRef === templateRef,
+          );
+          if (markerIndex === -1) continue;
+          const marker = quest.timely.markers[markerIndex];
+          if (!marker) continue;
+          fireMarker({ marker, markerIndex, questIndex, chainIndex, actId: act.id });
+          taskId = findPendingTaskId();
+          break outer;
+        }
+      }
+    }
+  }
+
   if (!taskId) return;
 
   const task = scheduleStore.tasks[taskId];
   if (!task) return;
 
   // Resolve current items from resultFields or initialise from template shape
-  const template = scheduleStore.taskTemplates[templateRef];
+  const template =
+    scheduleStore.taskTemplates[templateRef] ??
+    starterTaskTemplates.find((t) => t.id === templateRef) ??
+    null;
   const templateItems =
-    (template?.inputFields as { items?: Array<{ key: string; label: string }> })?.items ?? [];
+    (template?.inputFields as { items?: Array<{ key: string; label: string }> } | undefined)?.items ?? [];
   const rawItems = (task.resultFields as Record<string, unknown>).items;
   const existingItems: Array<{ key: string; label: string; checked: boolean }> =
     Array.isArray(rawItems)
       ? (rawItems as Array<{ key: string; label: string; checked: boolean }>)
       : templateItems.map((i) => ({ ...i, checked: false }));
+
+  if (existingItems.length === 0) return;
+  if (!existingItems.some((item) => item.key === itemKey)) return;
 
   // Idempotent — already checked
   if (existingItems.find((i) => i.key === itemKey)?.checked === true) return;

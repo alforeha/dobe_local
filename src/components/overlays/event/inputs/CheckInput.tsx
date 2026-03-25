@@ -1,5 +1,7 @@
 import type { CheckInputFields } from '../../../../types/taskTemplate';
 import type { Task } from '../../../../types/task';
+import { ONBOARDING_GLOW } from '../../../../constants/onboardingKeys';
+import { useGlows } from '../../../../hooks/useOnboardingGlow';
 
 interface CheckInputProps {
   inputFields: CheckInputFields;
@@ -9,6 +11,9 @@ interface CheckInputProps {
 
 export function CheckInput({ inputFields, task, onComplete }: CheckInputProps) {
   const isComplete = task.completionState === 'complete';
+  const welcomeGlow = useGlows(ONBOARDING_GLOW.WELCOME_EVENT_CARD);
+  const shouldGlowComplete =
+    welcomeGlow && task.questRef?.endsWith('|0|0') === true && !isComplete;
 
   return (
     <div className="h-full flex items-center gap-3">
@@ -21,7 +26,8 @@ export function CheckInput({ inputFields, task, onComplete }: CheckInputProps) {
           ${isComplete
             ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 cursor-default'
             : 'bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800'
-          }`}
+          }
+          ${shouldGlowComplete ? 'animate-pulse ring-2 ring-emerald-400 ring-offset-2 ring-offset-white dark:ring-offset-gray-800' : ''}`}
       >
         {isComplete ? '✓ Done' : 'Complete'}
       </button>

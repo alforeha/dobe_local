@@ -4,6 +4,8 @@ import { useUserStore } from '../../../stores/useUserStore';
 import type { StatGroupKey } from '../../../types/user';
 import { StatIcon } from '../../shared/StatIcon';
 import { ProfileXPBar } from './ProfileXPBar';
+import { ONBOARDING_GLOW } from '../../../constants/onboardingKeys';
+import { useGlows } from '../../../hooks/useOnboardingGlow';
 import {
   GEAR_SLOT_LABELS,
   GEAR_SLOT_ORDER,
@@ -51,6 +53,8 @@ export function ProfileTopSection({ onNav }: ProfileTopSectionProps) {
   const displayName = user?.system.displayName ?? '-';
   const xp = stats?.xp ?? 0;
   const level = deriveLevelFromXP(xp);
+  const badgeRoomGlows = useGlows(ONBOARDING_GLOW.BADGE_ROOM_NAV);
+  const equipmentRoomGlows = useGlows(ONBOARDING_GLOW.EQUIPMENT_ROOM_NAV);
 
   const topStat = STAT_ORDER.reduce<StatGroupKey>(
     (best, key) =>
@@ -154,6 +158,9 @@ export function ProfileTopSection({ onNav }: ProfileTopSectionProps) {
           aria-label="Badge Room"
         >
           {'\ud83c\udfc6'}
+          {badgeRoomGlows && (
+            <div className="pointer-events-none absolute inset-0 animate-pulse rounded-full ring-2 ring-emerald-400" />
+          )}
         </button>
 
         <button
@@ -163,6 +170,9 @@ export function ProfileTopSection({ onNav }: ProfileTopSectionProps) {
           aria-label="Equipment"
         >
           {'\ud83c\udf92'}
+          {equipmentRoomGlows && (
+            <div className="pointer-events-none absolute inset-0 animate-pulse rounded-full ring-2 ring-emerald-400" />
+          )}
         </button>
       </div>
 

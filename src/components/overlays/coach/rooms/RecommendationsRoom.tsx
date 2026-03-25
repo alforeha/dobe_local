@@ -4,6 +4,9 @@ import { RecommendedTasksTab } from './RecommendedTasksTab';
 import { RecommendedRoutinesTab } from './RecommendedRoutinesTab';
 import { RecommendedGearTab } from './RecommendedGearTab';
 import { RecommendedItemsTab } from './RecommendedItemsTab';
+import { GlowRing } from '../../../shared/GlowRing';
+import { ONBOARDING_GLOW } from '../../../../constants/onboardingKeys';
+import { useGlows } from '../../../../hooks/useOnboardingGlow';
 
 type RecTab = 'Tasks' | 'Routines' | 'Gear' | 'Items';
 
@@ -17,6 +20,8 @@ const TAB_CONFIG: { tab: RecTab; icon: string; label: string }[] = [
 export function RecommendationsRoom() {
   const [activeTab, setActiveTab] = useState<RecTab>('Tasks');
   const [gearViewed, setGearViewed] = useState(false);
+  const tasksTabGlows = useGlows(ONBOARDING_GLOW.RECOMMENDATIONS_TASKS);
+  const routinesTabGlows = useGlows(ONBOARDING_GLOW.RECOMMENDATIONS_ROUTINES);
 
   function handleTabClick(tab: RecTab) {
     setActiveTab(tab);
@@ -49,19 +54,28 @@ export function RecommendationsRoom() {
           {/* Icon-only tab nav */}
           <div className="ml-auto flex items-center gap-0.5 shrink-0">
             {TAB_CONFIG.map(({ tab, icon, label }) => (
-              <button
+              <GlowRing
                 key={tab}
-                type="button"
-                aria-label={label}
-                onClick={() => handleTabClick(tab)}
-                className={`w-10 h-10 flex items-center justify-center rounded-md text-xl transition-colors ${
-                  activeTab === tab
-                    ? 'bg-purple-600 text-white'
-                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
+                active={
+                  (tab === 'Tasks' && tasksTabGlows) ||
+                  (tab === 'Routines' && routinesTabGlows)
+                }
+                rounded="lg"
+                className="inline-flex"
               >
-                {icon}
-              </button>
+                <button
+                  type="button"
+                  aria-label={label}
+                  onClick={() => handleTabClick(tab)}
+                  className={`w-10 h-10 flex items-center justify-center rounded-md text-xl transition-colors ${
+                    activeTab === tab
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {icon}
+                </button>
+              </GlowRing>
             ))}
           </div>
         </div>

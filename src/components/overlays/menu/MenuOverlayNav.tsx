@@ -1,3 +1,7 @@
+import { GlowRing } from '../../shared/GlowRing';
+import { ONBOARDING_GLOW } from '../../../constants/onboardingKeys';
+import { useGlows } from '../../../hooks/useOnboardingGlow';
+
 type MenuRoom = 'world' | 'goal' | 'task' | 'schedule' | 'resource' | 'quickaction';
 
 const NAV_ITEMS: { room: MenuRoom; label: string; icon: string }[] = [
@@ -24,6 +28,10 @@ export function MenuOverlayNav({
   collapsed,
   onToggleCollapse,
 }: MenuOverlayNavProps) {
+  const taskRoomGlows = useGlows(ONBOARDING_GLOW.TASK_ROOM_NAV);
+  const scheduleRoomGlows = useGlows(ONBOARDING_GLOW.SCHEDULE_ROOM_NAV);
+  const resourceRoomGlows = useGlows(ONBOARDING_GLOW.RESOURCES_ROOM_NAV);
+
   return (
     <div
       className={`flex flex-col bg-gray-900 transition-all duration-200 shrink-0 ${
@@ -41,19 +49,29 @@ export function MenuOverlayNav({
 
       <div className="flex-1 overflow-y-auto py-2">
         {NAV_ITEMS.map(({ room, label, icon }) => (
-          <button
+          <GlowRing
             key={room}
-            type="button"
-            onClick={() => onNavigate(room)}
-            className={`w-full flex items-center gap-3 px-3 py-3 hover:bg-gray-800 transition-colors ${
-              activeRoom === room ? 'bg-gray-800 text-white' : 'text-gray-400'
-            }`}
+            active={
+              (room === 'task' && taskRoomGlows) ||
+              (room === 'schedule' && scheduleRoomGlows) ||
+              (room === 'resource' && resourceRoomGlows)
+            }
+            rounded="lg"
+            className="block"
           >
-            <span className="text-lg shrink-0">{icon}</span>
-            {!collapsed && (
-              <span className="text-sm truncate">{label}</span>
-            )}
-          </button>
+            <button
+              type="button"
+              onClick={() => onNavigate(room)}
+              className={`w-full flex items-center gap-3 px-3 py-3 hover:bg-gray-800 transition-colors ${
+                activeRoom === room ? 'bg-gray-800 text-white' : 'text-gray-400'
+              }`}
+            >
+              <span className="text-lg shrink-0">{icon}</span>
+              {!collapsed && (
+                <span className="text-sm truncate">{label}</span>
+              )}
+            </button>
+          </GlowRing>
         ))}
       </div>
 

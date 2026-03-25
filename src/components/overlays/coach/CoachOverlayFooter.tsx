@@ -6,6 +6,9 @@
 // ─────────────────────────────────────────
 
 import type { CoachRoom } from './CoachOverlay';
+import { GlowRing } from '../../shared/GlowRing';
+import { ONBOARDING_GLOW } from '../../../constants/onboardingKeys';
+import { useGlows } from '../../../hooks/useOnboardingGlow';
 
 interface CoachOverlayFooterProps {
   activeRoom: CoachRoom;
@@ -28,27 +31,34 @@ const ROOMS: { room: CoachRoom; icon: string; ariaLabel: string }[] = [
 
 export function CoachOverlayFooter({ activeRoom, onNav, userLevel }: CoachOverlayFooterProps) {
   const showLeaderboard = userLevel >= LEADERBOARD_LEVEL_GATE;
+  const recommendationsNavGlows = useGlows(ONBOARDING_GLOW.RECOMMENDATIONS_NAV);
 
   const visibleRooms = ROOMS.filter((r) => r.room !== 'leaderboard' || showLeaderboard);
 
   return (
     <nav className="shrink-0 flex border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
       {visibleRooms.map(({ room, icon, ariaLabel }) => (
-        <button
+        <GlowRing
           key={room}
-          type="button"
-          aria-label={ariaLabel}
-          aria-pressed={activeRoom === room}
-          onClick={() => onNav(room)}
-          className={`flex-1 flex items-center justify-center py-3 text-2xl transition-colors
-            ${
-              activeRoom === room
-                ? 'text-purple-600 bg-purple-50 dark:bg-purple-950/20'
-                : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
+          active={room === 'recommendations' && recommendationsNavGlows}
+          rounded="lg"
+          className="flex-1"
         >
-          {icon}
-        </button>
+          <button
+            type="button"
+            aria-label={ariaLabel}
+            aria-pressed={activeRoom === room}
+            onClick={() => onNav(room)}
+            className={`flex h-full w-full items-center justify-center py-3 text-2xl transition-colors
+              ${
+                activeRoom === room
+                  ? 'text-purple-600 bg-purple-50 dark:bg-purple-950/20'
+                  : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+          >
+            {icon}
+          </button>
+        </GlowRing>
       ))}
     </nav>
   );

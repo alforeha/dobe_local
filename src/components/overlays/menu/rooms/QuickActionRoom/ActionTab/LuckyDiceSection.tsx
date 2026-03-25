@@ -2,18 +2,15 @@ import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useScheduleStore } from '../../../../../../stores/useScheduleStore';
 import { useUserStore } from '../../../../../../stores/useUserStore';
-
 import { awardXP, awardStat } from '../../../../../../engine/awardPipeline';
 import { STARTER_TEMPLATE_IDS } from '../../../../../../coach/StarterQuestLibrary';
 import { getAppDate } from '../../../../../../utils/dateUtils';
 import type { Task } from '../../../../../../types/task';
 import type { QuickActionsEvent } from '../../../../../../types/event';
 import type { RollInputFields } from '../../../../../../types/taskTemplate';
-
-// ── Lucky Dice Section — D78
-// Renders a single roll-per-day dice section in the Quick Action room.
-// On roll: creates a ROLL Task, stores result, awards XP based on result.
-// Locked for the rest of the day once rolled.
+import { GlowRing } from '../../../../../shared/GlowRing';
+import { ONBOARDING_GLOW } from '../../../../../../constants/onboardingKeys';
+import { useGlows } from '../../../../../../hooks/useOnboardingGlow';
 
 const DIE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 const SIDES = 6;
@@ -33,7 +30,7 @@ function getTodayRoll(
     if (task.completionState !== 'complete') continue;
     const rf = task.resultFields as Partial<RollInputFields>;
     if (rf.result != null) {
-      return { result: rf.result, boostApplied: rf.boostApplied ?? `×${rf.result}` };
+      return { result: rf.result, boostApplied: rf.boostApplied ?? `x${rf.result}` };
     }
   }
   return null;
@@ -44,6 +41,7 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
   const activeEvents = useScheduleStore((s) => s.activeEvents);
   const scheduleStore = useScheduleStore.getState;
   const user = useUserStore((s) => s.user);
+  const luckyDiceGlows = useGlows(ONBOARDING_GLOW.LUCKY_DICE);
 
   const today = todayISO();
   const qaId = `qa-${today}`;
@@ -60,7 +58,7 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
 
     setRolling(true);
     const result = Math.floor(Math.random() * SIDES) + 1;
-    const boostApplied = `×${result}`;
+    const boostApplied = `x${result}`;
     let ticks = 0;
 
     const id = window.setInterval(() => {
@@ -91,7 +89,6 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
 
         store.setTask(rollTask);
 
-        // Write to today's QA event — create one if rollover hasn't run yet (B04)
         const freshQa = store.activeEvents[qaId] as QuickActionsEvent | undefined;
         const baseQa: QuickActionsEvent = freshQa ?? {
           id: qaId,
@@ -107,7 +104,6 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
         };
         store.setActiveEvent(updatedQa);
 
-        // Award XP: result * 10 agility (range 10–60 XP)
         const xpAmount = result * 10;
         awardXP(user.system.id, xpAmount);
         awardStat(user.system.id, 'agility', result);
@@ -122,7 +118,7 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
         <div className="flex flex-col items-center justify-center gap-0.5">
           <span className="text-3xl select-none leading-none">{face}</span>
           <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 leading-tight">
-            ×{todayRoll.result} Bonus
+            x{todayRoll.result} Bonus
           </p>
         </div>
       );
@@ -132,18 +128,20 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
         <span className="text-3xl select-none leading-none transition-transform duration-75">
           {rolling ? animFace : '🎲'}
         </span>
-        <button
-          type="button"
-          disabled={rolling}
-          onClick={handleRoll}
-          className={`rounded-full px-3 py-0.5 text-xs font-semibold transition-colors ${
-            rolling
-              ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
-              : 'bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800'
-          }`}
-        >
-          {rolling ? '…' : 'Roll'}
-        </button>
+        <GlowRing active={luckyDiceGlows} className="inline-flex">
+          <button
+            type="button"
+            disabled={rolling}
+            onClick={handleRoll}
+            className={`rounded-full px-3 py-0.5 text-xs font-semibold transition-colors ${
+              rolling
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+                : 'bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800'
+            }`}
+          >
+            {rolling ? '...' : 'Roll'}
+          </button>
+        </GlowRing>
       </div>
     );
   }
@@ -154,7 +152,7 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
       <div className="mb-5 flex flex-col items-center gap-2 py-4">
         <span className="text-6xl select-none">{face}</span>
         <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">
-          ×{todayRoll.result} Bonus
+          x{todayRoll.result} Bonus
         </p>
       </div>
     );
@@ -165,18 +163,20 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
       <span className="text-6xl select-none transition-transform duration-75">
         {rolling ? animFace : '🎲'}
       </span>
-      <button
-        type="button"
-        disabled={rolling}
-        onClick={handleRoll}
-        className={`rounded-full px-6 py-2 text-sm font-semibold transition-colors ${
-          rolling
-            ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
-            : 'bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800'
-        }`}
-      >
-        {rolling ? '…' : 'Roll'}
-      </button>
+      <GlowRing active={luckyDiceGlows} className="inline-flex">
+        <button
+          type="button"
+          disabled={rolling}
+          onClick={handleRoll}
+          className={`rounded-full px-6 py-2 text-sm font-semibold transition-colors ${
+            rolling
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+              : 'bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800'
+          }`}
+        >
+          {rolling ? '...' : 'Roll'}
+        </button>
+      </GlowRing>
     </div>
   );
 }

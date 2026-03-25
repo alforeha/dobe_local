@@ -1,34 +1,27 @@
+import { resolveIcon } from '../../../constants/iconMap';
+
 interface EventBlockProps {
   eventId: string;
   name: string;
   color: string;
   startTime: string;
   endTime: string;
-  /** Optional icon key resolved via resolveIcon() */
   icon?: string;
-  /** Pre-calculated height in px from the layout engine */
   heightPx: number;
   taskCount: number;
   taskComplete: number;
   completionState?: string;
-  /** Distance from top of the day-grid container in px */
   topOffset: number;
-  /** 0-based column index within concurrent overlap group */
   colIndex: number;
-  /** Total columns in overlap group — 1 means full width */
   colCount: number;
-  /** Number of columns this event spans to the right (default 1) */
   colSpan: number;
-  /** Optional multi-day label shown inside the block */
   multiDayLabel?: string;
   interactive: boolean;
   onOpen?: () => void;
   muted?: boolean;
+  glow?: boolean;
 }
 
-import { resolveIcon } from '../../../constants/iconMap';
-
-/** Event block in DayView — absolutely positioned within the unified day-grid. */
 export function EventBlock({
   name,
   color,
@@ -47,6 +40,7 @@ export function EventBlock({
   interactive,
   onOpen,
   muted,
+  glow = false,
 }: EventBlockProps) {
   const widthPct = (colSpan / colCount) * 100;
   const leftPct = (colIndex / colCount) * 100;
@@ -71,6 +65,9 @@ export function EventBlock({
         zIndex: colIndex + 1,
       }}
     >
+      {glow && (
+        <div className="pointer-events-none absolute inset-0 animate-pulse rounded ring-4 ring-emerald-300 shadow-[0_0_0_4px_rgba(16,185,129,0.25)]" />
+      )}
       {isComplete && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden rounded">
           <span className="font-bold text-sm tracking-widest rotate-[-8deg] text-white/90 text-center px-1">
@@ -79,7 +76,6 @@ export function EventBlock({
         </div>
       )}
 
-      {/* Left: name + time */}
       <div className="flex-1 min-w-0 flex flex-col justify-center">
         <div className="font-semibold truncate leading-tight text-sm">
           {icon && (
@@ -95,7 +91,6 @@ export function EventBlock({
         )}
       </div>
 
-      {/* Right: task count */}
       {taskCount > 0 && heightPx >= 44 && (
         <div className="shrink-0 text-white/80 text-base font-bold leading-none">{taskComplete}/{taskCount}</div>
       )}

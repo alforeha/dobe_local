@@ -1,6 +1,9 @@
 import type { TaskType, TaskSecondaryTag } from '../../../../../types';
 import { resolveIcon } from '../../../../../constants/iconMap';
 import { useUserStore } from '../../../../../stores/useUserStore';
+import { GlowRing } from '../../../../shared/GlowRing';
+import { ONBOARDING_GLOW } from '../../../../../constants/onboardingKeys';
+import { useGlows } from '../../../../../hooks/useOnboardingGlow';
 
 interface TaskBlockProps {
   templateKey: string;
@@ -9,18 +12,27 @@ interface TaskBlockProps {
   taskType: TaskType;
   secondaryTag: TaskSecondaryTag | null;
   xpTotal: number;
-  /** true = user custom template; false = prebuilt read-only */
   isCustom: boolean;
   isSystem?: boolean;
-  /** Called when user taps the edit button. Only provided for custom templates. */
   onEdit?: () => void;
 }
 
-export function TaskBlock({ templateKey, name, icon, taskType, secondaryTag, xpTotal, isCustom, isSystem, onEdit }: TaskBlockProps) {
+export function TaskBlock({
+  templateKey,
+  name,
+  icon,
+  taskType,
+  secondaryTag,
+  xpTotal,
+  isCustom,
+  isSystem,
+  onEdit,
+}: TaskBlockProps) {
   const favouritesList = useUserStore((s) => s.user?.lists.favouritesList ?? []);
   const addFavourite = useUserStore((s) => s.addFavourite);
   const removeFavourite = useUserStore((s) => s.removeFavourite);
   const isFavourited = favouritesList.includes(templateKey);
+  const starGlows = useGlows(ONBOARDING_GLOW.TASK_FAVOURITE_STAR);
 
   function handleStarClick() {
     if (isFavourited) {
@@ -33,14 +45,16 @@ export function TaskBlock({ templateKey, name, icon, taskType, secondaryTag, xpT
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 min-h-[44px] bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg">
       {!isSystem && (
-        <button
-          type="button"
-          onClick={handleStarClick}
-          aria-label={isFavourited ? 'Remove from favourites' : 'Add to favourites'}
-          className="text-lg leading-none shrink-0 transition-colors"
-        >
-          {isFavourited ? '⭐' : '☆'}
-        </button>
+        <GlowRing active={starGlows} className="inline-flex">
+          <button
+            type="button"
+            onClick={handleStarClick}
+            aria-label={isFavourited ? 'Remove from favourites' : 'Add to favourites'}
+            className="text-lg leading-none shrink-0 transition-colors"
+          >
+            {isFavourited ? '⭐' : '☆'}
+          </button>
+        </GlowRing>
       )}
       <span className="w-8 shrink-0 text-xl leading-none text-center" aria-hidden="true">
         {resolveIcon(icon)}
@@ -70,7 +84,7 @@ export function TaskBlock({ templateKey, name, icon, taskType, secondaryTag, xpT
         <span
           title="Prebuilt templates are read-only"
           className="text-xs text-gray-300 shrink-0 select-none cursor-default px-1"
-          aria-label="Prebuilt template — read-only"
+          aria-label="Prebuilt template - read-only"
         >
           •••
         </span>
