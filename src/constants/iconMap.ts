@@ -46,6 +46,19 @@ export const ICON_MAP: Record<string, string> = {
   welcome: '👋',
   quest: '🎯',
   daily: '☀️',
+  // act types
+  'act-onboarding': '🐸',
+  'act-daily': '☀️',
+  'act-health': '❤️',
+  'act-strength': '⚔️',
+  'act-agility': '⚡',
+  'act-defense': '🛡️',
+  'act-charisma': '💬',
+  'act-wisdom': '🔮',
+  // chain types
+  chain: '🔗',
+  'chain-daily': '📅',
+  'chain-stat': '📊',
   // general
   default: '📌',
 }

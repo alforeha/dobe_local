@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Act } from '../../../../../types';
+import { resolveIcon } from '../../../../../constants/iconMap';
 import { ChainPopup } from './ChainPopup';
 
 interface ActBlockExpandedProps {
@@ -22,8 +23,10 @@ export function ActBlockExpanded({ act }: ActBlockExpandedProps) {
           onClick={() => setOpenChainIdx(i)}
           className="w-full flex items-center gap-2 text-left px-2 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
         >
-          <span className="text-base">{chain.icon || '⛓️'}</span>
-          <span className="flex-1 text-sm text-gray-700 truncate">{chain.name}</span>
+          <span className="text-base">{resolveIcon(chain.icon)}</span>
+          <span className="flex-1 text-sm text-gray-700 dark:text-gray-100 truncate">
+            {chain.name}
+          </span>
           <span
             className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${
               chain.completionState === 'complete'

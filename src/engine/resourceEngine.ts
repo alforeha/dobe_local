@@ -121,7 +121,7 @@ function ensureTemplate(
  *
  * @returns Empty array — no PlannedEvents created.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// (commented out) eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function generateScheduledTasks(_resource: Resource): PlannedEvent[] {
   return [];
 }

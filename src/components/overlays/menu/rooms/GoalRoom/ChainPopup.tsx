@@ -580,7 +580,7 @@ function QuestRow({
   return (
     <div className="rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
       {/* Quest header row */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-750">
+      <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700">
         <button
           type="button"
           onClick={onToggle}
@@ -631,7 +631,7 @@ function QuestRow({
       </div>
 
       {/* Progress bar — always visible */}
-      <div className="px-3 pt-1 pb-1 bg-gray-50 dark:bg-gray-750">
+      <div className="px-3 pt-1 pb-1 bg-gray-50 dark:bg-gray-700">
         <ProgressBar pct={quest.progressPercent} />
         <div className="flex justify-between mt-0.5">
           <span className="text-xs text-gray-400">{quest.progressPercent}%</span>
