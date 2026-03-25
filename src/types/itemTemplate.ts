@@ -31,6 +31,12 @@ export interface BadgeContents {
   achievementRef: string;
   /** Timestamp — used for board render ordering */
   awardedDate: string; // ISO date
+  /** true when the badge is actively shown on the board */
+  placed?: boolean;
+  /** 0-100 percentage placement on the board X axis */
+  boardX?: number;
+  /** 0-100 percentage placement on the board Y axis */
+  boardY?: number;
   /**
    * null = unclaimed
    * {x, y} = placed on board

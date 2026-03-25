@@ -1,5 +1,5 @@
 ﻿import { useState, useRef } from 'react';
-import type { Resource, HomeMeta, VehicleMeta, AccountMeta, InventoryMeta, DocMeta, ResourceType } from '../../../../../types/resource';
+import type { Resource, HomeMeta, VehicleMeta, AccountMeta, InventoryMeta, DocMeta, ContactMeta, ResourceType } from '../../../../../types/resource';
 import { useResourceStore } from '../../../../../stores/useResourceStore';
 import { useUserStore } from '../../../../../stores/useUserStore';
 

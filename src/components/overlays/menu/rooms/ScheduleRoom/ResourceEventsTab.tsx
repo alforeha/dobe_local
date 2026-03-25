@@ -14,7 +14,8 @@ import type {
   VehicleMeta,
   AccountMeta,
   DocMeta,
-  RecurrenceRule,
+  ResourceRecurrenceRule,
+  RecurrenceDayOfWeek,
 } from '../../../../../types/resource';
 import type { Task } from '../../../../../types/task';
 import { resolveIcon } from '../../../../../constants/iconMap';
@@ -68,7 +69,7 @@ function nextAnnualDate(birthday: string): { date: string; days: number } | null
 }
 
 /** Next occurrence of a RecurrenceRule. */
-function computeNextOccurrence(rule: RecurrenceRule): { date: string; days: number } {
+function computeNextOccurrence(rule: ResourceRecurrenceRule): { date: string; days: number } {
   const today = todayMidnight();
   const seed = new Date(rule.seedDate + 'T00:00:00');
 
@@ -92,9 +93,9 @@ function computeNextOccurrence(rule: RecurrenceRule): { date: string; days: numb
         const DOW_ORDER = ['sun','mon','tue','wed','thu','fri','sat'];
         const todayDow = today.getDay();
         const diffs = rule.days
-          .map((d) => DOW_ORDER.indexOf(d))
-          .filter((i) => i >= 0)
-          .map((dow) => (dow - todayDow + 7) % 7);
+          .map((d: RecurrenceDayOfWeek) => DOW_ORDER.indexOf(d))
+          .filter((i: number) => i >= 0)
+          .map((dow: number) => (dow - todayDow + 7) % 7);
         if (diffs.length > 0) {
           const minDiff = Math.min(...diffs);
           const next = new Date(today);

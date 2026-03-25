@@ -38,8 +38,8 @@ export function DocMetaView({ meta, resource }: DocMetaViewProps) {
   // Reverse lookup: resources that list this doc in their linkedDocs
   const linkedReverse = Object.values(allResources).filter((r) => {
     if (r.id === resource.id) return false;
-    const m = r.meta as Record<string, unknown>;
-    if (Array.isArray(m.linkedDocs)) return (m.linkedDocs as string[]).includes(resource.id);
+    const m = r.meta as unknown as { linkedDocs?: string[] };
+    if (Array.isArray(m.linkedDocs)) return m.linkedDocs.includes(resource.id);
     return false;
   });
 

@@ -128,7 +128,7 @@ export function AccountMetaView({ meta, resource }: AccountMetaViewProps) {
                 {t.icon && <span>{t.icon}</span>}
                 <span>{t.name}</span>
                 <span className="text-gray-400">
-                  — {RECURRENCE_LABEL[t.recurrence] ?? t.recurrence}
+                  — {RECURRENCE_LABEL[t.recurrence.frequency] ?? t.recurrence.frequency}
                 </span>
               </span>
             ))}

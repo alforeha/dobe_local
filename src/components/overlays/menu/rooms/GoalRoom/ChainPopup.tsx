@@ -102,7 +102,7 @@ interface QuestFormState {
   unit: string;
   sourceType: 'taskInput' | 'resourceRef';
   taskTypes: TaskType[];
-  conditionType: 'interval' | 'xpThreshold';
+  conditionType: 'interval' | 'xpThreshold' | 'taskCount';
   frequency: RecurrenceFrequency;
   days: Weekday[];
   intervalN: string;

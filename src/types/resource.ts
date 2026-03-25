@@ -91,7 +91,7 @@ export interface HomeChore {
   id: string;
   icon: string;
   name: string;
-  recurrence: RecurrenceRule;
+  recurrence: ResourceRecurrenceRule;
   /** Single contact ID or 'all' */
   assignedTo: string;
 }
@@ -116,7 +116,7 @@ export interface HomeMeta {
 export const RECURRENCE_DAYS_OF_WEEK = ['sun','mon','tue','wed','thu','fri','sat'] as const;
 export type RecurrenceDayOfWeek = typeof RECURRENCE_DAYS_OF_WEEK[number];
 
-export interface RecurrenceRule {
+export interface ResourceRecurrenceRule {
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
   /** How many frequency units between occurrences. Default 1. */
   interval: number;
@@ -128,8 +128,8 @@ export interface RecurrenceRule {
   endsOn: string | null;
 }
 
-/** Returns a RecurrenceRule defaulting to weekly from today. */
-export function makeDefaultRecurrenceRule(): RecurrenceRule {
+/** Returns a ResourceRecurrenceRule defaulting to weekly from today. */
+export function makeDefaultRecurrenceRule(): ResourceRecurrenceRule {
   return {
     frequency: 'weekly',
     interval: 1,
@@ -139,14 +139,14 @@ export function makeDefaultRecurrenceRule(): RecurrenceRule {
   };
 }
 
-/** Coerces legacy string recurrence values to RecurrenceRule. */
-export function toRecurrenceRule(r: unknown): RecurrenceRule {
-  if (r && typeof r === 'object' && 'frequency' in r) return r as RecurrenceRule;
+/** Coerces legacy string recurrence values to ResourceRecurrenceRule. */
+export function toRecurrenceRule(r: unknown): ResourceRecurrenceRule {
+  if (r && typeof r === 'object' && 'frequency' in r) return r as ResourceRecurrenceRule;
   const freq = typeof r === 'string' ? r : 'weekly';
   return {
     frequency: (['daily','weekly','monthly','yearly'].includes(freq)
       ? freq
-      : 'weekly') as RecurrenceRule['frequency'],
+      : 'weekly') as ResourceRecurrenceRule['frequency'],
     interval: 1,
     days: [],
     seedDate: new Date().toISOString().slice(0, 10),
@@ -158,7 +158,7 @@ export interface VehicleMaintenanceTask {
   id: string;
   icon: string;
   name: string;
-  recurrence: RecurrenceRule;
+  recurrence: ResourceRecurrenceRule;
   /** Days before task triggers a GTD push. Default 14. -1 = never. */
   reminderLeadDays: number;
 }
@@ -218,7 +218,7 @@ export interface AccountTask {
   id: string;
   icon: string;
   name: string;
-  recurrence: RecurrenceRule;
+  recurrence: ResourceRecurrenceRule;
   /** Days before task triggers a GTD push. Default 7. -1 = never. */
   reminderLeadDays: number;
 }

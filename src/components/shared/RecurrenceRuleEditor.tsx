@@ -2,12 +2,12 @@
 // RecurrenceRuleEditor — compact inline recurrence rule editor.
 // ─────────────────────────────────────────
 
-import type { RecurrenceRule, RecurrenceDayOfWeek } from '../../types/resource';
+import type { ResourceRecurrenceRule, RecurrenceDayOfWeek } from '../../types/resource';
 import { RECURRENCE_DAYS_OF_WEEK } from '../../types/resource';
 
 interface RecurrenceRuleEditorProps {
-  value: RecurrenceRule;
-  onChange: (rule: RecurrenceRule) => void;
+  value: ResourceRecurrenceRule;
+  onChange: (rule: ResourceRecurrenceRule) => void;
 }
 
 const DOW_LABELS: { key: RecurrenceDayOfWeek; label: string }[] = [
@@ -26,7 +26,7 @@ const SELECT_CLS = INPUT_CLS + ' w-full';
 export function RecurrenceRuleEditor({ value, onChange }: RecurrenceRuleEditorProps) {
   void RECURRENCE_DAYS_OF_WEEK; // keep import live
 
-  function update(patch: Partial<RecurrenceRule>) {
+  function update(patch: Partial<ResourceRecurrenceRule>) {
     onChange({ ...value, ...patch });
   }
 
@@ -54,7 +54,7 @@ export function RecurrenceRuleEditor({ value, onChange }: RecurrenceRuleEditorPr
           value={value.frequency}
           onChange={(e) =>
             update({
-              frequency: e.target.value as RecurrenceRule['frequency'],
+              frequency: e.target.value as ResourceRecurrenceRule['frequency'],
               days: [],
             })
           }

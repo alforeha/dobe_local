@@ -124,7 +124,7 @@ export function HomeMetaView({ meta, resource }: HomeMetaViewProps) {
                 {c.icon && <span>{c.icon}</span>}
                 <span>{c.name}</span>
                 <span className="text-gray-400">
-                  — {RECURRENCE_LABEL[c.recurrence] ?? c.recurrence}
+                  — {RECURRENCE_LABEL[c.recurrence.frequency] ?? c.recurrence.frequency}
                 </span>
               </span>
             ))}

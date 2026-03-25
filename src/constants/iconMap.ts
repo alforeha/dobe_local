@@ -65,6 +65,7 @@ export const ICON_MAP: Record<string, string> = {
 
 export function resolveIcon(key: string | null | undefined): string {
   if (!key) return ICON_MAP['default']
+  if (key.startsWith('icon:ach-') || key.startsWith('sticker:ach-')) return '🏅'
   return ICON_MAP[key.toLowerCase()] ?? key
   // if key not in map, return key as-is (handles emoji passed directly
   // during migration — forward compatible)

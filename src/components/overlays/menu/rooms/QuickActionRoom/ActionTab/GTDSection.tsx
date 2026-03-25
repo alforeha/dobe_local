@@ -16,7 +16,7 @@ export function GTDSection() {
   const manualGtdList = user?.lists.manualGtdList ?? [];
 
   // Templates managed entirely by system auto-checks — never shown as manual GTD items
-  const AUTO_TRACKED = new Set([STARTER_TEMPLATE_IDS.setupSchedule]);
+  const AUTO_TRACKED = new Set<string>([STARTER_TEMPLATE_IDS.setupSchedule]);
 
   // Resolve system/resource-generated Task refs — pending only, excluding auto-tracked
   const systemTasks = gtdList

@@ -10,13 +10,14 @@ import type {
   HomeMeta,
   VehicleMeta,
   AccountMeta,
-  RecurrenceRule,
+  ResourceRecurrenceRule,
+  RecurrenceDayOfWeek,
 } from '../../../../../types/resource';
 import { resolveIcon } from '../../../../../constants/iconMap';
 
 // ── Recurrence label helper ────────────────────────────────────────────────────
 
-function recurrenceLabel(rule: RecurrenceRule): string {
+function recurrenceLabel(rule: ResourceRecurrenceRule): string {
   const freq =
     rule.frequency === 'daily'   ? 'day' :
     rule.frequency === 'weekly'  ? 'week' :
@@ -30,7 +31,7 @@ function recurrenceLabel(rule: RecurrenceRule): string {
       sun: 'Su', mon: 'Mo', tue: 'Tu', wed: 'We',
       thu: 'Th', fri: 'Fr', sat: 'Sa',
     };
-    const dayStr = rule.days.map((d) => DOW[d] ?? d).join(' ');
+    const dayStr = rule.days.map((d: RecurrenceDayOfWeek) => DOW[d] ?? d).join(' ');
     return `${intervalPart} · ${dayStr}`;
   }
 

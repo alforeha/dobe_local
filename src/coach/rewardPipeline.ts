@@ -47,6 +47,9 @@ export function awardBadge(achievementDef: AchievementDefinition, user: User): U
     contents: {
       achievementRef: achievementDef.id,
       awardedDate: now,
+      placed: false,
+      boardX: undefined,
+      boardY: undefined,
       location: null,
     },
   };
@@ -93,7 +96,7 @@ export function awardBadge(achievementDef: AchievementDefinition, user: User): U
  * @param source     ItemSource string — e.g. 'badge.reward', 'quest.reward', 'coach.drop'
  * @returns Updated User.
  */
-export function awardGear(gearDefId: string, source: string, user: User): User {
+export function awardGear(gearDefId: string, _source: string, user: User): User {
   const gearDef = characterLibrary.gearDefinitions.find((g) => g.id === gearDefId);
   if (!gearDef) {
     console.warn(`[rewardPipeline] awardGear: gearDefinition "${gearDefId}" not found`);

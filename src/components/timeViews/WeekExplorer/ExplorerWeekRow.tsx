@@ -108,7 +108,7 @@ export function ExplorerWeekRow({ weekStart, onSelect }: ExplorerWeekRowProps) {
     plannedEvents: s.plannedEvents,
   })));
 
-  const rawBlocks: Omit<ColorBlock, 'colIndex' | 'colCount'>[] = [];
+  const rawBlocks: Omit<ColorBlock, 'colIndex' | 'colCount' | 'colSpan'>[] = [];
 
   days.forEach((day, dayOfWeek) => {
     if (!visibleDaySet.has(dayOfWeek)) return; // skip hidden days

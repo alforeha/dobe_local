@@ -9,7 +9,7 @@ import type {
   VehicleMeta,
   VehicleMaintenanceTask,
   ResourceNote,
-  RecurrenceRule,
+  ResourceRecurrenceRule,
 } from '../../../../../../types/resource';
 import { makeDefaultRecurrenceRule, toRecurrenceRule } from '../../../../../../types/resource';
 import { useResourceStore } from '../../../../../../stores/useResourceStore';
@@ -37,7 +37,7 @@ interface TaskDraft {
   id: string;
   icon: string;
   name: string;
-  recurrence: RecurrenceRule;
+  recurrence: ResourceRecurrenceRule;
   reminderLeadDays: number;
 }
 
@@ -90,7 +90,7 @@ export function VehicleForm({ existing, onSaved, onCancel }: VehicleFormProps) {
     ]);
   }
 
-  function updateTask(id: string, field: keyof TaskDraft, value: string | number | RecurrenceRule) {
+  function updateTask(id: string, field: keyof TaskDraft, value: string | number | ResourceRecurrenceRule) {
     setMaintenanceTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, [field]: value } : t)),
     );

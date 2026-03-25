@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import type { Resource, HomeMeta, HomeRoom, HomeChore, ResourceNote, RecurrenceRule } from '../../../../../../types/resource';
+import type { Resource, HomeMeta, HomeRoom, HomeChore, ResourceNote, ResourceRecurrenceRule } from '../../../../../../types/resource';
 import { makeDefaultRecurrenceRule, toRecurrenceRule } from '../../../../../../types/resource';
 import { useResourceStore } from '../../../../../../stores/useResourceStore';
 import { useUserStore } from '../../../../../../stores/useUserStore';
@@ -37,7 +37,7 @@ interface ChoreDraft {
   id: string;
   icon: string;
   name: string;
-  recurrence: RecurrenceRule;
+  recurrence: ResourceRecurrenceRule;
   assignedTo: string;
 }
 
@@ -126,7 +126,7 @@ export function HomeForm({ existing, onSaved, onCancel }: HomeFormProps) {
     ]);
   }
 
-  function updateChore(id: string, field: keyof ChoreDraft, value: string | RecurrenceRule) {
+  function updateChore(id: string, field: keyof ChoreDraft, value: string | ResourceRecurrenceRule) {
     setChores((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
   }
 
