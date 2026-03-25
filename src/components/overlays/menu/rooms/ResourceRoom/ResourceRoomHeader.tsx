@@ -21,12 +21,23 @@ const TYPE_ICONS: Record<ResourceType, string> = {
 interface ResourceRoomHeaderProps {
   activeType: ResourceType;
   onTypeChange: (type: ResourceType) => void;
+  onAdd: () => void;
 }
 
-export function ResourceRoomHeader({ activeType, onTypeChange }: ResourceRoomHeaderProps) {
+export function ResourceRoomHeader({ activeType, onTypeChange, onAdd }: ResourceRoomHeaderProps) {
   return (
     <div className="px-4 pt-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-      <h2 className="text-base font-semibold text-gray-800 mb-2">Resources</h2>
+      <div className="flex items-center mb-2">
+        <h2 className="flex-1 text-base font-semibold text-gray-800 dark:text-gray-100">Resources</h2>
+        <button
+          type="button"
+          onClick={onAdd}
+          aria-label="Add resource"
+          className="text-2xl leading-none text-blue-500 hover:text-blue-600 transition-colors"
+        >
+          +
+        </button>
+      </div>
       <div className="flex gap-1 overflow-x-auto">
         {RESOURCE_TYPES.map((type) => (
           <button

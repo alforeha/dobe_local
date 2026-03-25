@@ -28,6 +28,7 @@ export const ICON_MAP: Record<string, string> = {
   mindfulness: '🧘',
   nutrition: '🥗',
   home: '🏠',
+  vehicle: '🚗',
   work: '💼',
   admin: '📁',
   finance: '💰',

@@ -19,6 +19,26 @@ export interface ResourceLogEntry {
   taskRef?: string;
 }
 
+// ── RESOURCE NOTE (D95) ───────────────────────────────────────────────────────
+
+export interface ResourceNote {
+  id: string;
+  text: string;
+  createdAt: string; // ISO datetime
+}
+
+// ── CONTACT GROUPS (D96) ─────────────────────────────────────────────────────
+
+export const CONTACT_GROUPS = [
+  'family',
+  'friend',
+  'acquaintance',
+  'colleague',
+  'coworker',
+] as const;
+
+export type ContactGroup = typeof CONTACT_GROUPS[number];
+
 // ── META SHAPES (D42) — one per ResourceType ─────────────────────────────────
 
 /**
@@ -33,36 +53,54 @@ export interface ContactInfo {
   customFields?: Record<string, string>;
 }
 
+export interface ContactLink {
+  contactId: string;
+  relationship: string;
+}
+
 export interface ContactMeta {
   info: ContactInfo;
   customTag: string | null;
-  /** Group membership strings */
-  groups: string[];
-  /** Freetext notes */
-  notes: string;
-  /** Optional refs to related resources, e.g. a Home resource */
-  linkedResourceRefs?: string[];
+  /** Predefined group membership — D96 */
+  groups?: ContactGroup[];
+  /** Timestamped note log — D95 */
+  notes?: ResourceNote[];
+  /** Linked contact relationships — D96 */
+  linkedContactRefs?: ContactLink[];
+  /**
+   * Days before birthday to push a GTD reminder.
+   * Default 14. Set to 0 for day-of only. Set to -1 to never push.
+   */
+  birthdayLeadDays?: number;
 }
 
 /**
  * Home meta — generates: chore tasks (CHECK / CHECKLIST)
- * rooms[] — each room has an explicit id for stable refs (D42).
- * assignedTo supports a list of contact refs or the literal 'all'.
+ * rooms[] — each room has a stable id ref (D42).
+ * chores[] — household recurring tasks.
  */
 export interface HomeRoom {
   id: string;
+  icon: string;
   name: string;
-  icon: string | null;
-  /** Contact Resource refs or the literal string 'all' */
-  assignedTo: string[] | 'all';
-  linkedDocs: string[];
-  linkedLayoutRef: string | null;
+  /** Contact IDs assigned to this room */
+  assignedTo: string[];
+}
+
+export interface HomeChore {
+  id: string;
+  icon: string;
+  name: string;
+  recurrence: RecurrenceRule;
+  /** Single contact ID or 'all' */
+  assignedTo: string;
 }
 
 export interface HomeMeta {
-  /** Contact Resource refs for household members */
-  memberContactRefs: string[];
-  rooms: HomeRoom[];
+  /** Contact IDs — household members */
+  members?: string[];
+  rooms?: HomeRoom[];
+  chores?: HomeChore[];
   /** Linked Inventory Resource ref */
   linkedInventoryRef: string | null;
   /** Lease, photos, and other Doc refs */
@@ -71,8 +109,58 @@ export interface HomeMeta {
   recurringTasksStub: null;
   /** Physical address — W23 */
   address?: string;
-  /** Freetext notes — W23 */
-  notes?: string;
+  /** Timestamped note log — D95/W23 */
+  notes?: ResourceNote[];
+}
+
+export const RECURRENCE_DAYS_OF_WEEK = ['sun','mon','tue','wed','thu','fri','sat'] as const;
+export type RecurrenceDayOfWeek = typeof RECURRENCE_DAYS_OF_WEEK[number];
+
+export interface RecurrenceRule {
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  /** How many frequency units between occurrences. Default 1. */
+  interval: number;
+  /** Days of week — only meaningful when frequency='weekly'. */
+  days: RecurrenceDayOfWeek[];
+  /** ISO date YYYY-MM-DD — when the recurrence starts. */
+  seedDate: string;
+  /** ISO date to stop, or null for indefinite. */
+  endsOn: string | null;
+}
+
+/** Returns a RecurrenceRule defaulting to weekly from today. */
+export function makeDefaultRecurrenceRule(): RecurrenceRule {
+  return {
+    frequency: 'weekly',
+    interval: 1,
+    days: [],
+    seedDate: new Date().toISOString().slice(0, 10),
+    endsOn: null,
+  };
+}
+
+/** Coerces legacy string recurrence values to RecurrenceRule. */
+export function toRecurrenceRule(r: unknown): RecurrenceRule {
+  if (r && typeof r === 'object' && 'frequency' in r) return r as RecurrenceRule;
+  const freq = typeof r === 'string' ? r : 'weekly';
+  return {
+    frequency: (['daily','weekly','monthly','yearly'].includes(freq)
+      ? freq
+      : 'weekly') as RecurrenceRule['frequency'],
+    interval: 1,
+    days: [],
+    seedDate: new Date().toISOString().slice(0, 10),
+    endsOn: null,
+  };
+}
+
+export interface VehicleMaintenanceTask {
+  id: string;
+  icon: string;
+  name: string;
+  recurrence: RecurrenceRule;
+  /** Days before task triggers a GTD push. Default 14. -1 = never. */
+  reminderLeadDays: number;
 }
 
 /**
@@ -93,10 +181,16 @@ export interface VehicleMeta {
   licensePlate?: string | null;
   /** ISO date — GTD item within 30 days — W24 */
   insuranceExpiry?: string | null;
+  /** Days before insuranceExpiry to push GTD. Default 30. -1 = never. */
+  insuranceLeadDays?: number;
   /** ISO date — GTD item within 14 days — W24 */
   serviceNextDate?: string | null;
-  /** Freetext notes — W24 */
-  notes?: string;
+  /** Days before serviceNextDate to push GTD. Default 14. -1 = never. */
+  serviceLeadDays?: number;
+  /** Recurring maintenance task definitions */
+  maintenanceTasks?: VehicleMaintenanceTask[];
+  /** Timestamped note log — D95/W24 */
+  notes?: ResourceNote[];
 }
 
 /**
@@ -118,6 +212,15 @@ export interface PendingTransaction {
   assignedAccountRef: string | null;
   amount: number | null;
   status: PendingTransactionStatus;
+}
+
+export interface AccountTask {
+  id: string;
+  icon: string;
+  name: string;
+  recurrence: RecurrenceRule;
+  /** Days before task triggers a GTD push. Default 7. -1 = never. */
+  reminderLeadDays: number;
 }
 
 export interface AccountMeta {
@@ -145,8 +248,12 @@ export interface AccountMeta {
   accountNickname?: string | null;
   /** ISO date — payment due — GTD item within 7 days — W25 */
   dueDate?: string | null;
-  /** Freetext notes — W25 */
-  notes?: string;
+  /** Days before dueDate to push GTD. Default 7. -1 = never. */
+  dueDateLeadDays?: number;
+  /** Recurring transaction task definitions — G */
+  accountTasks?: AccountTask[];
+  /** Timestamped note log — D95/W25 */
+  notes?: ResourceNote[];
 }
 
 /**
@@ -164,34 +271,35 @@ export interface InventoryContainer {
 }
 
 export interface InventoryItem {
-  useableRef: string;
-  /** null = uncontained */
-  containerId: string | null;
+  id: string;
+  /** Emoji or icon key for this item */
+  icon: string;
+  name: string;
   quantity: number;
-  /** Display name for LOCAL v1 (useableRef not resolved in-app) — W26 */
-  name?: string;
-  /** Unit label e.g. 'kg', 'units' — W26 */
-  unit?: string | null;
-  /** Linked Resource ref — W26 */
-  linkedResourceRef?: string | null;
+  /** Unit label e.g. 'kg', 'units' */
+  unit?: string;
+  /** Per-item low-stock threshold — GTD fires when quantity <= threshold */
+  threshold?: number;
+  /** Optional linked Resource ref */
+  linkedResourceRef?: string;
 }
 
 export interface InventoryMeta {
   containers: InventoryContainer[];
   items: InventoryItem[];
-  /** Category label e.g. 'Kitchen', 'Tools' — W26 */
+  /** Category label e.g. 'Kitchen', 'Tools' */
   category?: string;
-  /** Items at or below this quantity trigger a GTD item — W26 */
-  lowStockThreshold?: number | null;
-  /** Freetext notes — W26 */
-  notes?: string;
+  /** Resource IDs this inventory belongs to (e.g. a Home) — H */
+  linkedResourceRefs?: string[];
+  /** Timestamped note log — D95/W26 */
+  notes?: ResourceNote[];
 }
 
 /**
  * Doc meta — generates: no task generation in LOCAL.
  * progression{} is reserved for course docs — deferred (BUILD-time task).
  */
-export type DocType = 'text' | 'pdf' | 'contract' | 'manual' | 'layout' | 'course' | 'walkthrough' | string;
+export type DocType = 'reference' | 'course' | 'manual' | 'contract' | 'receipt' | 'other' | string;
 
 export interface DocMeta {
   docType: DocType;
@@ -210,10 +318,14 @@ export interface DocMeta {
   url?: string | null;
   /** ISO date — GTD item within 30 days — W27 */
   expiryDate?: string | null;
+  /** Days before expiryDate to push GTD. Default 30. -1 = never. */
+  expiryLeadDays?: number;
   /** Walkthrough mode — W27 */
   walkthroughType?: 'linear' | 'checklist' | 'none';
-  /** Freetext notes — W27 */
-  notes?: string;
+  /** Resource IDs this doc belongs to (Home, Vehicle, Contact) — I */
+  linkedResourceRefs?: string[];
+  /** Timestamped note log — D95/W27 */
+  notes?: ResourceNote[];
 }
 
 // ── META UNION ────────────────────────────────────────────────────────────────

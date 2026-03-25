@@ -214,8 +214,8 @@ function makeInventoryResource() {
     meta: {
       containers: [] as unknown[],
       items: [
-        { useableRef: 'useable-coffee', containerId: null, quantity: 0 },
-        { useableRef: 'useable-bread',  containerId: null, quantity: 0 },
+        { id: 'useable-coffee', icon: '☕', name: 'Coffee', quantity: 0, threshold: 2 },
+        { id: 'useable-bread',  icon: '🍞', name: 'Bread',  quantity: 0, threshold: 1 },
       ],
     },
   };

@@ -83,6 +83,7 @@ function ensureTemplate(
     name,
     description: '',
     icon: 'resource-task',
+    isSystem: true,   // hide from Stat Tasks tab — resource templates are internal
     taskType,
     inputFields: taskType === 'CHECK'
       ? { label: name }
@@ -114,177 +115,19 @@ function ensureTemplate(
 // ── GENERATE SCHEDULED TASKS ──────────────────────────────────────────────────
 
 /**
- * Generate PlannedEvent entries from a Resource's scheduled task definitions.
- * Writes to useScheduleStore + storageLayer.
+ * No-op stub — PlannedEvents are NOT created from Resource data (D97: resource
+ * events are virtual).  GTD push is handled exclusively by generateGTDItems().
+ * Call sites are preserved so callers need not change.
  *
- * Contact  → annual birthday PlannedEvent (if birthday set)
- * Account  → recurring transaction PlannedEvent (if recurrenceRuleRef set)
- * Inventory → weekly replenishment review PlannedEvent
- * Home / Vehicle → returns [] — recurring tasks via MULTI-USER stub
- * Doc → returns [] — course progression deferred
- *
- * @returns Array of PlannedEvents created (empty if none applicable)
+ * @returns Empty array — no PlannedEvents created.
  */
-export function generateScheduledTasks(resource: Resource): PlannedEvent[] {
-  const created: PlannedEvent[] = [];
-
-  switch (resource.type) {
-    case 'contact':
-      created.push(..._genContactSchedule(resource));
-      break;
-    case 'account':
-      created.push(..._genAccountSchedule(resource));
-      break;
-    case 'inventory':
-      created.push(..._genInventorySchedule(resource));
-      break;
-    case 'home':
-      created.push(..._genHomeSchedule(resource));
-      break;
-    case 'vehicle':
-    case 'doc':
-      // Vehicle + Doc — no scheduled PlannedEvents (GTD-only triggers)
-      break;
-  }
-
-  for (const pe of created) {
-    useScheduleStore.getState().setPlannedEvent(pe);
-  }
-
-  return created;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function generateScheduledTasks(_resource: Resource): PlannedEvent[] {
+  return [];
 }
 
-function _genContactSchedule(resource: Resource): PlannedEvent[] {
-  const meta = resource.meta as ContactMeta;
-  if (!meta.info?.birthday) return [];
 
-  const templateKey = `resource-task:${resource.id}:birthday`;
-  ensureTemplate(
-    templateKey,
-    `${resource.name} — Birthday`,
-    'CHECK',
-    { wisdom: 5 },
-  );
 
-  const birthday = meta.info.birthday.slice(0, 10);
-  const parts = birthday.split('-');
-  if (parts.length < 3) return [];
-
-  const thisYear = new Date().getFullYear();
-  const seedDate = `${thisYear}-${parts[1]}-${parts[2]}`;
-
-  const pe: PlannedEvent = {
-    id: uuidv4(),
-    name: `${resource.name} — Birthday`,
-    description: `Birthday reminder for ${resource.name}`,
-    icon: 'birthday',
-    color: '#f59e0b',
-    seedDate,
-    dieDate: null,
-    recurrenceInterval: {
-      frequency: 'monthly',
-      days: [],
-      interval: 12,
-      endsOn: null,
-      customCondition: 'annual-birthday',
-    },
-    activeState: 'active',
-    taskPool: [templateKey],
-    taskPoolCursor: 0,
-    taskList: [templateKey],
-    conflictMode: 'concurrent',
-    startTime: '09:00',
-    endTime: '09:15',
-    location: null,
-    sharedWith: null,
-    pushReminder: null,
-  };
-
-  return [pe];
-}
-
-function _genAccountSchedule(resource: Resource): PlannedEvent[] {
-  const meta = resource.meta as AccountMeta;
-  if (!meta.recurrenceRuleRef) return [];
-
-  const templateKey = `resource-task:${resource.id}:transaction`;
-  const template = ensureTemplate(
-    templateKey,
-    `${resource.name} — Transaction`,
-    'LOG',
-    { defense: 5 },
-  );
-  void template; // ensureTemplate stored it; ref unused here
-
-  const pe: PlannedEvent = {
-    id: uuidv4(),
-    name: `${resource.name} — Transaction`,
-    description: `Log transaction for ${resource.name}`,
-    icon: 'account',
-    color: '#10b981',
-    seedDate: todayISO(),
-    dieDate: null,
-    recurrenceInterval: {
-      frequency: 'monthly',
-      days: [],
-      interval: 1,
-      endsOn: null,
-      customCondition: null,
-    },
-    activeState: 'active',
-    taskPool: [templateKey],
-    taskPoolCursor: 0,
-    taskList: [templateKey],
-    conflictMode: 'concurrent',
-    startTime: '10:00',
-    endTime: '10:15',
-    location: null,
-    sharedWith: null,
-    pushReminder: null,
-  };
-
-  return [pe];
-}
-
-function _genInventorySchedule(resource: Resource): PlannedEvent[] {
-  const templateKey = `resource-task:${resource.id}:replenish`;
-  const template = ensureTemplate(
-    templateKey,
-    `${resource.name} — Stock Review`,
-    'CHECKLIST',
-    { defense: 5 },
-  );
-  void template;
-
-  const pe: PlannedEvent = {
-    id: uuidv4(),
-    name: `${resource.name} — Stock Review`,
-    description: `Weekly replenishment review for ${resource.name}`,
-    icon: 'inventory',
-    color: '#8b5cf6',
-    seedDate: todayISO(),
-    dieDate: null,
-    recurrenceInterval: {
-      frequency: 'weekly',
-      days: ['mon'],
-      interval: 1,
-      endsOn: null,
-      customCondition: null,
-    },
-    activeState: 'active',
-    taskPool: [templateKey],
-    taskPoolCursor: 0,
-    taskList: [templateKey],
-    conflictMode: 'concurrent',
-    startTime: '10:00',
-    endTime: '10:20',
-    location: null,
-    sharedWith: null,
-    pushReminder: null,
-  };
-
-  return [pe];
-}
 
 // ── GENERATE GTD ITEMS ────────────────────────────────────────────────────────
 
@@ -349,8 +192,11 @@ function _genContactGTD(resource: Resource): Task[] {
   const meta = resource.meta as ContactMeta;
   if (!meta.info?.birthday) return [];
 
+  const lead = meta.birthdayLeadDays ?? 14;
+  if (lead === -1) return [];
+
   const days = daysUntilAnnual(meta.info.birthday);
-  if (days === null || days > 14) return [];
+  if (days === null || days > lead) return [];
 
   const templateKey = `resource-task:${resource.id}:birthday`;
   ensureTemplate(templateKey, `${resource.name} — Birthday`, 'CHECK', { wisdom: 5 });
@@ -400,10 +246,11 @@ function _genAccountGTD(resource: Resource): Task[] {
     }
   }
 
-  // W25: Payment due within 7 days
+  // W25: Payment due
   if (meta.dueDate) {
+    const dueLead = meta.dueDateLeadDays ?? 7;
     const d = daysUntilDate(meta.dueDate);
-    if (d !== null && d >= 0 && d <= 7) {
+    if (dueLead !== -1 && d !== null && d >= 0 && d <= dueLead) {
       const label = meta.institution
         ? `Payment due: ${meta.institution}`
         : `Payment due: ${resource.name}`;
@@ -431,8 +278,10 @@ function _genAccountGTD(resource: Resource): Task[] {
 
 function _genInventoryGTD(resource: Resource): Task[] {
   const meta = resource.meta as InventoryMeta;
-  const threshold = meta.lowStockThreshold ?? 0;
-  const lowStock = meta.items.filter((item) => item.quantity <= threshold);
+  // Per-item threshold: only fire when item has an explicit threshold set
+  const lowStock = meta.items.filter(
+    (item) => item.threshold != null && item.quantity <= item.threshold,
+  );
   if (lowStock.length === 0) return [];
 
   const templateKey = `resource-task:${resource.id}:replenish`;
@@ -443,7 +292,7 @@ function _genInventoryGTD(resource: Resource): Task[] {
     templateRef: templateKey,
     completionState: 'pending' as const,
     completedAt: null,
-    resultFields: { itemName: item.name ?? item.useableRef } as Task['resultFields'],
+    resultFields: { itemName: item.name } as Task['resultFields'],
     attachmentRef: null,
     resourceRef: resource.id,
     location: null,
@@ -466,39 +315,6 @@ export function generateDocTasks_stub(): void {
 // ── HOME / VEHICLE / DOC GTD + SCHEDULE HANDLERS — W23–W27 ——————————————
 
 /** W23: Monthly home maintenance check PlannedEvent. */
-function _genHomeSchedule(resource: Resource): PlannedEvent[] {
-  const templateKey = `resource-task:${resource.id}:home-maintenance`;
-  ensureTemplate(templateKey, `${resource.name} — Maintenance Check`, 'CHECKLIST', { defense: 5 });
-
-  const pe: PlannedEvent = {
-    id: uuidv4(),
-    name: `${resource.name} — Maintenance Check`,
-    description: `Monthly home maintenance check for ${resource.name}`,
-    icon: 'home',
-    color: '#10b981',
-    seedDate: todayISO(),
-    dieDate: null,
-    recurrenceInterval: {
-      frequency: 'monthly',
-      days: [],
-      interval: 1,
-      endsOn: null,
-      customCondition: null,
-    },
-    activeState: 'active',
-    taskPool: [templateKey],
-    taskPoolCursor: 0,
-    taskList: [templateKey],
-    conflictMode: 'concurrent',
-    startTime: '09:00',
-    endTime: '09:30',
-    location: null,
-    sharedWith: null,
-    pushReminder: null,
-  };
-
-  return [pe];
-}
 
 /** W23: No GTD items from HomeMeta in LOCAL v1. */
 function _genHomeGTD(_resource: Resource): Task[] {
@@ -511,8 +327,9 @@ function _genVehicleGTD(resource: Resource): Task[] {
   const tasks: Task[] = [];
 
   if (meta.insuranceExpiry) {
+    const insuranceLead = meta.insuranceLeadDays ?? 30;
     const d = daysUntilDate(meta.insuranceExpiry);
-    if (d !== null && d >= 0 && d <= 30) {
+    if (insuranceLead !== -1 && d !== null && d >= 0 && d <= insuranceLead) {
       const templateKey = `resource-task:${resource.id}:insurance`;
       ensureTemplate(
         templateKey,
@@ -538,8 +355,9 @@ function _genVehicleGTD(resource: Resource): Task[] {
   }
 
   if (meta.serviceNextDate) {
+    const serviceLead = meta.serviceLeadDays ?? 14;
     const d = daysUntilDate(meta.serviceNextDate);
-    if (d !== null && d >= 0 && d <= 14) {
+    if (serviceLead !== -1 && d !== null && d >= 0 && d <= serviceLead) {
       const templateKey = `resource-task:${resource.id}:service`;
       ensureTemplate(
         templateKey,
@@ -567,13 +385,16 @@ function _genVehicleGTD(resource: Resource): Task[] {
   return tasks;
 }
 
-/** W27: GTD item for doc expiry within 30 days. */
+/** W27: GTD item for doc expiry within configurable lead days (default 30). */
 function _genDocGTD(resource: Resource): Task[] {
   const meta = resource.meta as DocMeta;
   if (!meta.expiryDate) return [];
 
+  const lead = meta.expiryLeadDays ?? 30;
+  if (lead === -1) return [];
+
   const d = daysUntilDate(meta.expiryDate);
-  if (d === null || d < 0 || d > 30) return [];
+  if (d === null || d < 0 || d > lead) return [];
 
   const templateKey = `resource-task:${resource.id}:expiry`;
   ensureTemplate(templateKey, `${resource.name} — Expiry`, 'CHECK', { defense: 8 });

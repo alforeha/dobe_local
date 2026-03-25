@@ -98,8 +98,9 @@ export function ResourceRoom() {
           setActiveType(t);
           setAddStep('closed');
         }}
+        onAdd={() => setAddStep('type-selector')}
       />
-      <ResourceRoomSubHeader type={activeType} onAdd={() => setAddStep('type-selector')} />
+      <ResourceRoomSubHeader type={activeType} />
       <ResourceRoomBody resources={filtered} onEdit={setEditingResource} />
     </div>
   );

@@ -1,5 +1,5 @@
 ﻿import { useState, useRef } from 'react';
-import type { Resource, ContactMeta, HomeMeta, VehicleMeta, AccountMeta, InventoryMeta, DocMeta, ResourceType } from '../../../../../types/resource';
+import type { Resource, HomeMeta, VehicleMeta, AccountMeta, InventoryMeta, DocMeta, ResourceType } from '../../../../../types/resource';
 import { useResourceStore } from '../../../../../stores/useResourceStore';
 import { useUserStore } from '../../../../../stores/useUserStore';
 
@@ -14,16 +14,6 @@ interface ResourceBlockExpandedProps {
   resource: Resource;
   onClose: () => void;
   onEdit: (resource: Resource) => void;
-}
-
-function daysUntilAnnual(isoDate: string): number | null {
-  const today = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00');
-  const parts = isoDate.slice(0, 10).split('-');
-  if (parts.length < 3) return null;
-  const thisYear = today.getFullYear();
-  const candidate = new Date(`${thisYear}-${parts[1]}-${parts[2]}T00:00:00`);
-  if (candidate < today) candidate.setFullYear(thisYear + 1);
-  return Math.round((candidate.getTime() - today.getTime()) / 86_400_000);
 }
 
 function daysUntil(isoDate: string): number | null {
@@ -78,16 +68,6 @@ export function ResourceBlockExpanded({ resource, onClose, onEdit }: ResourceBlo
   // Build GTD status badges
   const badges: { icon: string; label: string; color: string }[] = [];
 
-  if (resource.type === 'contact') {
-    const meta = resource.meta as ContactMeta;
-    if (meta.info?.birthday) {
-      const d = daysUntilAnnual(meta.info.birthday);
-      if (d !== null && d <= 14) {
-        badges.push({ icon: '🎂', label: d === 0 ? 'Birthday today!' : `Birthday in ${d}d`, color: 'amber' });
-      }
-    }
-  }
-
   if (resource.type === 'vehicle') {
     const meta = resource.meta as VehicleMeta;
     if (meta.insuranceExpiry) {
@@ -116,9 +96,10 @@ export function ResourceBlockExpanded({ resource, onClose, onEdit }: ResourceBlo
 
   if (resource.type === 'inventory') {
     const meta = resource.meta as InventoryMeta;
-    const threshold = meta.lowStockThreshold ?? 0;
-    if (threshold > 0 && meta.items) {
-      const lowItems = meta.items.filter((item) => (item.quantity ?? 0) <= threshold);
+    if (meta.items) {
+      const lowItems = meta.items.filter(
+        (item) => item.threshold != null && item.quantity <= item.threshold,
+      );
       if (lowItems.length > 0) {
         badges.push({ icon: '📦', label: `${lowItems.length} item${lowItems.length > 1 ? 's' : ''} low stock`, color: 'amber' });
       }
@@ -144,22 +125,22 @@ export function ResourceBlockExpanded({ resource, onClose, onEdit }: ResourceBlo
   let metaView: React.ReactNode = null;
   switch (resource.type) {
     case 'contact':
-      metaView = <ContactMetaView meta={resource.meta as ContactMeta} />;
+      metaView = <ContactMetaView meta={resource.meta as ContactMeta} resource={resource} />;
       break;
     case 'home':
-      metaView = <HomeMetaView meta={resource.meta as HomeMeta} />;
+      metaView = <HomeMetaView meta={resource.meta as HomeMeta} resource={resource} />;
       break;
     case 'vehicle':
-      metaView = <VehicleMetaView meta={resource.meta as VehicleMeta} />;
+      metaView = <VehicleMetaView meta={resource.meta as VehicleMeta} resource={resource} />;
       break;
     case 'account':
-      metaView = <AccountMetaView meta={resource.meta as AccountMeta} />;
+      metaView = <AccountMetaView meta={resource.meta as AccountMeta} resource={resource} />;
       break;
     case 'inventory':
-      metaView = <InventoryMetaView meta={resource.meta as InventoryMeta} />;
+      metaView = <InventoryMetaView meta={resource.meta as InventoryMeta} resource={resource} />;
       break;
     case 'doc':
-      metaView = <DocMetaView meta={resource.meta as DocMeta} />;
+      metaView = <DocMetaView meta={resource.meta as DocMeta} resource={resource} />;
       break;
     default:
       metaView = (
@@ -172,21 +153,6 @@ export function ResourceBlockExpanded({ resource, onClose, onEdit }: ResourceBlo
   return (
     <div className="px-3 pb-3">
       <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-        {/* Header row */}
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xl shrink-0">{resource.icon || '📦'}</span>
-          <span className="flex-1 text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
-            {resource.name}
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 text-sm leading-none shrink-0"
-          >
-            ✕
-          </button>
-        </div>
-
         {/* GTD status badges */}
         {badges.length > 0 && (
           <div className="flex flex-col gap-1 mb-2">

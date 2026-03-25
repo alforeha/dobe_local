@@ -4,12 +4,13 @@ import { ScheduleRoomHeader } from './ScheduleRoomHeader';
 import { ScheduleRoomSubHeader } from './ScheduleRoomSubHeader';
 import { ScheduleRoomBody } from './ScheduleRoomBody';
 import { LeaguesTabStub } from './LeaguesTabStub';
+import { ResourceEventsTab } from './ResourceEventsTab';
 import { RoutinePopup } from './RoutinePopup';
 import { OneOffEventPopup } from './OneOffEventPopup';
 import { isOneOffEvent } from '../../../../../utils/isOneOffEvent';
 import type { PlannedEvent } from '../../../../../types';
 
-type ScheduleTab = 'routines' | 'events' | 'leagues';
+type ScheduleTab = 'routines' | 'events' | 'resources' | 'leagues';
 
 type PopupState =
   | { mode: 'add-routine' }
@@ -77,6 +78,7 @@ export function ScheduleRoom() {
           <ScheduleRoomBody events={filteredOneOffs} onEdit={handleEdit} />
         </>
       )}
+      {tab === 'resources' && <ResourceEventsTab />}
       {tab === 'leagues' && <LeaguesTabStub />}
 
       {(popup?.mode === 'add-routine' || popup?.mode === 'edit-routine') && (

@@ -1,17 +1,18 @@
 // ─────────────────────────────────────────
-// InventoryForm — add / edit form for Inventory resources. W26.
-// Items use name field (LOCAL v1 — no Useable store lookup).
+// InventoryForm — add / edit form for Inventory resources. W26 / H.
+// Per-item threshold replaces container-level lowStockThreshold.
 // ─────────────────────────────────────────
 
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import type { Resource, InventoryMeta, InventoryItem } from '../../../../../../types/resource';
+import type { Resource, InventoryMeta, InventoryItem, ResourceNote } from '../../../../../../types/resource';
 import { useResourceStore } from '../../../../../../stores/useResourceStore';
 import { useUserStore } from '../../../../../../stores/useUserStore';
 
 import { generateScheduledTasks, generateGTDItems } from '../../../../../../engine/resourceEngine';
 import { TextInput } from '../../../../../shared/inputs/TextInput';
-import { NumberInput } from '../../../../../shared/inputs/NumberInput';
+import { IconPicker } from '../../../../../shared/IconPicker';
+import { NotesLogEditor } from '../../../../../shared/NotesLogEditor';
 
 interface InventoryFormProps {
   existing?: Resource;
@@ -25,30 +26,36 @@ function existingMeta(r: Resource | undefined): InventoryMeta | null {
 }
 
 interface ItemDraft {
-  id: string; // local draft id
-  useableRef: string;
+  draftId: string;
+  id: string;
+  icon: string;
   name: string;
   quantity: number | '';
   unit: string;
+  threshold: number | '';
   linkedResourceRef: string;
 }
+
+const INPUT_CLS =
+  'w-full rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 focus:border-purple-500 focus:outline-none';
 
 export function InventoryForm({ existing, onSaved, onCancel }: InventoryFormProps) {
   const prevMeta = existingMeta(existing);
 
+  const [iconKey, setIconKey] = useState<string>(existing?.icon ?? 'admin');
   const [displayName, setDisplayName] = useState(existing?.name ?? '');
   const [category, setCategory] = useState(prevMeta?.category ?? '');
-  const [lowStockThreshold, setLowStockThreshold] = useState<number | ''>(
-    prevMeta?.lowStockThreshold ?? '',
-  );
-  const [notes, setNotes] = useState(prevMeta?.notes ?? '');
+  const [linkedRef, setLinkedRef] = useState(prevMeta?.linkedResourceRefs?.[0] ?? '');
+  const [notes, setNotes] = useState<ResourceNote[]>(prevMeta?.notes ?? []);
   const [items, setItems] = useState<ItemDraft[]>(
     prevMeta?.items.map((it) => ({
-      id: uuidv4(),
-      useableRef: it.useableRef,
+      draftId: uuidv4(),
+      id: it.id,
+      icon: it.icon ?? '',
       name: it.name ?? '',
       quantity: it.quantity,
       unit: it.unit ?? '',
+      threshold: it.threshold ?? '',
       linkedResourceRef: it.linkedResourceRef ?? '',
     })) ?? [],
   );
@@ -62,18 +69,27 @@ export function InventoryForm({ existing, onSaved, onCancel }: InventoryFormProp
   function addItem() {
     setItems((prev) => [
       ...prev,
-      { id: uuidv4(), useableRef: uuidv4(), name: '', quantity: 1, unit: '', linkedResourceRef: '' },
+      {
+        draftId: uuidv4(),
+        id: uuidv4(),
+        icon: '',
+        name: '',
+        quantity: 1,
+        unit: '',
+        threshold: '',
+        linkedResourceRef: '',
+      },
     ]);
   }
 
-  function updateItem(id: string, field: keyof ItemDraft, value: string | number | '') {
+  function updateItem(draftId: string, field: keyof ItemDraft, value: string | number | '') {
     setItems((prev) =>
-      prev.map((it) => (it.id === id ? { ...it, [field]: value } : it)),
+      prev.map((it) => (it.draftId === draftId ? { ...it, [field]: value } : it)),
     );
   }
 
-  function removeItem(id: string) {
-    setItems((prev) => prev.filter((it) => it.id !== id));
+  function removeItem(draftId: string) {
+    setItems((prev) => prev.filter((it) => it.draftId !== draftId));
   }
 
   function handleSave() {
@@ -82,26 +98,27 @@ export function InventoryForm({ existing, onSaved, onCancel }: InventoryFormProp
     const finalItems: InventoryItem[] = items
       .filter((it) => it.name.trim().length > 0)
       .map((it) => ({
-        useableRef: it.useableRef,
-        containerId: null,
-        quantity: it.quantity === '' ? 0 : it.quantity,
+        id: it.id,
+        icon: it.icon.trim(),
         name: it.name.trim(),
-        unit: it.unit.trim() || null,
-        linkedResourceRef: it.linkedResourceRef.trim() || null,
+        quantity: it.quantity === '' ? 0 : it.quantity,
+        unit: it.unit.trim() || undefined,
+        threshold: it.threshold === '' ? undefined : it.threshold,
+        linkedResourceRef: it.linkedResourceRef.trim() || undefined,
       }));
 
     const meta: InventoryMeta = {
       containers: prevMeta?.containers ?? [],
       items: finalItems,
       category: category.trim() || undefined,
-      lowStockThreshold: lowStockThreshold === '' ? null : lowStockThreshold,
+      linkedResourceRefs: linkedRef.trim() ? [linkedRef.trim()] : undefined,
       notes,
     };
 
     const resource: Resource = {
       id: existing?.id ?? uuidv4(),
       name: displayName.trim(),
-      icon: existing?.icon ?? '📦',
+      icon: iconKey,
       description: existing?.description ?? '',
       type: 'inventory',
       attachments: existing?.attachments ?? [],
@@ -156,33 +173,39 @@ export function InventoryForm({ existing, onSaved, onCancel }: InventoryFormProp
       </div>
 
       {/* Fields */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-        <TextInput
-          label="Name *"
-          value={displayName}
-          onChange={setDisplayName}
-          placeholder="e.g. Kitchen Supplies"
-          maxLength={100}
-        />
-        <TextInput
-          label="Category"
-          value={category}
-          onChange={setCategory}
-          placeholder="e.g. Kitchen, Tools"
-          maxLength={60}
-        />
-        <NumberInput
-          label="Low Stock Threshold"
-          value={lowStockThreshold}
-          onChange={setLowStockThreshold}
-          placeholder="e.g. 2"
-          min={0}
-        />
-        <p className="text-xs text-gray-400 -mt-2">
-          Items at or below this quantity trigger a GTD task.
-        </p>
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
 
-        {/* Items */}
+        {/* Row 1: Icon + Name */}
+        <div className="grid grid-cols-[auto_1fr] gap-3 items-end">
+          <IconPicker value={iconKey} onChange={setIconKey} />
+          <TextInput
+            label="Name *"
+            value={displayName}
+            onChange={setDisplayName}
+            placeholder="e.g. Kitchen Supplies"
+            maxLength={100}
+          />
+        </div>
+
+        {/* Row 2: Category + Linked resource */}
+        <div className="grid grid-cols-2 gap-3">
+          <TextInput
+            label="Category"
+            value={category}
+            onChange={setCategory}
+            placeholder="e.g. Kitchen"
+            maxLength={60}
+          />
+          <TextInput
+            label="Linked resource"
+            value={linkedRef}
+            onChange={setLinkedRef}
+            placeholder="Resource ID or name"
+            maxLength={120}
+          />
+        </div>
+
+        {/* Items section */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Items</span>
@@ -199,48 +222,79 @@ export function InventoryForm({ existing, onSaved, onCancel }: InventoryFormProp
           )}
           {items.map((item) => (
             <div
-              key={item.id}
+              key={item.draftId}
               className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 space-y-2"
             >
+              {/* Icon + name + remove */}
               <div className="flex items-center gap-2">
                 <input
                   type="text"
+                  value={item.icon}
+                  onChange={(e) => updateItem(item.draftId, 'icon', e.target.value)}
+                  placeholder="📦"
+                  maxLength={4}
+                  className="w-9 text-center rounded border border-gray-200 dark:border-gray-600 px-1 py-1 text-sm bg-white dark:bg-gray-800 dark:text-gray-100"
+                />
+                <input
+                  type="text"
                   value={item.name}
-                  onChange={(e) => updateItem(item.id, 'name', e.target.value)}
+                  onChange={(e) => updateItem(item.draftId, 'name', e.target.value)}
                   placeholder="Item name"
                   maxLength={80}
-                  className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-sm text-gray-800 dark:text-gray-100 dark:bg-gray-700 focus:border-purple-500 focus:outline-none"
+                  className={`flex-1 ${INPUT_CLS}`}
                 />
                 <button
                   type="button"
-                  onClick={() => removeItem(item.id)}
-                  className="text-gray-400 hover:text-red-400 text-xs font-bold shrink-0"
+                  onClick={() => removeItem(item.draftId)}
+                  className="text-gray-400 hover:text-red-400 text-xs leading-none shrink-0"
                 >
                   ✕
                 </button>
               </div>
-              <div className="flex gap-2">
-                <div className="flex flex-col gap-0.5 flex-1">
-                  <span className="text-xs text-gray-400">Qty</span>
+              {/* Count + unit + threshold */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-gray-400 dark:text-gray-500">Count</span>
                   <input
                     type="number"
                     value={item.quantity}
                     onChange={(e) =>
-                      updateItem(item.id, 'quantity', e.target.value === '' ? '' : Number(e.target.value))
+                      updateItem(
+                        item.draftId,
+                        'quantity',
+                        e.target.value === '' ? '' : Number(e.target.value),
+                      )
                     }
                     min={0}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-sm text-gray-800 dark:text-gray-100 dark:bg-gray-700 focus:border-purple-500 focus:outline-none"
+                    className={INPUT_CLS}
                   />
                 </div>
-                <div className="flex flex-col gap-0.5 flex-1">
-                  <span className="text-xs text-gray-400">Unit</span>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-gray-400 dark:text-gray-500">Unit</span>
                   <input
                     type="text"
                     value={item.unit}
-                    onChange={(e) => updateItem(item.id, 'unit', e.target.value)}
-                    placeholder="kg, units…"
+                    onChange={(e) => updateItem(item.draftId, 'unit', e.target.value)}
+                    placeholder="kg, L…"
                     maxLength={20}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-sm text-gray-800 dark:text-gray-100 dark:bg-gray-700 focus:border-purple-500 focus:outline-none"
+                    className={INPUT_CLS}
+                  />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-gray-400 dark:text-gray-500">Low at</span>
+                  <input
+                    type="number"
+                    value={item.threshold}
+                    onChange={(e) =>
+                      updateItem(
+                        item.draftId,
+                        'threshold',
+                        e.target.value === '' ? '' : Number(e.target.value),
+                      )
+                    }
+                    min={0}
+                    placeholder="—"
+                    className={INPUT_CLS}
                   />
                 </div>
               </div>
@@ -248,18 +302,8 @@ export function InventoryForm({ existing, onSaved, onCancel }: InventoryFormProp
           ))}
         </div>
 
-        {/* Notes */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Notes</label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Any notes about this inventory…"
-            rows={4}
-            maxLength={1000}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 dark:bg-gray-700 dark:border-gray-600 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 resize-none"
-          />
-        </div>
+        {/* Notes log */}
+        <NotesLogEditor notes={notes} onChange={setNotes} />
       </div>
     </div>
   );

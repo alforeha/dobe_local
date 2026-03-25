@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { TaskRoomHeader } from './TaskRoomHeader';
 import { TaskRoomBody } from './TaskRoomBody';
+import { ResourceTasksTab } from './ResourceTasksTab';
 import { TaskTemplatePopup } from './TaskTemplatePopup';
 import type { TaskTemplate } from '../../../../../types';
 
@@ -17,12 +18,14 @@ export function TaskRoom() {
   const [popup, setPopup] = useState<PopupState>(null);
   const taskTemplates = useScheduleStore((s) => s.taskTemplates);
 
-  // Filter out system onboarding tasks and map to [key, template, isCustom].
-  // isCustom is determined by the flag written at creation time.
+  // Filter out system/onboarding tasks and resource-derived templates.
+  // Resource templates use the 'resource-task:' key prefix (written by ensureTemplate()
+  // in resourceEngine) — exclude them regardless of isSystem flag so that templates
+  // persisted before the isSystem flag was added are also hidden.
   const filtered: [string, TaskTemplate, boolean][] =
     tab === 'stat'
       ? Object.entries(taskTemplates)
-          .filter(([, t]) => t.isSystem !== true)
+          .filter(([k, t]) => t.isSystem !== true && !k.startsWith('resource-task:'))
           .map(([k, t]): [string, TaskTemplate, boolean] => [k, t, t.isCustom === true])
       : [];
 
@@ -33,7 +36,8 @@ export function TaskRoom() {
   return (
     <div className="flex flex-col h-full">
       <TaskRoomHeader activeTab={tab} onTabChange={setTab} onAdd={() => setPopup({ mode: 'add' })} />
-      <TaskRoomBody templates={filtered} onEdit={handleEdit} />
+      {tab === 'stat' && <TaskRoomBody templates={filtered} onEdit={handleEdit} />}
+      {tab === 'resource' && <ResourceTasksTab />}
       {popup && (
         <TaskTemplatePopup
           editKey={popup.mode === 'edit' ? popup.key : null}

@@ -1,16 +1,18 @@
 // ─────────────────────────────────────────
-// DocForm — add / edit form for Doc resources. W27.
+// DocForm — add / edit form for Doc resources. W27 / I.
 // courseProgress is stub only per D42 — display placeholder only.
 // ─────────────────────────────────────────
 
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import type { Resource, DocMeta, DocType } from '../../../../../../types/resource';
+import type { Resource, DocMeta, DocType, ResourceNote } from '../../../../../../types/resource';
 import { useResourceStore } from '../../../../../../stores/useResourceStore';
 import { useUserStore } from '../../../../../../stores/useUserStore';
 
 import { generateGTDItems, generateDocTasks_stub } from '../../../../../../engine/resourceEngine';
 import { TextInput } from '../../../../../shared/inputs/TextInput';
+import { IconPicker } from '../../../../../shared/IconPicker';
+import { NotesLogEditor } from '../../../../../shared/NotesLogEditor';
 
 interface DocFormProps {
   existing?: Resource;
@@ -28,6 +30,7 @@ const DOC_TYPE_OPTIONS: { value: DocType; label: string }[] = [
   { value: 'course',    label: 'Course' },
   { value: 'manual',    label: 'Manual' },
   { value: 'contract',  label: 'Contract' },
+  { value: 'receipt',   label: 'Receipt' },
   { value: 'other',     label: 'Other' },
 ];
 
@@ -37,23 +40,34 @@ const WALKTHROUGH_OPTIONS: { value: 'linear' | 'checklist' | 'none'; label: stri
   { value: 'checklist', label: 'Checklist' },
 ];
 
+const SELECT_CLS =
+  'w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 disabled:opacity-40';
+
+const DATE_CLS =
+  'w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500';
+
 export function DocForm({ existing, onSaved, onCancel }: DocFormProps) {
   const prevMeta = existingMeta(existing);
 
+  const [iconKey, setIconKey] = useState<string>(existing?.icon ?? 'log');
   const [displayName, setDisplayName] = useState(existing?.name ?? '');
   const [docType, setDocType] = useState<DocType>(prevMeta?.docType ?? 'reference');
   const [url, setUrl] = useState(prevMeta?.url ?? '');
   const [expiryDate, setExpiryDate] = useState(prevMeta?.expiryDate ?? '');
+  const [expiryLeadDays, setExpiryLeadDays] = useState<number>(
+    prevMeta?.expiryLeadDays ?? 30,
+  );
   const [walkthroughType, setWalkthroughType] = useState<'linear' | 'checklist' | 'none'>(
     prevMeta?.walkthroughType ?? 'none',
   );
-  const [notes, setNotes] = useState(prevMeta?.notes ?? '');
+  const [linkedRef, setLinkedRef] = useState(prevMeta?.linkedResourceRefs?.[0] ?? '');
+  const [notes, setNotes] = useState<ResourceNote[]>(prevMeta?.notes ?? []);
 
   const setResource = useResourceStore((s) => s.setResource);
   const setUser = useUserStore((s) => s.setUser);
   const user = useUserStore((s) => s.user);
 
-  const canSave = displayName.trim().length > 0 && docType.trim().length > 0;
+  const canSave = displayName.trim().length > 0;
 
   const now = new Date().toISOString();
 
@@ -71,14 +85,16 @@ export function DocForm({ existing, onSaved, onCancel }: DocFormProps) {
       updatedAt: now,
       url: url.trim() || null,
       expiryDate: expiryDate || null,
+      expiryLeadDays: expiryDate ? expiryLeadDays : undefined,
       walkthroughType,
+      linkedResourceRefs: linkedRef.trim() ? [linkedRef.trim()] : undefined,
       notes,
     };
 
     const resource: Resource = {
       id: existing?.id ?? uuidv4(),
       name: displayName.trim(),
-      icon: existing?.icon ?? '📄',
+      icon: iconKey,
       description: existing?.description ?? '',
       type: 'doc',
       attachments: existing?.attachments ?? [],
@@ -102,7 +118,6 @@ export function DocForm({ existing, onSaved, onCancel }: DocFormProps) {
     }
 
     generateGTDItems(resource);
-    // Course progression is a stub per D42 — call noted here as a stub
     generateDocTasks_stub();
     onSaved();
   }
@@ -135,90 +150,117 @@ export function DocForm({ existing, onSaved, onCancel }: DocFormProps) {
 
       {/* Fields */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-        <TextInput
-          label="Name *"
-          value={displayName}
-          onChange={setDisplayName}
-          placeholder="e.g. Car Manual"
-          maxLength={100}
-        />
 
-        {/* Doc type */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Doc Type *</label>
-          <select
-            value={docType}
-            onChange={(e) => setDocType(e.target.value as DocType)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 dark:bg-gray-700 dark:border-gray-600 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-          >
-            {DOC_TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <TextInput
-          label="URL"
-          value={url}
-          onChange={setUrl}
-          placeholder="https://…"
-          maxLength={500}
-        />
-
-        {/* Expiry date */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-            Expiry Date
-          </label>
-          <input
-            type="date"
-            value={expiryDate}
-            onChange={(e) => setExpiryDate(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 dark:bg-gray-700 dark:border-gray-600 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+        {/* Row 1: Icon + Name */}
+        <div className="grid grid-cols-[auto_1fr] gap-3 items-end">
+          <IconPicker value={iconKey} onChange={setIconKey} />
+          <TextInput
+            label="Name *"
+            value={displayName}
+            onChange={setDisplayName}
+            placeholder="e.g. Car Manual"
+            maxLength={100}
           />
-          <p className="text-xs text-gray-400">GTD task fires when within 30 days.</p>
         </div>
 
-        {/* Walkthrough type */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-            Walkthrough Type
-          </label>
-          <select
-            value={walkthroughType}
-            onChange={(e) =>
-              setWalkthroughType(e.target.value as 'linear' | 'checklist' | 'none')
-            }
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 dark:bg-gray-700 dark:border-gray-600 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-          >
-            {WALKTHROUGH_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Course progression — stub per D42 */}
-        {(docType === 'course' || docType === 'walkthrough') && (
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2.5 text-xs text-gray-400 italic">
-            Course progression coming soon.
+        {/* Row 2: Doc type + URL */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              Type
+            </label>
+            <select
+              value={docType}
+              onChange={(e) => setDocType(e.target.value as DocType)}
+              className={SELECT_CLS}
+            >
+              {DOC_TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
-        )}
-
-        {/* Notes */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Notes</label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Any notes about this doc…"
-            rows={4}
-            maxLength={1000}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 dark:bg-gray-700 dark:border-gray-600 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 resize-none"
+          <TextInput
+            label="URL"
+            value={url}
+            onChange={setUrl}
+            placeholder="https://…"
+            maxLength={500}
           />
+        </div>
+
+        {/* Row 3: Expiry date + Reminder */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              Expiry Date
+            </label>
+            <input
+              type="date"
+              value={expiryDate}
+              onChange={(e) => setExpiryDate(e.target.value)}
+              className={DATE_CLS}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              Reminder
+            </label>
+            <select
+              value={expiryDate ? expiryLeadDays : ''}
+              disabled={!expiryDate}
+              onChange={(e) => setExpiryLeadDays(Number(e.target.value))}
+              className={SELECT_CLS}
+            >
+              <option value={-1}>Never</option>
+              <option value={0}>Day of</option>
+              <option value={7}>7 days</option>
+              <option value={14}>14 days</option>
+              <option value={30}>30 days</option>
+              <option value={60}>60 days</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Row 4: Walkthrough type */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              Walkthrough
+            </label>
+            <select
+              value={walkthroughType}
+              onChange={(e) =>
+                setWalkthroughType(e.target.value as 'linear' | 'checklist' | 'none')
+              }
+              className={SELECT_CLS}
+            >
+              {WALKTHROUGH_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div /> {/* spacer */}
+        </div>
+
+        {/* Linked resource */}
+        <TextInput
+          label="Linked resource"
+          value={linkedRef}
+          onChange={setLinkedRef}
+          placeholder="Resource ID or name"
+          maxLength={120}
+        />
+
+        {/* Notes log */}
+        <NotesLogEditor notes={notes} onChange={setNotes} />
+
+        {/* Course progression — coming soon stub */}
+        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2.5 text-xs text-gray-400 italic">
+          Course progression coming soon.
         </div>
       </div>
     </div>

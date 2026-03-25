@@ -3,11 +3,13 @@
 // Used inside ResourceBlockExpanded when resource.type === 'contact'.
 // ─────────────────────────────────────────
 
-import type { ContactMeta } from '../../../../../../types/resource';
+import type { Resource, ContactMeta } from '../../../../../../types/resource';
 import { useResourceStore } from '../../../../../../stores/useResourceStore';
+import { NotesLogViewer } from '../../../../../shared/NotesLogViewer';
 
 interface ContactMetaViewProps {
   meta: ContactMeta;
+  resource: Resource;
 }
 
 function daysUntilAnnual(isoDate: string): number | null {
@@ -27,17 +29,16 @@ function formatBirthday(isoDate: string): string {
 
 export function ContactMetaView({ meta }: ContactMetaViewProps) {
   const resources = useResourceStore((s) => s.resources);
-  const { info, notes, groups, customTag, linkedResourceRefs } = meta;
+  const { info, notes, customTag, linkedContactRefs } = meta;
 
   const hasAny =
     info.phone ||
     info.email ||
     info.birthday ||
     info.address ||
-    notes ||
+    (notes && notes.length > 0) ||
     customTag ||
-    (groups && groups.length > 0) ||
-    (linkedResourceRefs && linkedResourceRefs.length > 0);
+    (linkedContactRefs && linkedContactRefs.length > 0);
 
   if (!hasAny) {
     return <p className="text-xs text-gray-400 italic mb-1">No details on file.</p>;
@@ -77,13 +78,11 @@ export function ContactMetaView({ meta }: ContactMetaViewProps) {
                     in {d}d
                   </span>
                 );
-              if (d <= 30)
-                return (
-                  <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">
-                    in {d}d
-                  </span>
-                );
-              return null;
+              return (
+                <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400">
+                  in {d}d
+                </span>
+              );
             })()}
           </span>
         </div>
@@ -94,10 +93,19 @@ export function ContactMetaView({ meta }: ContactMetaViewProps) {
           <span>{info.address}</span>
         </div>
       )}
-      {notes && (
+      {linkedContactRefs && linkedContactRefs.length > 0 && (
         <div className="flex gap-2">
-          <span className="text-gray-400 w-16 shrink-0">Notes</span>
-          <span className="whitespace-pre-line">{notes}</span>
+          <span className="text-gray-400 w-16 shrink-0">Linked</span>
+          <div className="flex flex-col gap-0.5">
+            {linkedContactRefs.map((link) => (
+              <span key={link.contactId}>
+                {resources[link.contactId]?.name ?? link.contactId}
+                {link.relationship && (
+                  <span className="text-gray-400"> — {link.relationship}</span>
+                )}
+              </span>
+            ))}
+          </div>
         </div>
       )}
       {customTag && (
@@ -106,22 +114,7 @@ export function ContactMetaView({ meta }: ContactMetaViewProps) {
           <span className="bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded">{customTag}</span>
         </div>
       )}
-      {groups && groups.length > 0 && (
-        <div className="flex gap-2">
-          <span className="text-gray-400 w-16 shrink-0">Groups</span>
-          <span>{groups.join(', ')}</span>
-        </div>
-      )}
-      {linkedResourceRefs && linkedResourceRefs.length > 0 && (
-        <div className="flex gap-2">
-          <span className="text-gray-400 w-16 shrink-0">Linked</span>
-          <span>
-            {linkedResourceRefs
-              .map((id) => resources[id]?.name ?? id)
-              .join(', ')}
-          </span>
-        </div>
-      )}
+      <NotesLogViewer notes={notes} />
     </div>
   );
 }

@@ -2,10 +2,14 @@
 // VehicleMetaView — read-only display of VehicleMeta. W24.
 // ─────────────────────────────────────────
 
-import type { VehicleMeta } from '../../../../../../types/resource';
+import type { Resource, VehicleMeta, AccountMeta, DocMeta } from '../../../../../../types/resource';
+import { resolveIcon } from '../../../../../../constants/iconMap';
+import { useResourceStore } from '../../../../../../stores/useResourceStore';
+import { NotesLogViewer } from '../../../../../shared/NotesLogViewer';
 
 interface VehicleMetaViewProps {
   meta: VehicleMeta;
+  resource: Resource;
 }
 
 function formatDate(isoDate: string): string {
@@ -13,17 +17,36 @@ function formatDate(isoDate: string): string {
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function daysUntil(isoDate: string): number | null {
-  const today = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00');
-  const target = new Date(isoDate.slice(0, 10) + 'T00:00:00');
-  if (isNaN(target.getTime())) return null;
-  return Math.round((target.getTime() - today.getTime()) / 86_400_000);
-}
+const RECURRENCE_LABEL: Record<string, string> = {
+  daily: 'daily',
+  weekly: 'weekly',
+  monthly: 'monthly',
+  yearly: 'yearly',
+};
 
-export function VehicleMetaView({ meta }: VehicleMetaViewProps) {
-  const { make, model, year, mileage, licensePlate, insuranceExpiry, serviceNextDate, notes } = meta;
+export function VehicleMetaView({ meta, resource }: VehicleMetaViewProps) {
+  const allResources = useResourceStore((s) => s.resources);
 
-  const hasAny = make || model || year || mileage || licensePlate || insuranceExpiry || serviceNextDate || notes;
+  const {
+    make, model, year, mileage, licensePlate,
+    insuranceExpiry, serviceNextDate, maintenanceTasks, notes,
+  } = meta;
+
+  // Linked: accounts/docs whose linkedResourceRef points to this vehicle
+  const linkedResources = Object.values(allResources).filter((r) => {
+    if (r.type === 'account')
+      return (r.meta as AccountMeta).linkedResourceRef === resource.id;
+    if (r.type === 'doc')
+      return (r.meta as DocMeta).linkedResourceRef === resource.id;
+    return false;
+  });
+
+  const hasAny =
+    make || model || year || mileage != null || licensePlate ||
+    insuranceExpiry || serviceNextDate ||
+    (maintenanceTasks && maintenanceTasks.length > 0) ||
+    linkedResources.length > 0 ||
+    (notes && notes.length > 0);
 
   if (!hasAny) {
     return <p className="text-xs text-gray-400 italic mb-1">No details on file.</p>;
@@ -31,18 +54,32 @@ export function VehicleMetaView({ meta }: VehicleMetaViewProps) {
 
   return (
     <div className="space-y-1.5 text-xs text-gray-600 dark:text-gray-300 mb-1">
-      {(make || model) && (
+      {/* Icon + name header */}
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-xl leading-none shrink-0" aria-hidden="true">
+          {resolveIcon(resource.icon)}
+        </span>
+        <span className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
+          {resource.name}
+        </span>
+      </div>
+
+      {make && (
         <div className="flex gap-2">
-          <span className="text-gray-400 w-16 shrink-0">Vehicle</span>
-          <span>
-            {[make, model, year ? String(year) : null].filter(Boolean).join(' ')}
-          </span>
+          <span className="text-gray-400 w-16 shrink-0">Make</span>
+          <span>{make}</span>
         </div>
       )}
-      {mileage != null && (
+      {model && (
         <div className="flex gap-2">
-          <span className="text-gray-400 w-16 shrink-0">Mileage</span>
-          <span>{mileage.toLocaleString()}</span>
+          <span className="text-gray-400 w-16 shrink-0">Model</span>
+          <span>{model}</span>
+        </div>
+      )}
+      {year != null && (
+        <div className="flex gap-2">
+          <span className="text-gray-400 w-16 shrink-0">Year</span>
+          <span>{year}</span>
         </div>
       )}
       {licensePlate && (
@@ -51,50 +88,62 @@ export function VehicleMetaView({ meta }: VehicleMetaViewProps) {
           <span>{licensePlate}</span>
         </div>
       )}
+      {mileage != null && (
+        <div className="flex gap-2">
+          <span className="text-gray-400 w-16 shrink-0">Mileage</span>
+          <span>{mileage.toLocaleString()} km</span>
+        </div>
+      )}
       {insuranceExpiry && (
-        <div className="flex items-center gap-2">
+        <div className="flex gap-2">
           <span className="text-gray-400 w-16 shrink-0">Insurance</span>
-          <span className="flex items-center gap-1.5">
-            {formatDate(insuranceExpiry)}
-            {(() => {
-              const d = daysUntil(insuranceExpiry);
-              if (d === null) return null;
-              if (d <= 0) return (
-                <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">Expired</span>
-              );
-              if (d <= 30) return (
-                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">in {d}d ⚠</span>
-              );
-              return null;
-            })()}
-          </span>
+          <span>{formatDate(insuranceExpiry)}</span>
         </div>
       )}
       {serviceNextDate && (
-        <div className="flex items-center gap-2">
-          <span className="text-gray-400 w-16 shrink-0">Service</span>
-          <span className="flex items-center gap-1.5">
-            {formatDate(serviceNextDate)}
-            {(() => {
-              const d = daysUntil(serviceNextDate);
-              if (d === null) return null;
-              if (d <= 0) return (
-                <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">Overdue</span>
-              );
-              if (d <= 14) return (
-                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">in {d}d</span>
-              );
-              return null;
-            })()}
-          </span>
-        </div>
-      )}
-      {notes && (
         <div className="flex gap-2">
-          <span className="text-gray-400 w-16 shrink-0">Notes</span>
-          <span className="whitespace-pre-line">{notes}</span>
+          <span className="text-gray-400 w-16 shrink-0">Service</span>
+          <span>{formatDate(serviceNextDate)}</span>
         </div>
       )}
+
+      {/* Maintenance tasks */}
+      {maintenanceTasks && maintenanceTasks.length > 0 && (
+        <div className="flex gap-2">
+          <span className="text-gray-400 w-16 shrink-0">Tasks</span>
+          <div className="flex flex-col gap-0.5">
+            {maintenanceTasks.map((t) => (
+              <span key={t.id} className="flex items-center gap-1.5">
+                {t.icon && <span>{t.icon}</span>}
+                <span>{t.name}</span>
+                <span className="text-gray-400">
+                  — {RECURRENCE_LABEL[t.recurrence] ?? t.recurrence}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Linked resources */}
+      {linkedResources.length > 0 && (
+        <div className="flex gap-2">
+          <span className="text-gray-400 w-16 shrink-0">Linked</span>
+          <div className="flex flex-wrap gap-1">
+            {linkedResources.map((r) => (
+              <span
+                key={r.id}
+                className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded text-xs"
+              >
+                {resolveIcon(r.icon)}
+                <span>{r.name}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <NotesLogViewer notes={notes} />
     </div>
   );
 }
