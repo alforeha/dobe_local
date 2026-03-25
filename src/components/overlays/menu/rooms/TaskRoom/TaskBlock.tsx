@@ -1,5 +1,6 @@
 import type { TaskType, TaskSecondaryTag } from '../../../../../types';
 import { resolveIcon } from '../../../../../constants/iconMap';
+import { useUserStore } from '../../../../../stores/useUserStore';
 
 interface TaskBlockProps {
   templateKey: string;
@@ -10,13 +11,37 @@ interface TaskBlockProps {
   xpTotal: number;
   /** true = user custom template; false = prebuilt read-only */
   isCustom: boolean;
+  isSystem?: boolean;
   /** Called when user taps the edit button. Only provided for custom templates. */
   onEdit?: () => void;
 }
 
-export function TaskBlock({ name, icon, taskType, secondaryTag, xpTotal, isCustom, onEdit }: TaskBlockProps) {
+export function TaskBlock({ templateKey, name, icon, taskType, secondaryTag, xpTotal, isCustom, isSystem, onEdit }: TaskBlockProps) {
+  const favouritesList = useUserStore((s) => s.user?.lists.favouritesList ?? []);
+  const addFavourite = useUserStore((s) => s.addFavourite);
+  const removeFavourite = useUserStore((s) => s.removeFavourite);
+  const isFavourited = favouritesList.includes(templateKey);
+
+  function handleStarClick() {
+    if (isFavourited) {
+      removeFavourite(templateKey);
+    } else {
+      addFavourite(templateKey);
+    }
+  }
+
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 min-h-[44px] bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg">
+      {!isSystem && (
+        <button
+          type="button"
+          onClick={handleStarClick}
+          aria-label={isFavourited ? 'Remove from favourites' : 'Add to favourites'}
+          className="text-lg leading-none shrink-0 transition-colors"
+        >
+          {isFavourited ? '⭐' : '☆'}
+        </button>
+      )}
       <span className="w-8 shrink-0 text-xl leading-none text-center" aria-hidden="true">
         {resolveIcon(icon)}
       </span>

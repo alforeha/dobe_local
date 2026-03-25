@@ -29,6 +29,10 @@ interface UserActions {
   markAllFeedRead: () => void;
   /** Set (or deselect) a single reaction on a feed entry; marks the entry as read */
   setFeedReaction: (index: number, reaction: string) => void;
+  /** Add a TaskTemplate id to User.lists.favouritesList */
+  addFavourite: (templateId: string) => void;
+  /** Remove a TaskTemplate id from User.lists.favouritesList */
+  removeFavourite: (templateId: string) => void;
   /** Add a PlannedEvent (Routine) UUID ref to User.lists.routineRefs */
   addRoutineRef: (id: string) => void;
   /** Remove a PlannedEvent (Routine) UUID ref from User.lists.routineRefs */
@@ -141,6 +145,40 @@ export const useUserStore = create<UserState & UserActions>()(
             },
           };
         }),
+
+      addFavourite: (templateId) =>
+        set((state) =>
+          state.user
+            ? {
+                user: {
+                  ...state.user,
+                  lists: {
+                    ...state.user.lists,
+                    favouritesList: (state.user.lists.favouritesList ?? []).includes(templateId)
+                      ? (state.user.lists.favouritesList ?? [])
+                      : [...(state.user.lists.favouritesList ?? []), templateId],
+                  },
+                },
+              }
+            : {},
+        ),
+
+      removeFavourite: (templateId) =>
+        set((state) =>
+          state.user
+            ? {
+                user: {
+                  ...state.user,
+                  lists: {
+                    ...state.user.lists,
+                    favouritesList: (state.user.lists.favouritesList ?? []).filter(
+                      (id) => id !== templateId,
+                    ),
+                  },
+                },
+              }
+            : {},
+        ),
 
       addRoutineRef: (id) =>
         set((state) =>
