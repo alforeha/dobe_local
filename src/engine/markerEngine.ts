@@ -20,6 +20,7 @@ import { evaluateQuestSpecific, updateQuestProgress, countTasksForScope } from '
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
 import { localISODate, getAppDate } from '../utils/dateUtils';
 import { unlockAct, makeDailyChain, STARTER_ACT_IDS, starterTaskTemplates } from '../coach/StarterQuestLibrary';
+import { awardGold } from './awardPipeline';
 
 // ── QUESTREF ENCODING ─────────────────────────────────────────────────────────
 
@@ -180,6 +181,7 @@ export function fireMarker(params: FireMarkerParams): void {
           isManual: true,
           completionState: 'pending',
           completedAt: null,
+          skipQAWrite: true,
         };
         sideEffectUserMut = {
           ...sideEffectUserMut,
@@ -439,6 +441,14 @@ export function completeMilestone(completedTask: Task): void {
   }
 
   progressionStore.setAct(propagatedAct);
+
+  // D98 — +10 gold bonus for completing the Onboarding Act
+  if (actNowComplete && actId === STARTER_ACT_IDS.onboarding) {
+    const userForGold = useUserStore.getState().user;
+    if (userForGold) {
+      useUserStore.getState().setUser(awardGold(10, userForGold));
+    }
+  }
 
   // D79 — Unlock Daily Adventure when Onboarding Act completes
   if (actNowComplete && actId === STARTER_ACT_IDS.onboarding) {

@@ -467,16 +467,18 @@ export function completeManualGTDItem(itemId: string, user: User): void {
   };
   persistUser(updated);
 
-  // Write to today's QuickActionsEvent
-  const qaId = `qa-${today}`;
-  const qa = scheduleStore.activeEvents[qaId] as QuickActionsEvent | undefined;
-  if (qa) {
-    const updatedQa: QuickActionsEvent = {
-      ...qa,
-      completions: [...qa.completions, { taskRef: task.id, completedAt: now }],
-    };
-    scheduleStore.setActiveEvent(updatedQa);
-    storageSet(storageKey.quickActions(today), updatedQa);
+  // Write to today's QuickActionsEvent — skip for system-seeded GTD items (D99)
+  if (!item.skipQAWrite) {
+    const qaId = `qa-${today}`;
+    const qa = scheduleStore.activeEvents[qaId] as QuickActionsEvent | undefined;
+    if (qa) {
+      const updatedQa: QuickActionsEvent = {
+        ...qa,
+        completions: [...qa.completions, { taskRef: task.id, completedAt: now }],
+      };
+      scheduleStore.setActiveEvent(updatedQa);
+      storageSet(storageKey.quickActions(today), updatedQa);
+    }
   }
 
   // XP award — +5 wisdom for manual GTD completion

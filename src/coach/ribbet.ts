@@ -16,6 +16,7 @@ import { useSystemStore } from '../stores/useSystemStore';
 import { useProgressionStore } from '../stores/useProgressionStore';
 import { getOffsetNow } from '../utils/dateUtils';
 import { commentLibrary } from './index';
+import { STARTER_ACT_IDS } from './StarterQuestLibrary';
 
 // ── TONE RESOLVER ─────────────────────────────────────────────────────────────
 
@@ -75,6 +76,22 @@ export function ribbet(user: User): string {
 
   if (hour >= 18) {
     return pickComment('ambient.evening', tone);
+  }
+
+  // Onboarding Act — return quest-specific comment when a Q1-Q4 quest is active
+  const onboardingAct = acts[STARTER_ACT_IDS.onboarding];
+  if (onboardingAct && onboardingAct.completionState !== 'complete') {
+    const chain = onboardingAct.chains[0];
+    if (chain) {
+      const activeQuestIndex = chain.quests.findIndex(
+        (q) => q.completionState === 'active',
+      );
+      if (activeQuestIndex !== -1) {
+        const key = `onboarding.q${activeQuestIndex + 1}`;
+        const comment = pickComment(key, tone);
+        if (comment) return comment;
+      }
+    }
   }
 
   if (milestones.streakCurrent > 0) {

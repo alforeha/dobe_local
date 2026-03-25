@@ -84,4 +84,6 @@ export interface GTDItem {
   completionState: 'pending' | 'complete';
   /** ISO datetime — null when pending */
   completedAt: string | null;
+  /** When true, completeManualGTDItem() skips the QuickActionsEvent write (D99) */
+  skipQAWrite?: boolean;
 }

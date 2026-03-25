@@ -349,6 +349,38 @@
       }
     },
     {
+      "contextKey": "onboarding.q1",
+      "variants": {
+        "muted": ["Welcome Event is active. Complete the task inside."],
+        "friendly": ["Ribbit! Tap the Welcome Event — your first quest awaits! 🐸"],
+        "militant": ["Open the Welcome Event. Complete the task. Move."]
+      }
+    },
+    {
+      "contextKey": "onboarding.q2",
+      "variants": {
+        "muted": ["Add a routine and explore the time views."],
+        "friendly": ["Time to splash around! Add a routine and check out Week and Month views 🐸"],
+        "militant": ["Add a routine. Switch to Week view. Switch to Month view. Go."]
+      }
+    },
+    {
+      "contextKey": "onboarding.q3",
+      "variants": {
+        "muted": ["Explore the app rooms and complete the GTD task."],
+        "friendly": ["The pond is big — explore it! Check your tasks, schedule, and resources 🐸"],
+        "militant": ["Open Tasks. Open Schedule. Open Resources. Complete the GTD item."]
+      }
+    },
+    {
+      "contextKey": "onboarding.q4",
+      "variants": {
+        "muted": ["Set your display name and claim your identity."],
+        "friendly": ["Who are you, adventurer? Set your name and claim your first badge! 🐸"],
+        "militant": ["Set your name. Place your badge. Equip your gear. Open Adventures."]
+      }
+    },
+    {
       "contextKey": "login.return",
       "variants": {
         "muted": [

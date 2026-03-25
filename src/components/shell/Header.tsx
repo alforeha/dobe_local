@@ -53,6 +53,7 @@ export function Header({ onProfileOpen }: HeaderProps) {
         <BoostRow />
       </div>
 
+
       {deltas.map((d) => (
         <FloatingDelta key={d.id} label={d.label} onDismiss={() => dismissDelta(d.id)} />
       ))}

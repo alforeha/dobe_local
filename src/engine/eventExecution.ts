@@ -20,7 +20,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { useProgressionStore } from '../stores/useProgressionStore';
 import { EVENT_MAX_ATTACHMENTS } from '../storage/storageBudget';
 
-import { awardXP, awardStat } from './awardPipeline';
+import { awardXP, awardStat, awardGold } from './awardPipeline';
 import { completeMilestone, decodeQuestRef } from './markerEngine';
 import { starterTaskTemplates } from '../coach/StarterQuestLibrary';
 import { checkAchievements } from '../coach/checkAchievements';
@@ -312,6 +312,13 @@ export function completeEvent(eventId: string): void {
       },
     };
     userStoreRef.setUser(withEventCount);
+
+    // +1 gold per event completion (D98)
+    const userForGold = useUserStore.getState().user;
+    if (userForGold) {
+      userStoreRef.setUser(awardGold(1, userForGold));
+    }
+
     pushRibbet('event.completed');
 
     // Achievement check + badge awards

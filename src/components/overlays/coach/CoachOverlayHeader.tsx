@@ -4,6 +4,10 @@
 // Header background matches overlay — no strong contrast.
 // ─────────────────────────────────────────
 
+import { useMemo } from 'react';
+import { useUserStore } from '../../../stores/useUserStore';
+import { ribbet } from '../../../coach/ribbet';
+
 interface CoachOverlayHeaderProps {
   onClose: () => void;
   onFeedNav: () => void;
@@ -12,6 +16,9 @@ interface CoachOverlayHeaderProps {
 }
 
 export function CoachOverlayHeader({ onClose, onFeedNav, onInfo, unreadCount }: CoachOverlayHeaderProps) {
+  const user = useUserStore((s) => s.user);
+  const comment = useMemo(() => (user ? ribbet(user) : ''), [user]);
+
   return (
     <div className="flex shrink-0 items-center px-4 py-5 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
       {/* Coach icon + bee button — bee always visible, glow only when unread */}
@@ -33,8 +40,14 @@ export function CoachOverlayHeader({ onClose, onFeedNav, onInfo, unreadCount }: 
         </button>
       </div>
 
-      {/* Flex spacer */}
-      <div className="flex-1" />
+      {/* Coach comment — ambient ribbet in the middle */}
+      <div className="flex-1 min-w-0 px-4">
+        {comment ? (
+          <p className="truncate text-sm text-gray-400 dark:text-gray-500 italic">
+            {comment}
+          </p>
+        ) : null}
+      </div>
 
       {/* Right: info + gap + close */}
       <div className="flex items-center gap-6">

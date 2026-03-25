@@ -13,7 +13,7 @@
 //   xpForLevel(L) = floor( A * sum_{i=1}^{L-1} floor(i + B * 2^(i/C)) )
 // ─────────────────────────────────────────
 
-import type { StatGroupKey } from '../types/user';
+import type { StatGroupKey, User } from '../types/user';
 import { useUserStore } from '../stores/useUserStore';
 
 import { checkAchievements } from '../coach/checkAchievements';
@@ -175,6 +175,24 @@ export function awardXP(
       }, levelFeedUser);
     }
   }
+}
+
+// ── AWARD GOLD (D98) ──────────────────────────────────────────────────────────
+
+/**
+ * Add gold to the user. Returns the updated User — caller must write to store.
+ *
+ * @param amount  Gold to add (positive integer)
+ * @param user    Current User
+ */
+export function awardGold(amount: number, user: User): User {
+  return {
+    ...user,
+    progression: {
+      ...user.progression,
+      gold: (user.progression.gold ?? 0) + amount,
+    },
+  };
 }
 
 // ── AWARD STAT ────────────────────────────────────────────────────────────────
