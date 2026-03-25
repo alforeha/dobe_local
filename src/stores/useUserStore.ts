@@ -6,7 +6,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, UserStats, Avatar, BadgeBoard, Equipment, Feed } from '../types';
+import type { User, UserStats, Avatar, BadgeBoard, Equipment, Feed, GearSlot } from '../types';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 
@@ -22,6 +22,8 @@ interface UserActions {
   setAvatar: (avatar: Avatar) => void;
   setBadgeBoard: (badgeBoard: BadgeBoard) => void;
   setEquipment: (equipment: Equipment) => void;
+  equipGear: (slot: GearSlot, gearId: string) => void;
+  unequipGear: (slot: GearSlot) => void;
   setFeed: (feed: Feed) => void;
   /** Mark a single feed entry as read by index; decrements unreadCount if it was unread */
   markFeedEntryRead: (index: number) => void;
@@ -85,6 +87,48 @@ export const useUserStore = create<UserState & UserActions>()(
             ? { user: { ...state.user, progression: { ...state.user.progression, equipment } } }
             : {},
         ),
+
+      equipGear: (slot, gearId) =>
+        set((state) => {
+          if (!state.user) return {};
+
+          return {
+            user: {
+              ...state.user,
+              progression: {
+                ...state.user.progression,
+                avatar: {
+                  ...state.user.progression.avatar,
+                  equippedGear: {
+                    ...state.user.progression.avatar.equippedGear,
+                    [slot]: gearId,
+                  },
+                },
+              },
+            },
+          };
+        }),
+
+      unequipGear: (slot) =>
+        set((state) => {
+          if (!state.user) return {};
+
+          const equippedGear = { ...state.user.progression.avatar.equippedGear };
+          delete equippedGear[slot];
+
+          return {
+            user: {
+              ...state.user,
+              progression: {
+                ...state.user.progression,
+                avatar: {
+                  ...state.user.progression.avatar,
+                  equippedGear,
+                },
+              },
+            },
+          };
+        }),
 
       setFeed: (feed) =>
         set((state) =>

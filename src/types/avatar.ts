@@ -5,8 +5,12 @@
 // Stores equipped gear ids and slot taxonomy reference only.
 // ─────────────────────────────────────────
 
-/** Keyed by slot name — slot taxonomy is a BUILD-time task */
-export type EquippedGear = Record<string, string>; // slotName → Gear.id
+export const GEAR_SLOTS = ['head', 'body', 'hand', 'feet', 'accessory'] as const;
+
+export type GearSlot = typeof GEAR_SLOTS[number];
+
+/** Keyed by canonical gear slot */
+export type EquippedGear = Partial<Record<GearSlot, string>>;
 
 /** [MULTI-USER] stub — null in LOCAL */
 export type PublicVisibilityStub = null;

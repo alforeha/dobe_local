@@ -1,26 +1,33 @@
 import { useEffect, useRef, useState } from 'react';
-import { useUserStore } from '../../../stores/useUserStore';
 import { deriveLevelFromXP } from '../../../engine/awardPipeline';
+import { useUserStore } from '../../../stores/useUserStore';
 import type { StatGroupKey } from '../../../types/user';
 import { StatIcon } from '../../shared/StatIcon';
 import { ProfileXPBar } from './ProfileXPBar';
+import {
+  GEAR_SLOT_LABELS,
+  GEAR_SLOT_ORDER,
+  getGearDefinition,
+  getGearIcon,
+  getSlotIcon,
+} from './rooms/EquipmentRoom/equipmentRoomData';
 
 const STAKE_TIERS: { minLevel: number; emoji: string; label: string }[] = [
-  { minLevel: 21, emoji: '\u26FA\uFE0F', label: 'Forest' },
-  { minLevel: 11, emoji: '\uD83C\uDF32', label: 'Grove' },
-  { minLevel: 6,  emoji: '\uD83C\uDF33', label: 'Sapling' },
-  { minLevel: 3,  emoji: '\uD83C\uDF3F', label: 'Sprout' },
-  { minLevel: 1,  emoji: '\uD83C\uDF31', label: 'Seed' },
+  { minLevel: 21, emoji: '\u26fa\ufe0f', label: 'Forest' },
+  { minLevel: 11, emoji: '\ud83c\udf32', label: 'Grove' },
+  { minLevel: 6, emoji: '\ud83c\udf33', label: 'Sapling' },
+  { minLevel: 3, emoji: '\ud83c\udf3f', label: 'Sprout' },
+  { minLevel: 1, emoji: '\ud83c\udf31', label: 'Seed' },
 ];
 
 function getStake(level: number) {
   for (const tier of STAKE_TIERS) {
     if (level >= tier.minLevel) return tier;
   }
+
   return STAKE_TIERS[STAKE_TIERS.length - 1];
 }
 
-// Local alias — avoids circular import with ProfileOverlay
 type ProfileRoom = 'stats' | 'preferences' | 'storage' | 'badges' | 'equipment' | 'talent';
 
 interface ProfileTopSectionProps {
@@ -29,115 +36,136 @@ interface ProfileTopSectionProps {
 
 const STAT_ORDER: StatGroupKey[] = ['health', 'strength', 'agility', 'defense', 'charisma', 'wisdom'];
 
+const FLOATING_SLOT_CLASSES = {
+  head: 'top-3 left-1/2 -translate-x-1/2',
+  body: 'bottom-8 left-1/2 -translate-x-[110%]',
+  hand: 'top-1/2 left-2 -translate-y-1/2',
+  feet: 'bottom-8 left-1/2 translate-x-[10%]',
+  accessory: 'top-1/2 right-2 -translate-y-1/2',
+} as const;
+
 export function ProfileTopSection({ onNav }: ProfileTopSectionProps) {
-  const user = useUserStore((s) => s.user);
+  const user = useUserStore((state) => state.user);
   const stats = user?.progression.stats;
-  const displayName = user?.system.displayName ?? '—';
+  const equippedGear = user?.progression.avatar.equippedGear ?? {};
+  const displayName = user?.system.displayName ?? '-';
   const xp = stats?.xp ?? 0;
   const level = deriveLevelFromXP(xp);
 
   const topStat = STAT_ORDER.reduce<StatGroupKey>(
     (best, key) =>
-      (stats?.talents[key]?.statPoints ?? 0) > (stats?.talents[best]?.statPoints ?? 0)
-        ? key
-        : best,
+      (stats?.talents[key]?.statPoints ?? 0) > (stats?.talents[best]?.statPoints ?? 0) ? key : best,
     'health',
   );
   const topStatValue = stats?.talents[topStat]?.statPoints ?? 0;
   const stake = getStake(level);
 
-  // Measure avatar button width so emoji scales with it
   const avatarRef = useRef<HTMLButtonElement>(null);
   const [avatarPx, setAvatarPx] = useState(0);
+
   useEffect(() => {
-    const el = avatarRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([entry]) => setAvatarPx(entry.contentRect.width));
-    ro.observe(el);
-    return () => ro.disconnect();
+    const element = avatarRef.current;
+    if (!element) return;
+
+    const observer = new ResizeObserver(([entry]) => setAvatarPx(entry.contentRect.width));
+    observer.observe(element);
+    return () => observer.disconnect();
   }, []);
+
   const emojiFontSize = avatarPx > 0 ? `${Math.round(avatarPx * 0.45)}px` : '3rem';
   const labelFontSize = avatarPx > 0 ? `${Math.round(avatarPx * 0.08)}px` : '0.75rem';
 
-  return (
-    <div className="flex-1 flex flex-col border-b border-gray-100 dark:border-gray-700">
+  const floatingGearSlots = GEAR_SLOT_ORDER.map((slot) => ({
+    slot,
+    gear: getGearDefinition(equippedGear[slot]),
+  }));
 
-      {/* ── TOP ROW: Preferences + User card; Storage stays abs below close button ── */}
+  return (
+    <div className="flex flex-1 flex-col border-b border-gray-100 dark:border-gray-700">
       <div className="relative flex items-center gap-2 px-3 pt-3 pr-24">
-        {/* Preferences */}
         <button
           type="button"
-          className="shrink-0 flex h-16 w-16 items-center justify-center rounded-full bg-white dark:bg-gray-700 shadow-md text-3xl hover:scale-105 transition-transform"
+          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white text-3xl shadow-md transition-transform hover:scale-105 dark:bg-gray-700"
           onClick={() => onNav('preferences')}
           aria-label="Preferences"
         >
-          👤
+          {'\ud83d\udc64'}
         </button>
 
-        {/* User info card — fixed width */}
-        <div className="w-44 shrink-0 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 px-3 py-2.5">
-          <p className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate leading-tight">
-            {displayName}
-          </p>
+        <div className="w-44 shrink-0 rounded-2xl border border-gray-100 bg-white px-3 py-2.5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <p className="truncate text-sm font-bold leading-tight text-gray-800 dark:text-gray-100">{displayName}</p>
           <div className="mt-1.5 flex items-center gap-2">
-            {/* Level badge inline in card */}
             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
               {level}
             </div>
-            <span className="text-gray-300 dark:text-gray-600 select-none">·</span>
+            <span className="select-none text-gray-300 dark:text-gray-600">·</span>
             <StatIcon stat={topStat} value={topStatValue} />
           </div>
         </div>
 
-        {/* Storage — abs top-right, offset below overlay close button */}
         <button
           type="button"
-          className="absolute top-14 right-3 flex h-20 w-20 items-center justify-center rounded-full bg-white dark:bg-gray-700 shadow-md text-3xl hover:scale-105 transition-transform"
+          className="absolute right-3 top-14 flex h-20 w-20 items-center justify-center rounded-full bg-white text-3xl shadow-md transition-transform hover:scale-105 dark:bg-gray-700"
           onClick={() => onNav('storage')}
           aria-label="Storage"
         >
-          🔒
+          {'\ud83d\udd12'}
         </button>
       </div>
 
-      {/* ── MIDDLE: Avatar fills remaining height; badge/equipment buttons overlay bottom corners ── */}
-      <div className="relative flex-1 flex items-center justify-center px-3 pb-3">
-        {/* Avatar square — full available height */}
+      <div className="relative flex flex-1 items-center justify-center px-3 pb-3">
         <button
           ref={avatarRef}
           type="button"
-          className="flex flex-col items-center justify-center h-full aspect-square rounded-3xl bg-emerald-50 dark:bg-emerald-900/30 hover:scale-105 transition-transform"
+          className="relative flex h-full aspect-square flex-col items-center justify-center rounded-3xl bg-emerald-50 transition-transform hover:scale-105 dark:bg-emerald-900/30"
           onClick={() => onNav('stats')}
           aria-label="View stat groups"
         >
-          <span className="leading-none" style={{ fontSize: emojiFontSize }}>{stake.emoji}</span>
-          <span className="mt-1.5 font-medium text-emerald-700 dark:text-emerald-300 leading-none" style={{ fontSize: labelFontSize }}>
+          <span className="leading-none" style={{ fontSize: emojiFontSize }}>
+            {stake.emoji}
+          </span>
+          <span
+            className="mt-1.5 font-medium leading-none text-emerald-700 dark:text-emerald-300"
+            style={{ fontSize: labelFontSize }}
+          >
             {stake.label}
           </span>
+
+          {floatingGearSlots.map(({ slot, gear }) => (
+            <div
+              key={slot}
+              className={`absolute z-10 flex h-12 w-12 items-center justify-center rounded-2xl border bg-white/90 shadow-sm ${FLOATING_SLOT_CLASSES[slot]} ${
+                gear ? 'border-emerald-200' : 'border-dashed border-gray-300'
+              }`}
+              aria-label={`${GEAR_SLOT_LABELS[slot]} slot`}
+              title={gear ? `${GEAR_SLOT_LABELS[slot]}: ${gear.name}` : `${GEAR_SLOT_LABELS[slot]} slot empty`}
+            >
+              <span className={`text-2xl leading-none ${gear ? '' : 'opacity-45'}`}>
+                {gear ? getGearIcon(gear) : getSlotIcon(slot)}
+              </span>
+            </div>
+          ))}
         </button>
 
-        {/* Badge Room — bottom-left, sits on top of avatar */}
         <button
           type="button"
-          className="absolute bottom-3 left-3 flex h-20 w-20 items-center justify-center rounded-full bg-white dark:bg-gray-700 shadow-md text-3xl hover:scale-105 transition-transform z-10"
+          className="absolute bottom-3 left-3 z-10 flex h-20 w-20 items-center justify-center rounded-full bg-white text-3xl shadow-md transition-transform hover:scale-105 dark:bg-gray-700"
           onClick={() => onNav('badges')}
           aria-label="Badge Room"
         >
-          🏆
+          {'\ud83c\udfc6'}
         </button>
 
-        {/* Equipment — bottom-right, sits on top of avatar */}
         <button
           type="button"
-          className="absolute bottom-3 right-3 flex h-20 w-20 items-center justify-center rounded-full bg-white dark:bg-gray-700 shadow-md text-3xl hover:scale-105 transition-transform z-10"
+          className="absolute bottom-3 right-3 z-10 flex h-20 w-20 items-center justify-center rounded-full bg-white text-3xl shadow-md transition-transform hover:scale-105 dark:bg-gray-700"
           onClick={() => onNav('equipment')}
           aria-label="Equipment"
         >
-          🎒
+          {'\ud83c\udf92'}
         </button>
       </div>
 
-      {/* ── XP BAR ── */}
       <ProfileXPBar xp={xp} />
     </div>
   );

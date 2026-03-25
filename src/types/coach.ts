@@ -9,6 +9,7 @@
 
 import type { TaskTemplate, RecurrenceRule, XpAward } from './taskTemplate';
 import type { StatGroupKey } from './user';
+import type { GearSlot } from './avatar';
 
 // re-export so coach.ts consumers can use it without importing from user.ts
 export type { StatGroupKey };
@@ -126,7 +127,7 @@ export interface CoachCharacter {
 export interface GearDefinition {
   id: string;
   /** Slot enum — head | body | hand | feet | accessory (D-MVP08-G01) */
-  slot: 'head' | 'body' | 'hand' | 'feet' | 'accessory';
+  slot: GearSlot;
   /** Rarity enum — common | rare | epic | legendary (D-MVP08-G02) */
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   name: string;
@@ -166,7 +167,7 @@ export interface XpLevelThreshold {
 
 export interface SlotTaxonomyVersion {
   version: string;
-  slots: string[];
+  slots: GearSlot[];
 }
 
 export interface CharacterLibrary {
