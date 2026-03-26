@@ -142,12 +142,6 @@ const EMPTY_COMMITMENT: ActCommitment = {
   routineRefs: [],
 };
 
-function xp(primary: keyof XpAward, amount: number): XpAward {
-  const base: XpAward = { health: 0, strength: 0, agility: 0, defense: 0, charisma: 0, wisdom: 0 };
-  base[primary] = amount;
-  return base;
-}
-
 function noStatXp(): XpAward {
   return { health: 0, strength: 0, agility: 0, defense: 0, charisma: 0, wisdom: 0 };
 }
@@ -158,34 +152,6 @@ function noStatXp(): XpAward {
 // via STARTER_TEMPLATE_IDS but NOT re-declared here — they already exist.
 
 export const starterTaskTemplates: TaskTemplate[] = [
-  // ROLL — D78 daily dice roll
-  {
-    id: STARTER_TEMPLATE_IDS.roll,
-    name: 'Lucky Dice',
-    description: 'Roll the dice for today\'s XP boost. One roll per day — result locked on complete.',
-    icon: 'roll',
-    taskType: 'ROLL',
-    inputFields: { sides: 6 },
-    xpAward: xp('agility', 0), // XP multiplier applied at roll time
-    secondaryTag: 'fitness' as TaskSecondaryTag,
-    cooldown: 1440,
-    media: null,
-    items: [],
-  },
-  // LOG — generic log entry
-  {
-    id: STARTER_TEMPLATE_IDS.logEntry,
-    name: 'Log something',
-    description: 'Write a free-form note to any active Doc.',
-    icon: 'log',
-    taskType: 'LOG',
-    inputFields: { prompt: 'What would you like to log?' },
-    xpAward: xp('wisdom', 15),
-    secondaryTag: 'mindfulness' as TaskSecondaryTag,
-    cooldown: null,
-    media: null,
-    items: [],
-  },
   // ONBOARDING TASKS — isSystem: true hides them from all user-facing pickers
   {
     id: STARTER_TEMPLATE_IDS.openWelcomeEvent,
@@ -266,225 +232,6 @@ export const starterTaskTemplates: TaskTemplate[] = [
     xpAward: noStatXp(),
     xpBonus: 40,
     secondaryTag: 'social' as TaskSecondaryTag,
-    cooldown: null,
-    media: null,
-    items: [],
-  },
-  // STAT PATH TASKS
-  {
-    id: STARTER_TEMPLATE_IDS.bodyLog,
-    name: 'Log body scan',
-    description: 'Record a quick body scan noting sensations, tension, or energy levels.',
-    icon: 'log',
-    taskType: 'LOG',
-    inputFields: { prompt: 'Body scan — what are you noticing right now?' },
-    xpAward: xp('health', 20),
-    secondaryTag: 'health' as TaskSecondaryTag,
-    cooldown: null,
-    media: null,
-    items: [],
-  },
-  {
-    id: STARTER_TEMPLATE_IDS.mealLog,
-    name: 'Log meal',
-    description: 'Log what you ate for a meal — notes on ingredients, quantity, or how it felt.',
-    icon: 'log',
-    taskType: 'LOG',
-    inputFields: { prompt: 'What did you eat? Any notes?' },
-    xpAward: xp('health', 20),
-    secondaryTag: 'nutrition' as TaskSecondaryTag,
-    cooldown: null,
-    media: null,
-    items: [],
-  },
-  {
-    id: STARTER_TEMPLATE_IDS.loginCheck,
-    name: 'Daily login',
-    description: 'Simply open the app — the system logs your visit automatically.',
-    icon: 'check',
-    taskType: 'CHECK',
-    inputFields: { label: 'Logged in today' },
-    xpAward: xp('health', 10),
-    secondaryTag: 'health' as TaskSecondaryTag,
-    cooldown: 720,
-    media: null,
-    items: [],
-  },
-  {
-    id: STARTER_TEMPLATE_IDS.sleepCircuit,
-    name: 'Track sleep',
-    description: 'Log when you went to sleep, when you woke up, and how rested you feel.',
-    icon: 'circuit',
-    taskType: 'CIRCUIT',
-    inputFields: {
-      exercises: ['Log sleep time', 'Log wake time', 'Rate restedness (1–5)'],
-      rounds: 1,
-      restBetweenRounds: null,
-    },
-    xpAward: xp('strength', 30),
-    secondaryTag: 'health' as TaskSecondaryTag,
-    cooldown: 720,
-    media: null,
-    items: [],
-  },
-  {
-    id: STARTER_TEMPLATE_IDS.workoutCheck,
-    name: 'Complete workout event',
-    description: 'Mark a workout event as complete.',
-    icon: 'check',
-    taskType: 'CHECK',
-    inputFields: { label: 'Workout complete' },
-    xpAward: xp('strength', 40),
-    secondaryTag: 'fitness' as TaskSecondaryTag,
-    cooldown: null,
-    media: null,
-    items: [],
-  },
-  {
-    id: STARTER_TEMPLATE_IDS.workoutCounter,
-    name: 'Log workout count',
-    description: 'Increment your cumulative workout log.',
-    icon: 'counter',
-    taskType: 'COUNTER',
-    inputFields: { target: 24, unit: 'workouts', step: 1 },
-    xpAward: xp('strength', 30),
-    secondaryTag: 'fitness' as TaskSecondaryTag,
-    cooldown: null,
-    media: null,
-    items: [],
-  },
-  {
-    id: STARTER_TEMPLATE_IDS.chore,
-    name: 'Chore',
-    description: 'Complete a household chore task.',
-    icon: 'check',
-    taskType: 'CHECK',
-    inputFields: { label: 'Chore complete' },
-    xpAward: xp('agility', 20),
-    secondaryTag: 'home' as TaskSecondaryTag,
-    cooldown: null,
-    media: null,
-    items: [],
-  },
-  {
-    id: STARTER_TEMPLATE_IDS.clearInbox,
-    name: 'Clear inbox',
-    description: 'Work through your inbox or GTD list until it\'s empty.',
-    icon: 'checklist',
-    taskType: 'CHECKLIST',
-    inputFields: {
-      items: [
-        { key: 'process_email', label: 'Process email inbox' },
-        { key: 'process_gtd', label: 'Triage GTD list' },
-        { key: 'capture_actions', label: 'Capture next actions' },
-      ],
-    },
-    xpAward: xp('agility', 30),
-    secondaryTag: 'admin' as TaskSecondaryTag,
-    cooldown: null,
-    media: null,
-    items: [],
-  },
-  {
-    id: STARTER_TEMPLATE_IDS.logTransaction,
-    name: 'Log transaction',
-    description: 'Record a financial transaction to your account doc.',
-    icon: 'log',
-    taskType: 'LOG',
-    inputFields: { prompt: 'Transaction details — amount, category, notes', unit: '$' },
-    xpAward: xp('defense', 25),
-    secondaryTag: 'finance' as TaskSecondaryTag,
-    cooldown: null,
-    media: null,
-    items: [],
-  },
-  {
-    id: STARTER_TEMPLATE_IDS.inventoryCounter,
-    name: 'Inventory items',
-    description: 'Log or count items in your personal inventory.',
-    icon: 'counter',
-    taskType: 'COUNTER',
-    inputFields: { target: 24, unit: 'items', step: 1 },
-    xpAward: xp('defense', 20),
-    secondaryTag: 'admin' as TaskSecondaryTag,
-    cooldown: null,
-    media: null,
-    items: [],
-  },
-  {
-    id: STARTER_TEMPLATE_IDS.selfCompliment,
-    name: 'Log a self compliment',
-    description: 'Take a moment to recognise something you did well today.',
-    icon: 'log',
-    taskType: 'LOG',
-    inputFields: { prompt: 'What did you do well today?' },
-    xpAward: xp('charisma', 25),
-    secondaryTag: 'mindfulness' as TaskSecondaryTag,
-    cooldown: null,
-    media: null,
-    items: [],
-  },
-  {
-    id: STARTER_TEMPLATE_IDS.gratitude,
-    name: 'Log a piece of gratitude',
-    description: 'Write down one thing you\'re grateful for right now.',
-    icon: 'log',
-    taskType: 'LOG',
-    inputFields: { prompt: 'What are you grateful for today?' },
-    xpAward: xp('charisma', 25),
-    secondaryTag: 'mindfulness' as TaskSecondaryTag,
-    cooldown: null,
-    media: null,
-    items: [],
-  },
-  {
-    id: STARTER_TEMPLATE_IDS.kindness,
-    name: 'Log an act of kindness',
-    description: 'Record something kind you did for someone else.',
-    icon: 'log',
-    taskType: 'LOG',
-    inputFields: { prompt: 'What act of kindness did you perform?' },
-    xpAward: xp('charisma', 25),
-    secondaryTag: 'social' as TaskSecondaryTag,
-    cooldown: null,
-    media: null,
-    items: [],
-  },
-  {
-    id: STARTER_TEMPLATE_IDS.sharedActivity,
-    name: 'Shared activity',
-    description: 'Log a social or shared activity with someone else. [MULTI-USER stub]',
-    icon: 'check',
-    taskType: 'CHECK',
-    inputFields: { label: 'Shared activity complete' },
-    xpAward: xp('charisma', 30),
-    secondaryTag: 'social' as TaskSecondaryTag,
-    cooldown: null,
-    media: null,
-    items: [],
-  },
-  {
-    id: STARTER_TEMPLATE_IDS.moodLog,
-    name: 'Log mood',
-    description: 'Rate and note your current mood state.',
-    icon: 'rating',
-    taskType: 'RATING',
-    inputFields: { scale: 10, label: 'Mood (1 = very low, 10 = great)' },
-    xpAward: xp('wisdom', 20),
-    secondaryTag: 'mindfulness' as TaskSecondaryTag,
-    cooldown: null,
-    media: null,
-    items: [],
-  },
-  {
-    id: STARTER_TEMPLATE_IDS.wisdomCheck,
-    name: 'Wisdom task',
-    description: 'Complete any wisdom-tagged task — study, reflection, or planning.',
-    icon: 'check',
-    taskType: 'CHECK',
-    inputFields: { label: 'Wisdom task complete' },
-    xpAward: xp('wisdom', 25),
-    secondaryTag: 'learning' as TaskSecondaryTag,
     cooldown: null,
     media: null,
     items: [],
@@ -956,6 +703,15 @@ export const starterTaskTemplateIds: string[] = [
   STARTER_TEMPLATE_IDS.setupSchedule,
   STARTER_TEMPLATE_IDS.learnGrounds,
   STARTER_TEMPLATE_IDS.claimIdentity,
+];
+
+/**
+ * Coach's day-one template push into scheduleStore.
+ * Includes the system onboarding markers plus curated general templates that now
+ * live in TaskTemplateLibrary.json.
+ */
+export const starterSeedTemplateIds: string[] = [
+  ...starterTaskTemplateIds,
   // Coach curated day-one picks
   STARTER_TEMPLATE_IDS.drinkWater,
   STARTER_TEMPLATE_IDS.meditation,
@@ -971,12 +727,12 @@ export const starterTaskTemplateIds: string[] = [
 /**
  * Seed the coach's starter template set into scheduleStore.taskTemplates.
  * Merges taskTemplateLibrary (prebuilts) + starterTaskTemplates (quest-specific),
- * then writes only IDs in starterTaskTemplateIds.
+ * then writes only IDs in starterSeedTemplateIds.
  * Idempotent — setTaskTemplate is a simple upsert.
  */
 export function seedStarterTemplates(): void {
   const scheduleStore = useScheduleStore.getState();
-  const idSet = new Set(starterTaskTemplateIds);
+  const idSet = new Set(starterSeedTemplateIds);
 
   // Build lookup from both sources; library wins on duplicates
   const allTemplates = new Map<string, TaskTemplate>();

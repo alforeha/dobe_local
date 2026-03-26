@@ -6,8 +6,17 @@
     "icon": "check",
     "taskType": "CHECK",
     "secondaryTag": "mindfulness",
-    "inputFields": { "label": "Checked in?" },
-    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 25, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "label": "Checked in?"
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 25,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -19,8 +28,17 @@
     "icon": "check",
     "taskType": "CHECK",
     "secondaryTag": "health",
-    "inputFields": { "label": "Drank a glass of water" },
-    "xpAward": { "health": 10, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "label": "Drank a glass of water"
+    },
+    "xpAward": {
+      "health": 10,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": 30,
     "media": null,
     "items": []
@@ -32,8 +50,19 @@
     "icon": "counter",
     "taskType": "COUNTER",
     "secondaryTag": "fitness",
-    "inputFields": { "target": 10000, "unit": "steps", "step": 500 },
-    "xpAward": { "health": 0, "strength": 0, "agility": 30, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "target": 10000,
+      "unit": "steps",
+      "step": 500
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 30,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -45,8 +74,22 @@
     "icon": "sets_reps",
     "taskType": "SETS_REPS",
     "secondaryTag": "fitness",
-    "inputFields": { "sets": 3, "reps": 10, "weight": null, "weightUnit": "kg", "restAfter": 90, "dropSet": false },
-    "xpAward": { "health": 0, "strength": 60, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "sets": 3,
+      "reps": 10,
+      "weight": null,
+      "weightUnit": "kg",
+      "restAfter": 90,
+      "dropSet": false
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 60,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -59,11 +102,23 @@
     "taskType": "CIRCUIT",
     "secondaryTag": "fitness",
     "inputFields": {
-      "exercises": ["Jumping jacks", "Burpees", "High knees", "Mountain climbers"],
+      "exercises": [
+        "Jumping jacks",
+        "Burpees",
+        "High knees",
+        "Mountain climbers"
+      ],
       "rounds": 3,
       "restBetweenRounds": 60
     },
-    "xpAward": { "health": 0, "strength": 0, "agility": 65, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 65,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -75,8 +130,18 @@
     "icon": "duration",
     "taskType": "DURATION",
     "secondaryTag": "work",
-    "inputFields": { "targetDuration": 1500, "unit": "seconds" },
-    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 40 },
+    "inputFields": {
+      "targetDuration": 1500,
+      "unit": "seconds"
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 40
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -88,8 +153,17 @@
     "icon": "timer",
     "taskType": "TIMER",
     "secondaryTag": "mindfulness",
-    "inputFields": { "countdownFrom": 600 },
-    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 25, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "countdownFrom": 600
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 25,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -101,8 +175,18 @@
     "icon": "rating",
     "taskType": "RATING",
     "secondaryTag": "health",
-    "inputFields": { "scale": 10, "label": "Energy level" },
-    "xpAward": { "health": 20, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "scale": 10,
+      "label": "Energy level"
+    },
+    "xpAward": {
+      "health": 20,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -114,8 +198,18 @@
     "icon": "text",
     "taskType": "TEXT",
     "secondaryTag": "mindfulness",
-    "inputFields": { "prompt": "What's on your mind today?", "maxLength": null },
-    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 35, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "prompt": "What's on your mind today?",
+      "maxLength": null
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 35,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -129,14 +223,41 @@
     "secondaryTag": "admin",
     "inputFields": {
       "fields": [
-        { "key": "wins", "label": "Top 3 wins this week", "fieldType": "text" },
-        { "key": "challenges", "label": "Biggest challenge", "fieldType": "text" },
-        { "key": "habits_kept", "label": "Habits kept (%)", "fieldType": "number" },
-        { "key": "next_focus", "label": "Main focus next week", "fieldType": "text" },
-        { "key": "overall_rating", "label": "Overall week rating (1–10)", "fieldType": "number" }
+        {
+          "key": "wins",
+          "label": "Top 3 wins this week",
+          "fieldType": "text"
+        },
+        {
+          "key": "challenges",
+          "label": "Biggest challenge",
+          "fieldType": "text"
+        },
+        {
+          "key": "habits_kept",
+          "label": "Habits kept (%)",
+          "fieldType": "number"
+        },
+        {
+          "key": "next_focus",
+          "label": "Main focus next week",
+          "fieldType": "text"
+        },
+        {
+          "key": "overall_rating",
+          "label": "Overall week rating (1–10)",
+          "fieldType": "number"
+        }
       ]
     },
-    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 40 },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 40
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -148,8 +269,23 @@
     "icon": "choice",
     "taskType": "CHOICE",
     "secondaryTag": "nutrition",
-    "inputFields": { "options": ["Excellent", "Good", "Okay", "Poor"], "multiSelect": false },
-    "xpAward": { "health": 20, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "options": [
+        "Excellent",
+        "Good",
+        "Okay",
+        "Poor"
+      ],
+      "multiSelect": false
+    },
+    "xpAward": {
+      "health": 20,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -163,14 +299,36 @@
     "secondaryTag": "home",
     "inputFields": {
       "items": [
-        { "key": "make_bed", "label": "Make bed" },
-        { "key": "brush_teeth", "label": "Brush teeth" },
-        { "key": "shower", "label": "Shower" },
-        { "key": "get_dressed", "label": "Get dressed" },
-        { "key": "eat_breakfast", "label": "Eat breakfast" }
+        {
+          "key": "make_bed",
+          "label": "Make bed"
+        },
+        {
+          "key": "brush_teeth",
+          "label": "Brush teeth"
+        },
+        {
+          "key": "shower",
+          "label": "Shower"
+        },
+        {
+          "key": "get_dressed",
+          "label": "Get dressed"
+        },
+        {
+          "key": "eat_breakfast",
+          "label": "Eat breakfast"
+        }
       ]
     },
-    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 30, "charisma": 0, "wisdom": 0 },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 30,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -182,8 +340,17 @@
     "icon": "scan",
     "taskType": "SCAN",
     "secondaryTag": "finance",
-    "inputFields": { "scanType": "receipt" },
-    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 35 },
+    "inputFields": {
+      "scanType": "receipt"
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 35
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -197,13 +364,36 @@
     "secondaryTag": "fitness",
     "inputFields": {
       "fields": [
-        { "key": "exercise", "label": "Exercise name", "fieldType": "text" },
-        { "key": "sets", "label": "Sets completed", "fieldType": "number" },
-        { "key": "reps", "label": "Reps per set", "fieldType": "number" },
-        { "key": "weight_kg", "label": "Weight (kg)", "fieldType": "number" }
+        {
+          "key": "exercise",
+          "label": "Exercise name",
+          "fieldType": "text"
+        },
+        {
+          "key": "sets",
+          "label": "Sets completed",
+          "fieldType": "number"
+        },
+        {
+          "key": "reps",
+          "label": "Reps per set",
+          "fieldType": "number"
+        },
+        {
+          "key": "weight_kg",
+          "label": "Weight (kg)",
+          "fieldType": "number"
+        }
       ]
     },
-    "xpAward": { "health": 0, "strength": 55, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "xpAward": {
+      "health": 0,
+      "strength": 55,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -215,8 +405,18 @@
     "icon": "location_point",
     "taskType": "LOCATION_POINT",
     "secondaryTag": "social",
-    "inputFields": { "label": "Where are you?", "captureAccuracy": true },
-    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 0, "charisma": 35, "wisdom": 0 },
+    "inputFields": {
+      "label": "Where are you?",
+      "captureAccuracy": true
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 35,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -228,8 +428,18 @@
     "icon": "location_trail",
     "taskType": "LOCATION_TRAIL",
     "secondaryTag": "fitness",
-    "inputFields": { "label": "Route name", "captureInterval": 5 },
-    "xpAward": { "health": 0, "strength": 0, "agility": 60, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "label": "Route name",
+      "captureInterval": 5
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 60,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -241,8 +451,17 @@
     "icon": "log",
     "taskType": "LOG",
     "secondaryTag": "health",
-    "inputFields": { "prompt": "Body scan — what are you noticing right now?" },
-    "xpAward": { "health": 20, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "prompt": "Body scan — what are you noticing right now?"
+    },
+    "xpAward": {
+      "health": 20,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -254,8 +473,17 @@
     "icon": "log",
     "taskType": "LOG",
     "secondaryTag": "nutrition",
-    "inputFields": { "prompt": "What did you eat? Any notes?" },
-    "xpAward": { "health": 20, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "prompt": "What did you eat? Any notes?"
+    },
+    "xpAward": {
+      "health": 20,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -268,11 +496,22 @@
     "taskType": "CIRCUIT",
     "secondaryTag": "health",
     "inputFields": {
-      "exercises": ["Log sleep time", "Log wake time", "Rate restedness (1–5)"],
+      "exercises": [
+        "Log sleep time",
+        "Log wake time",
+        "Rate restedness (1–5)"
+      ],
       "rounds": 1,
       "restBetweenRounds": null
     },
-    "xpAward": { "health": 0, "strength": 30, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "xpAward": {
+      "health": 0,
+      "strength": 30,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": 720,
     "media": null,
     "items": []
@@ -284,8 +523,17 @@
     "icon": "check",
     "taskType": "CHECK",
     "secondaryTag": "home",
-    "inputFields": { "label": "Chore complete" },
-    "xpAward": { "health": 0, "strength": 0, "agility": 20, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "label": "Chore complete"
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 20,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -299,12 +547,28 @@
     "secondaryTag": "admin",
     "inputFields": {
       "items": [
-        { "key": "process_email", "label": "Process email inbox" },
-        { "key": "process_gtd", "label": "Triage GTD list" },
-        { "key": "capture_actions", "label": "Capture next actions" }
+        {
+          "key": "process_email",
+          "label": "Process email inbox"
+        },
+        {
+          "key": "process_gtd",
+          "label": "Triage GTD list"
+        },
+        {
+          "key": "capture_actions",
+          "label": "Capture next actions"
+        }
       ]
     },
-    "xpAward": { "health": 0, "strength": 0, "agility": 30, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 30,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -316,8 +580,18 @@
     "icon": "rating",
     "taskType": "RATING",
     "secondaryTag": "mindfulness",
-    "inputFields": { "scale": 10, "label": "Mood (1 = very low, 10 = great)" },
-    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 20 },
+    "inputFields": {
+      "scale": 10,
+      "label": "Mood (1 = very low, 10 = great)"
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 20
+    },
     "cooldown": null,
     "media": null,
     "items": []
@@ -329,11 +603,22 @@
     "icon": "check",
     "taskType": "CHECK",
     "secondaryTag": "nutrition",
-    "inputFields": { "label": "Onions prepped?" },
-    "xpAward": { "health": 3, "strength": 0, "agility": 2, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "label": "Onions prepped?"
+    },
+    "xpAward": {
+      "health": 3,
+      "strength": 0,
+      "agility": 2,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
-    "items": ["item-onion"]
+    "items": [
+      "item-onion"
+    ]
   },
   {
     "id": "item-tmpl-morning-coffee-01",
@@ -342,11 +627,22 @@
     "icon": "check",
     "taskType": "CHECK",
     "secondaryTag": "mindfulness",
-    "inputFields": { "label": "Coffee brewed?" },
-    "xpAward": { "health": 2, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 2 },
+    "inputFields": {
+      "label": "Coffee brewed?"
+    },
+    "xpAward": {
+      "health": 2,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 2
+    },
     "cooldown": null,
     "media": null,
-    "items": ["item-coffee-beans"]
+    "items": [
+      "item-coffee-beans"
+    ]
   },
   {
     "id": "item-tmpl-clean-room-01",
@@ -357,15 +653,30 @@
     "secondaryTag": "home",
     "inputFields": {
       "items": [
-        { "label": "Clear surfaces" },
-        { "label": "Wipe down" },
-        { "label": "Vacuum/sweep" }
+        {
+          "label": "Clear surfaces"
+        },
+        {
+          "label": "Wipe down"
+        },
+        {
+          "label": "Vacuum/sweep"
+        }
       ]
     },
-    "xpAward": { "health": 3, "strength": 0, "agility": 2, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "xpAward": {
+      "health": 3,
+      "strength": 0,
+      "agility": 2,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
-    "items": ["item-cleaning-supplies"]
+    "items": [
+      "item-cleaning-supplies"
+    ]
   },
   {
     "id": "item-tmpl-do-laundry-01",
@@ -376,16 +687,33 @@
     "secondaryTag": "home",
     "inputFields": {
       "items": [
-        { "label": "Load machine" },
-        { "label": "Add detergent" },
-        { "label": "Run cycle" },
-        { "label": "Hang or fold" }
+        {
+          "label": "Load machine"
+        },
+        {
+          "label": "Add detergent"
+        },
+        {
+          "label": "Run cycle"
+        },
+        {
+          "label": "Hang or fold"
+        }
       ]
     },
-    "xpAward": { "health": 3, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "xpAward": {
+      "health": 3,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
-    "items": ["item-laundry-detergent"]
+    "items": [
+      "item-laundry-detergent"
+    ]
   },
   {
     "id": "item-tmpl-make-bed-01",
@@ -394,11 +722,22 @@
     "icon": "check",
     "taskType": "CHECK",
     "secondaryTag": "home",
-    "inputFields": { "label": "Bed made?" },
-    "xpAward": { "health": 2, "strength": 0, "agility": 1, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "label": "Bed made?"
+    },
+    "xpAward": {
+      "health": 2,
+      "strength": 0,
+      "agility": 1,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
-    "items": ["item-bed"]
+    "items": [
+      "item-bed"
+    ]
   },
   {
     "id": "item-tmpl-weekly-car-check-01",
@@ -409,16 +748,33 @@
     "secondaryTag": "home",
     "inputFields": {
       "items": [
-        { "label": "Check tyre pressure" },
-        { "label": "Check fluid levels" },
-        { "label": "Check lights" },
-        { "label": "Check windscreen wipers" }
+        {
+          "label": "Check tyre pressure"
+        },
+        {
+          "label": "Check fluid levels"
+        },
+        {
+          "label": "Check lights"
+        },
+        {
+          "label": "Check windscreen wipers"
+        }
       ]
     },
-    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 5, "charisma": 0, "wisdom": 0 },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 5,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
-    "items": ["item-car"]
+    "items": [
+      "item-car"
+    ]
   },
   {
     "id": "item-tmpl-clean-oven-01",
@@ -427,11 +783,22 @@
     "icon": "check",
     "taskType": "CHECK",
     "secondaryTag": "home",
-    "inputFields": { "label": "Oven cleaned?" },
-    "xpAward": { "health": 2, "strength": 0, "agility": 3, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "label": "Oven cleaned?"
+    },
+    "xpAward": {
+      "health": 2,
+      "strength": 0,
+      "agility": 3,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
-    "items": ["item-oven"]
+    "items": [
+      "item-oven"
+    ]
   },
   {
     "id": "item-tmpl-water-plants-01",
@@ -440,11 +807,22 @@
     "icon": "check",
     "taskType": "CHECK",
     "secondaryTag": "home",
-    "inputFields": { "label": "Plants watered?" },
-    "xpAward": { "health": 2, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 2 },
+    "inputFields": {
+      "label": "Plants watered?"
+    },
+    "xpAward": {
+      "health": 2,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 2
+    },
     "cooldown": null,
     "media": null,
-    "items": ["item-garden"]
+    "items": [
+      "item-garden"
+    ]
   },
   {
     "id": "item-tmpl-run-wash-01",
@@ -453,11 +831,22 @@
     "icon": "check",
     "taskType": "CHECK",
     "secondaryTag": "home",
-    "inputFields": { "label": "Wash running?" },
-    "xpAward": { "health": 3, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "label": "Wash running?"
+    },
+    "xpAward": {
+      "health": 3,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
-    "items": ["item-washing-machine"]
+    "items": [
+      "item-washing-machine"
+    ]
   },
   {
     "id": "item-tmpl-clean-fridge-01",
@@ -466,11 +855,22 @@
     "icon": "check",
     "taskType": "CHECK",
     "secondaryTag": "home",
-    "inputFields": { "label": "Fridge cleaned?" },
-    "xpAward": { "health": 2, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "label": "Fridge cleaned?"
+    },
+    "xpAward": {
+      "health": 2,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
-    "items": ["item-fridge"]
+    "items": [
+      "item-fridge"
+    ]
   },
   {
     "id": "item-tmpl-clear-desk-01",
@@ -479,11 +879,22 @@
     "icon": "check",
     "taskType": "CHECK",
     "secondaryTag": "work",
-    "inputFields": { "label": "Desk cleared?" },
-    "xpAward": { "health": 0, "strength": 0, "agility": 2, "defense": 0, "charisma": 0, "wisdom": 3 },
+    "inputFields": {
+      "label": "Desk cleared?"
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 2,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 3
+    },
     "cooldown": null,
     "media": null,
-    "items": ["item-desk"]
+    "items": [
+      "item-desk"
+    ]
   },
   {
     "id": "item-tmpl-clean-shower-01",
@@ -492,11 +903,22 @@
     "icon": "check",
     "taskType": "CHECK",
     "secondaryTag": "home",
-    "inputFields": { "label": "Shower cleaned?" },
-    "xpAward": { "health": 3, "strength": 0, "agility": 0, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "label": "Shower cleaned?"
+    },
+    "xpAward": {
+      "health": 3,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
-    "items": ["item-shower"]
+    "items": [
+      "item-shower"
+    ]
   },
   {
     "id": "item-tmpl-mow-lawn-01",
@@ -505,11 +927,22 @@
     "icon": "check",
     "taskType": "CHECK",
     "secondaryTag": "home",
-    "inputFields": { "label": "Lawn mowed?" },
-    "xpAward": { "health": 3, "strength": 0, "agility": 3, "defense": 0, "charisma": 0, "wisdom": 0 },
+    "inputFields": {
+      "label": "Lawn mowed?"
+    },
+    "xpAward": {
+      "health": 3,
+      "strength": 0,
+      "agility": 3,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
-    "items": ["item-lawnmower"]
+    "items": [
+      "item-lawnmower"
+    ]
   },
   {
     "id": "item-tmpl-check-tyre-01",
@@ -520,13 +953,295 @@
     "secondaryTag": "home",
     "inputFields": {
       "items": [
-        { "label": "Front tyre pressure OK" },
-        { "label": "Rear tyre pressure OK" }
+        {
+          "label": "Front tyre pressure OK"
+        },
+        {
+          "label": "Rear tyre pressure OK"
+        }
       ]
     },
-    "xpAward": { "health": 0, "strength": 0, "agility": 0, "defense": 4, "charisma": 0, "wisdom": 0 },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 4,
+      "charisma": 0,
+      "wisdom": 0
+    },
     "cooldown": null,
     "media": null,
-    "items": ["item-bicycle"]
+    "items": [
+      "item-bicycle"
+    ]
+  },
+  {
+    "id": "tmpl-roll-00000000-0000-0000-0000",
+    "name": "Lucky Dice",
+    "description": "Roll the dice for today's XP boost. One roll per day - result locked on complete.",
+    "icon": "roll",
+    "taskType": "ROLL",
+    "secondaryTag": "fitness",
+    "inputFields": {
+      "sides": 6
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
+    "cooldown": 1440,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-log-entry-0000-0000-0000-0001",
+    "name": "Log something",
+    "description": "Write a free-form note to any active Doc.",
+    "icon": "log",
+    "taskType": "LOG",
+    "secondaryTag": "mindfulness",
+    "inputFields": {
+      "prompt": "What would you like to log?"
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 15
+    },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-login-check-0000-0000-0000-0001",
+    "name": "Daily login",
+    "description": "Simply open the app - the system logs your visit automatically.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "health",
+    "inputFields": {
+      "label": "Logged in today"
+    },
+    "xpAward": {
+      "health": 10,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
+    "cooldown": 720,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-workout-check-00-0000-0000-0001",
+    "name": "Complete workout event",
+    "description": "Mark a workout event as complete.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "fitness",
+    "inputFields": {
+      "label": "Workout complete"
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 40,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-workout-counter-0-0000-0000-0001",
+    "name": "Log workout count",
+    "description": "Increment your cumulative workout log.",
+    "icon": "counter",
+    "taskType": "COUNTER",
+    "secondaryTag": "fitness",
+    "inputFields": {
+      "target": 24,
+      "unit": "workouts",
+      "step": 1
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 30,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 0
+    },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-log-transaction-0-0000-0000-0001",
+    "name": "Log transaction",
+    "description": "Record a financial transaction to your account doc.",
+    "icon": "log",
+    "taskType": "LOG",
+    "secondaryTag": "finance",
+    "inputFields": {
+      "prompt": "Transaction details - amount, category, notes",
+      "unit": "$"
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 25,
+      "charisma": 0,
+      "wisdom": 0
+    },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-inventory-count-0-0000-0000-0001",
+    "name": "Inventory items",
+    "description": "Log or count items in your personal inventory.",
+    "icon": "counter",
+    "taskType": "COUNTER",
+    "secondaryTag": "admin",
+    "inputFields": {
+      "target": 24,
+      "unit": "items",
+      "step": 1
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 20,
+      "charisma": 0,
+      "wisdom": 0
+    },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-self-compliment-0-0000-0000-0001",
+    "name": "Log a self compliment",
+    "description": "Take a moment to recognise something you did well today.",
+    "icon": "log",
+    "taskType": "LOG",
+    "secondaryTag": "mindfulness",
+    "inputFields": {
+      "prompt": "What did you do well today?"
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 25,
+      "wisdom": 0
+    },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-gratitude-000000-0000-0000-0000-1",
+    "name": "Log a piece of gratitude",
+    "description": "Write down one thing you're grateful for right now.",
+    "icon": "log",
+    "taskType": "LOG",
+    "secondaryTag": "mindfulness",
+    "inputFields": {
+      "prompt": "What are you grateful for today?"
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 25,
+      "wisdom": 0
+    },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-kindness-000000-0000-0000-0000-01",
+    "name": "Log an act of kindness",
+    "description": "Record something kind you did for someone else.",
+    "icon": "log",
+    "taskType": "LOG",
+    "secondaryTag": "social",
+    "inputFields": {
+      "prompt": "What act of kindness did you perform?"
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 25,
+      "wisdom": 0
+    },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-shared-activity-0-0000-0000-0001",
+    "name": "Shared activity",
+    "description": "Log a social or shared activity with someone else. [MULTI-USER stub]",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "social",
+    "inputFields": {
+      "label": "Shared activity complete"
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 30,
+      "wisdom": 0
+    },
+    "cooldown": null,
+    "media": null,
+    "items": []
+  },
+  {
+    "id": "tmpl-wisdom-check-000-0000-0000-0001",
+    "name": "Wisdom task",
+    "description": "Complete any wisdom-tagged task - study, reflection, or planning.",
+    "icon": "check",
+    "taskType": "CHECK",
+    "secondaryTag": "learning",
+    "inputFields": {
+      "label": "Wisdom task complete"
+    },
+    "xpAward": {
+      "health": 0,
+      "strength": 0,
+      "agility": 0,
+      "defense": 0,
+      "charisma": 0,
+      "wisdom": 25
+    },
+    "cooldown": null,
+    "media": null,
+    "items": []
   }
 ]
