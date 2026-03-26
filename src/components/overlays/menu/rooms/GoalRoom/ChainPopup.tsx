@@ -11,15 +11,24 @@ import type {
   Quest,
   ExigencyOption,
   QuestCompletionState,
+  Task,
+  TaskTemplate,
+  ChecklistItem,
+  QuickActionsEvent,
+  Event,
 } from '../../../../../types';
 import type {
   TaskType,
   RecurrenceFrequency,
   Weekday,
+  RollInputFields,
 } from '../../../../../types';
 import { useProgressionStore } from '../../../../../stores/useProgressionStore';
+import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 
 import { computeProjectedFinish } from '../../../../../engine';
+import { starterTaskTemplates } from '../../../../../coach/StarterQuestLibrary';
+import { getAppDate } from '../../../../../utils/dateUtils';
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 
@@ -221,6 +230,118 @@ function ProgressBar({ pct }: { pct: number }) {
       />
     </div>
   );
+}
+
+interface QuestProgressRow {
+  label: string;
+  checked: boolean;
+}
+
+function getQuestTaskTemplateRef(quest: Quest): string | null {
+  return quest.timely.markers.find((marker) => marker.activeState)?.taskTemplateRef ??
+    quest.timely.markers[0]?.taskTemplateRef ??
+    null;
+}
+
+function getQuestTaskTemplate(
+  templateRef: string,
+  taskTemplates: Record<string, TaskTemplate>,
+): TaskTemplate | null {
+  return taskTemplates[templateRef] ??
+    starterTaskTemplates.find((template) => template.id === templateRef) ??
+    null;
+}
+
+function getQuestTask(
+  tasks: Record<string, Task>,
+  questRef: string,
+  templateRef: string,
+): Task | null {
+  const matches = Object.values(tasks).filter(
+    (task) => task.questRef === questRef && task.templateRef === templateRef,
+  );
+  if (matches.length === 0) return null;
+  return matches.find((task) => task.completionState === 'pending') ??
+    matches.find((task) => task.completionState === 'complete') ??
+    matches[0] ??
+    null;
+}
+
+function hasCompletedQuickActionRollToday(
+  templateRef: string,
+  tasks: Record<string, Task>,
+  activeEvents: Record<string, QuickActionsEvent | Event>,
+  historyEvents: Record<string, QuickActionsEvent | Event>,
+): boolean {
+  const today = getAppDate();
+  for (const source of [activeEvents, historyEvents]) {
+    for (const event of Object.values(source)) {
+      if (!('eventType' in event) || event.eventType !== 'quickActions') continue;
+      const quickActions = event as QuickActionsEvent;
+      if (quickActions.date !== today && quickActions.id !== `qa-${today}`) continue;
+      for (const completion of quickActions.completions) {
+        const task = tasks[completion.taskRef];
+        if (!task) continue;
+        if (task.templateRef !== templateRef) continue;
+        const result = (task.resultFields as Partial<RollInputFields>).result;
+        if (task.completionState === 'complete' && typeof result === 'number') return true;
+      }
+    }
+  }
+  return false;
+}
+
+function getQuestProgressRows(
+  quest: Quest,
+  questRef: string,
+  tasks: Record<string, Task>,
+  taskTemplates: Record<string, TaskTemplate>,
+  activeEvents: Record<string, QuickActionsEvent | Event>,
+  historyEvents: Record<string, QuickActionsEvent | Event>,
+): QuestProgressRow[] {
+  const templateRef = getQuestTaskTemplateRef(quest);
+  if (!templateRef) return [];
+
+  const template = getQuestTaskTemplate(templateRef, taskTemplates);
+  if (!template) return [];
+
+  const task = getQuestTask(tasks, questRef, templateRef);
+
+  if (template.taskType === 'CHECKLIST') {
+    const templateItems =
+      (template.inputFields as { items?: ChecklistItem[] } | undefined)?.items ?? [];
+    const resultItems = (task?.resultFields as { items?: ChecklistItem[] } | undefined)?.items ?? [];
+    const checkedByKey = new Map<string, boolean>(
+      resultItems.map((item) => [item.key, item.checked === true]),
+    );
+
+    const sourceItems = resultItems.length > 0 ? resultItems : templateItems;
+    return sourceItems.map((item) => ({
+      label: item.label,
+      checked: checkedByKey.get(item.key) === true,
+    }));
+  }
+
+  if (template.taskType === 'CHECK') {
+    return [{
+      label: template.name,
+      checked: task?.completionState === 'complete',
+    }];
+  }
+
+  if (template.taskType === 'ROLL') {
+    return [{
+      label: 'Lucky dice rolled today',
+      checked: hasCompletedQuickActionRollToday(
+        templateRef,
+        tasks,
+        activeEvents,
+        historyEvents,
+      ),
+    }];
+  }
+
+  return [];
 }
 
 // ── QUEST FORM SUB-POPUP ──────────────────────────────────────────────────────
@@ -547,6 +668,8 @@ function QuestFormPopup({ initialState, isEdit, onSave, onCancel }: QuestFormPop
 
 interface QuestRowProps {
   quest: Quest;
+  actId: string;
+  chainIndex: number;
   index: number;
   isExpanded: boolean;
   onToggle: () => void;
@@ -559,6 +682,8 @@ interface QuestRowProps {
 
 function QuestRow({
   quest,
+  actId,
+  chainIndex,
   index,
   isExpanded,
   onToggle,
@@ -569,6 +694,19 @@ function QuestRow({
   onCancelDelete,
 }: QuestRowProps) {
   const projected = computeProjectedFinish(quest);
+  const questRef = `${actId}|${chainIndex}|${index}`;
+  const tasks = useScheduleStore((s) => s.tasks);
+  const taskTemplates = useScheduleStore((s) => s.taskTemplates);
+  const activeEvents = useScheduleStore((s) => s.activeEvents);
+  const historyEvents = useScheduleStore((s) => s.historyEvents);
+  const progressRows = getQuestProgressRows(
+    quest,
+    questRef,
+    tasks,
+    taskTemplates,
+    activeEvents,
+    historyEvents,
+  );
 
   const attainableText = typeof quest.attainable['text'] === 'string'
     ? (quest.attainable['text'] as string) : '';
@@ -629,6 +767,22 @@ function QuestRow({
           </button>
         )}
       </div>
+
+      {isExpanded && progressRows.length > 0 && (
+        <div className="px-3 pt-2 pb-1 bg-gray-50 dark:bg-gray-700 border-t border-gray-100 dark:border-gray-600">
+          <div className="space-y-0.5">
+            {progressRows.map((row) => (
+              <div
+                key={row.label}
+                className="flex items-center gap-1.5 text-[11px] leading-4 text-gray-600 dark:text-gray-300"
+              >
+                <span className="shrink-0">{row.checked ? '✅' : '⭕'}</span>
+                <span className="truncate">{row.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Progress bar — always visible */}
       <div className="px-3 pt-1 pb-1 bg-gray-50 dark:bg-gray-700">
@@ -987,6 +1141,8 @@ export function ChainPopup({ chain, chainIndex, act, onClose }: ChainPopupProps)
                     <QuestRow
                       key={i}
                       quest={q}
+                      actId={act.id}
+                      chainIndex={chainIndex}
                       index={i}
                       isExpanded={expandedIdx === i}
                       onToggle={() => setExpandedIdx((prev) => (prev === i ? null : i))}

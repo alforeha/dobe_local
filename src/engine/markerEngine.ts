@@ -27,6 +27,8 @@ import {
   starterTaskTemplates,
 } from '../coach/StarterQuestLibrary';
 import { awardGold } from './awardPipeline';
+import { autoCheckQuestItem } from './resourceEngine';
+import { isOneOffEvent } from '../utils/isOneOffEvent';
 
 // ── QUESTREF ENCODING ─────────────────────────────────────────────────────────
 
@@ -122,6 +124,29 @@ function findQuickActionCompletionForDate(templateRef: string, dateIso: string):
     }
   }
   return null;
+}
+
+function backfillQuestActivation(templateRef: string): void {
+  if (templateRef !== STARTER_TEMPLATE_IDS.learnGrounds) return;
+
+  const today = getAppDate();
+  const user = useUserStore.getState().user;
+  const scheduleStore = useScheduleStore.getState();
+
+  if (findQuickActionCompletionForDate(STARTER_TEMPLATE_IDS.roll, today)) {
+    autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'complete_roll');
+  }
+
+  if ((user?.lists.favouritesList.length ?? 0) > 0) {
+    autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'add_favourite');
+  }
+
+  const hasRoutine = Object.values(scheduleStore.plannedEvents).some(
+    (plannedEvent) => plannedEvent.activeState === 'active' && !isOneOffEvent(plannedEvent),
+  );
+  if (hasRoutine) {
+    autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'open_schedule');
+  }
 }
 
 // ── FIRE MARKER ───────────────────────────────────────────────────────────────
@@ -523,6 +548,7 @@ export function completeMilestone(completedTask: Task): void {
         chainIndex,
         actId,
       });
+      backfillQuestActivation(nextMarker.taskTemplateRef);
     }
   }
 

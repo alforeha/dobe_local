@@ -196,6 +196,7 @@ async function main(): Promise<void> {
     seedStarterContent,
     unlockAct,
     STARTER_ACT_IDS,
+    STARTER_TEMPLATE_IDS,
     makeDailyChain,
     coachActs,
   } = await import('../../coach/StarterQuestLibrary');
@@ -458,6 +459,84 @@ async function main(): Promise<void> {
   assert('Quest 2 (Splash) — task found before Q2 complete call', !!q2Task);
 
   if (q2Task) {
+    // Seed prior Quest 3 actions before Quest 2 completes so activation backfill
+    // can reflect existing state immediately on the newly fired learnGrounds task.
+    const userBeforeQ2Complete = useUserStore.getState().user!;
+    useUserStore.getState().setUser({
+      ...userBeforeQ2Complete,
+      lists: {
+        ...userBeforeQ2Complete.lists,
+        favouritesList: [...userBeforeQ2Complete.lists.favouritesList, 'tmpl-preseed-favourite-0001'],
+      },
+    });
+
+    useScheduleStore.getState().setPlannedEvent({
+      id: 'pe-mvp11-routine-0001',
+      name: 'Validation Routine',
+      description: 'Pre-existing routine for Quest 3 backfill coverage.',
+      icon: 'routine',
+      color: '#22c55e',
+      seedDate: DAY1,
+      dieDate: null,
+      recurrenceInterval: {
+        frequency: 'weekly',
+        interval: 1,
+        days: ['mon'],
+        endsOn: null,
+        customCondition: null,
+      },
+      activeState: 'active',
+      taskPool: [],
+      taskPoolCursor: 0,
+      taskList: [],
+      conflictMode: 'concurrent',
+      startTime: '08:00',
+      endTime: '08:30',
+      location: null,
+      sharedWith: null,
+      pushReminder: null,
+    } as never);
+
+    const qaDay1Id = `qa-${DAY1}`;
+    const rollTaskId = 'task-mvp11-roll-backfill-0001';
+    useScheduleStore.getState().setTask({
+      id: rollTaskId,
+      templateRef: STARTER_TEMPLATE_IDS.roll,
+      completionState: 'complete',
+      completedAt: `${DAY1}T12:00:00.000Z`,
+      resultFields: {
+        sides: 6,
+        result: 4,
+        boostApplied: '1.2x',
+      },
+      attachmentRef: null,
+      resourceRef: null,
+      location: null,
+      sharedWith: null,
+      questRef: null,
+      actRef: null,
+      secondaryTag: null,
+    } as never);
+    const existingQaDay1 = useScheduleStore.getState().activeEvents[qaDay1Id];
+    useScheduleStore.getState().setActiveEvent(
+      existingQaDay1 && 'eventType' in existingQaDay1 && existingQaDay1.eventType === 'quickActions'
+        ? {
+            ...existingQaDay1,
+            completions: [
+              ...existingQaDay1.completions,
+              { taskRef: rollTaskId, completedAt: `${DAY1}T12:00:00.000Z` },
+            ],
+          }
+        : {
+            id: qaDay1Id,
+            eventType: 'quickActions',
+            date: DAY1,
+            completions: [{ taskRef: rollTaskId, completedAt: `${DAY1}T12:00:00.000Z` }],
+            xpAwarded: 0,
+            sharedCompletions: null,
+          },
+    );
+
     // Build a CHECKLIST result with all 3 items ticked — mirrors ChecklistInput.handleComplete()
     const q2Result = {
       resultFields: {
@@ -501,6 +580,35 @@ async function main(): Promise<void> {
       'Quest 3 (High Ground) — armed after Quest 2 completes',
       q3TaskExists,
       `tasks with questRefs: ${allTasksAfterQ2.filter((t) => t.questRef).map((t) => t.questRef).join(', ')}`,
+    );
+
+    const q3Task = allTasksAfterQ2.find(
+      (t) => t.questRef === q3TaskRef && t.templateRef === STARTER_TEMPLATE_IDS.learnGrounds,
+    );
+    const q3Items = ((q3Task?.resultFields as { items?: Array<{ key: string; checked?: boolean }> } | undefined)?.items ?? []);
+    const q3Checked = new Set(
+      q3Items.filter((item) => item.checked === true).map((item) => item.key),
+    );
+    assert(
+      'Quest 3 (High Ground) — backfills completed roll on activation',
+      q3Checked.has('complete_roll'),
+      `checked: ${[...q3Checked].join(', ')}`,
+    );
+    assert(
+      'Quest 3 (High Ground) — backfills add favourite on activation',
+      q3Checked.has('add_favourite'),
+      `checked: ${[...q3Checked].join(', ')}`,
+    );
+    assert(
+      'Quest 3 (High Ground) — backfills open schedule on activation',
+      q3Checked.has('open_schedule'),
+      `checked: ${[...q3Checked].join(', ')}`,
+    );
+    const q3AfterBackfill = useProgressionStore.getState().acts[obActId]?.chains[0]?.quests[2];
+    assert(
+      'Quest 3 (High Ground) — progressPercent reflects 3 of 6 backfilled items',
+      q3AfterBackfill?.progressPercent === 50,
+      `got: ${q3AfterBackfill?.progressPercent}`,
     );
   }
 
