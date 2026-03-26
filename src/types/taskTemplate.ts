@@ -18,11 +18,13 @@ export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 export interface RecurrenceRule {
   /**
    * daily = shorthand, days[] ignored.
-   * monthly uses parent seedDate or Marker.lastFired to resolve nth-weekday implicitly (D37).
+   * monthly defaults to parent seedDate day-of-month when monthlyDay is not set.
    */
   frequency: RecurrenceFrequency;
   /** Which weekdays fire within the period. Ignored for daily and monthly (D37) */
   days: Weekday[];
+  /** Optional day-of-month for monthly recurrence. 31 falls back to the month's last day. */
+  monthlyDay?: number | null;
   /** Every N periods — default 1 */
   interval: number;
   /** null = indefinite */

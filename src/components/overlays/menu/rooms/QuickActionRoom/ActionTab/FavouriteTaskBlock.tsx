@@ -65,7 +65,7 @@ export function FavouriteTaskBlock({ templateKey, template }: FavouriteTaskBlock
   }
 
   return (
-    <GlowRing active={favouriteActionGlows} rounded="xl" className="block">
+    <GlowRing active={favouriteActionGlows} rounded="lg" className="block">
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <button
           type="button"

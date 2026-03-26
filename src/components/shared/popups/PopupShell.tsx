@@ -4,13 +4,21 @@ interface PopupShellProps {
   title: string;
   onClose: () => void;
   children?: ReactNode;
+  size?: 'default' | 'large';
 }
 
 /** Shared wrapper for all ADD/EDIT popups — internal layout is BUILD-time per popup */
-export function PopupShell({ title, onClose, children }: PopupShellProps) {
+export function PopupShell({ title, onClose, children, size = 'default' }: PopupShellProps) {
+  const panelClassName = size === 'large'
+    ? 'relative flex h-full w-full flex-col rounded-2xl bg-white shadow-xl dark:bg-gray-800'
+    : 'relative w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-gray-800';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="relative w-full max-w-md rounded-xl bg-white dark:bg-gray-800 shadow-xl" onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`fixed inset-0 z-50 bg-black/40 ${size === 'large' ? 'p-3 sm:p-4' : 'flex items-center justify-center p-4'}`}
+      onClick={onClose}
+    >
+      <div className={panelClassName} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
           <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">{title}</h3>
@@ -24,7 +32,7 @@ export function PopupShell({ title, onClose, children }: PopupShellProps) {
           </button>
         </div>
         {/* Content — BUILD-time per popup */}
-        <div className="p-4 text-gray-800 dark:text-gray-100">
+        <div className="min-h-0 flex-1 p-4 text-gray-800 dark:text-gray-100">
           {children ?? (
             <p className="text-sm text-gray-400 italic">Popup content — BUILD-time</p>
           )}

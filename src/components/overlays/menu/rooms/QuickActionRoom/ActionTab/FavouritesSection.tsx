@@ -41,9 +41,8 @@ export function FavouritesSection() {
   const favouritesList = user?.lists.favouritesList ?? [];
   const entries = favouritesList
     .map((key) => ({ key, template: taskTemplates[key] as TaskTemplate | undefined }))
-    .filter((entry) => Boolean(entry.template));
+    .filter((entry): entry is { key: string; template: TaskTemplate } => Boolean(entry.template));
   const filteredEntries = entries.filter(({ template }) => {
-    if (!template) return false;
     if (filter === 'all') return true;
     return getPrimaryStatKey(template.xpAward) === filter;
   });

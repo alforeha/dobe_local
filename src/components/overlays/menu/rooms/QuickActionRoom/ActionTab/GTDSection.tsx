@@ -293,7 +293,7 @@ export function GTDSection() {
               {filteredEntries.map((entry) => {
                 const topRight = renderTopRight(entry);
                 return (
-                  <GlowRing key={entry.id} active={gtdItemGlows} rounded="2xl" className="block">
+                  <GlowRing key={entry.id} active={gtdItemGlows} rounded="lg" className="block">
                     <button
                       type="button"
                       onClick={() => {

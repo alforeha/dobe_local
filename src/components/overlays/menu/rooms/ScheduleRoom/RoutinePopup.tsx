@@ -1,13 +1,10 @@
-// ─────────────────────────────────────────
-// RoutinePopup — ADD / EDIT Routine (PlannedEvent)
-// W16 — SCHEDULE room Routines tab.
-// Renders inside the Menu overlay via PopupShell.
-// ─────────────────────────────────────────
-
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import type { DragEvent, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { PopupShell } from '../../../../shared/popups/PopupShell';
 import { IconPicker } from '../../../../shared/IconPicker';
+import { ColorPicker } from '../../../../shared/ColorPicker';
+import { resolveIcon } from '../../../../../constants/iconMap';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { useUserStore } from '../../../../../stores/useUserStore';
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
@@ -16,22 +13,8 @@ import { STARTER_TEMPLATE_IDS } from '../../../../../coach/StarterQuestLibrary';
 import { storageDelete, storageKey } from '../../../../../storage';
 import { localISODate } from '../../../../../utils/dateUtils';
 import type { PlannedEvent, ConflictMode } from '../../../../../types/plannedEvent';
-import type { RecurrenceFrequency, RecurrenceRule, Weekday } from '../../../../../types/taskTemplate';
-
-// ── CONSTANTS ─────────────────────────────────────────────────────────────────
-
-const COLOUR_SWATCHES = [
-  '#6366f1', // indigo
-  '#8b5cf6', // violet
-  '#ec4899', // pink
-  '#f59e0b', // amber
-  '#10b981', // emerald
-  '#3b82f6', // blue
-  '#ef4444', // red
-  '#f97316', // orange
-  '#14b8a6', // teal
-  '#84cc16', // lime
-];
+import type { RecurrenceFrequency, RecurrenceRule, TaskTemplate, TaskType, Weekday } from '../../../../../types/taskTemplate';
+import type { StatGroupKey } from '../../../../../types/user';
 
 const WEEKDAYS: { key: Weekday; label: string }[] = [
   { key: 'mon', label: 'M' },
@@ -44,27 +27,28 @@ const WEEKDAYS: { key: Weekday; label: string }[] = [
 ];
 
 const CONFLICT_MODES: { value: ConflictMode; label: string }[] = [
-  { value: 'override', label: 'Override — replace conflicting event' },
-  { value: 'shift', label: 'Shift — push conflicting event later' },
-  { value: 'truncate', label: 'Truncate — cut conflicting event short' },
-  { value: 'concurrent', label: 'Concurrent — run alongside other events' },
+  { value: 'concurrent', label: 'Concurrent' },
+  { value: 'override', label: 'Override' },
+  { value: 'shift', label: 'Shift' },
+  { value: 'truncate', label: 'Truncate' },
 ];
 
-// ── TODAY ISO ─────────────────────────────────────────────────────────────────
+const STAT_PILLS: { key: 'all' | StatGroupKey; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'health', label: resolveIcon('health') },
+  { key: 'strength', label: resolveIcon('strength') },
+  { key: 'agility', label: resolveIcon('agility') },
+  { key: 'defense', label: resolveIcon('defense') },
+  { key: 'charisma', label: resolveIcon('charisma') },
+  { key: 'wisdom', label: resolveIcon('wisdom') },
+];
+
+const WEEKDAY_KEYS: Weekday[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 function todayISO(): string {
   return localISODate(new Date());
 }
 
-// ── RECURRENCE DAY GUARD ──────────────────────────────────────────────────────
-
-const WEEKDAY_KEYS: Weekday[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-
-/**
- * Return true when today's weekday is a valid recurrence day for the rule.
- * Used to guard same-day materialisation: a weekly routine set to Wed/Thu/Fri
- * must not materialise immediately if today is Mon.
- */
 function isTodayARecurrenceDay(rule: RecurrenceRule): boolean {
   if (rule.frequency === 'daily') return true;
   if (rule.frequency === 'monthly') return true;
@@ -73,13 +57,64 @@ function isTodayARecurrenceDay(rule: RecurrenceRule): boolean {
     const todayKey = WEEKDAY_KEYS[new Date().getDay()];
     return todayKey !== undefined && rule.days.includes(todayKey);
   }
-  // custom or unknown — do not block
   return true;
 }
 
-// ── TYPES ─────────────────────────────────────────────────────────────────────
+function getPrimaryStat(template: TaskTemplate): StatGroupKey {
+  const groups: StatGroupKey[] = ['health', 'strength', 'agility', 'defense', 'charisma', 'wisdom'];
+  let best: StatGroupKey = 'health';
+  let bestValue = -1;
 
-/** Pre-fill values for add mode — sourced from prebuilt routines in RecommendationsRoom */
+  for (const group of groups) {
+    const value = template.xpAward[group] ?? 0;
+    if (value > bestValue) {
+      best = group;
+      bestValue = value;
+    }
+  }
+
+  return bestValue > 0 ? best : 'wisdom';
+}
+
+function getTaskTypeIcon(taskType: TaskType): string {
+  const map: Record<TaskType, string> = {
+    CHECK: 'check',
+    COUNTER: 'counter',
+    SETS_REPS: 'sets_reps',
+    CIRCUIT: 'circuit',
+    DURATION: 'duration',
+    TIMER: 'timer',
+    RATING: 'rating',
+    TEXT: 'text',
+    FORM: 'form',
+    CHOICE: 'choice',
+    CHECKLIST: 'checklist',
+    SCAN: 'scan',
+    LOG: 'log',
+    LOCATION_POINT: 'location_point',
+    LOCATION_TRAIL: 'location_trail',
+    ROLL: 'roll',
+  };
+
+  return resolveIcon(map[taskType]);
+}
+
+function reorderList<T>(list: T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || to < 0) return list;
+  const next = [...list];
+  const [moved] = next.splice(from, 1);
+  if (moved === undefined) return list;
+  next.splice(to, 0, moved);
+  return next;
+}
+
+function getIntervalHint(frequency: RecurrenceFrequency): string {
+  if (frequency === 'daily') return '1 = daily, 2 = every 2 days';
+  if (frequency === 'weekly') return '1 = weekly, 2 = every 2 weeks';
+  if (frequency === 'monthly') return '1 = monthly, 3 = every 3 months';
+  return 'Interval between each custom recurrence cycle';
+}
+
 export interface RoutinePopupPrefill {
   name: string;
   icon: string;
@@ -89,34 +124,160 @@ export interface RoutinePopupPrefill {
 }
 
 interface RoutinePopupProps {
-  /** null = add mode; PlannedEvent = edit mode */
   editRoutine: PlannedEvent | null;
-  /** Optional pre-fill for add mode from prebuilt routines */
   prefill?: RoutinePopupPrefill;
   onClose: () => void;
-  /** If true, task pool is read-only and coach note is shown */
   isPrebuilt?: boolean;
 }
-
-// ── FORM FIELD WRAPPER ────────────────────────────────────────────────────────
 
 interface FieldProps {
   label: string;
   hint?: string;
-  children: React.ReactNode;
+  children: ReactNode;
+  className?: string;
 }
 
-function Field({ label, hint, children }: FieldProps) {
+function Field({ label, hint, children, className }: FieldProps) {
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</label>
+    <div className={`flex flex-col gap-1 ${className ?? ''}`}>
+      <label className="text-xs font-medium uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">{label}</label>
       {children}
       {hint && <p className="text-xs text-gray-400 italic">{hint}</p>}
     </div>
   );
 }
 
-// ── COMPONENT ─────────────────────────────────────────────────────────────────
+interface ScheduleTaskPoolProps {
+  templates: { id: string; template: TaskTemplate }[];
+  taskPool: string[];
+  setTaskPool: React.Dispatch<React.SetStateAction<string[]>>;
+  readOnly?: boolean;
+  note?: string;
+}
+
+function ScheduleTaskPool({ templates, taskPool, setTaskPool, readOnly = false, note }: ScheduleTaskPoolProps) {
+  const [statFilter, setStatFilter] = useState<'all' | StatGroupKey>('all');
+  const [orderMode, setOrderMode] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+
+  const templateMap = useMemo(
+    () => Object.fromEntries(templates.map((entry) => [entry.id, entry.template])),
+    [templates],
+  );
+
+  const filteredTemplates = useMemo(() => {
+    const alphabetized = [...templates].sort((a, b) => a.template.name.localeCompare(b.template.name));
+    return alphabetized.filter(({ template }) => statFilter === 'all' || getPrimaryStat(template) === statFilter);
+  }, [statFilter, templates]);
+
+  const selectedTemplates = useMemo(() => {
+    return taskPool
+      .map((id) => {
+        const template = templateMap[id];
+        return template ? { id, template } : null;
+      })
+      .filter((entry): entry is { id: string; template: TaskTemplate } => entry !== null);
+  }, [taskPool, templateMap]);
+
+  function togglePoolItem(id: string) {
+    if (readOnly) return;
+    setTaskPool((prev) => (
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    ));
+  }
+
+  function moveSelectedItem(targetId: string) {
+    if (readOnly || !draggedId || draggedId === targetId) return;
+    setTaskPool((prev) => reorderList(prev, prev.indexOf(draggedId), prev.indexOf(targetId)));
+  }
+
+  const rows = orderMode ? selectedTemplates : filteredTemplates;
+
+  return (
+    <div className="flex h-full min-h-0 flex-col rounded-xl border border-gray-200 bg-gray-50/60 p-3 dark:border-gray-700 dark:bg-gray-900/20">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {!orderMode && STAT_PILLS.map((pill) => (
+            <button
+              key={pill.key}
+              type="button"
+              onClick={() => setStatFilter(pill.key)}
+              className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                statFilter === pill.key
+                  ? 'border-purple-500 bg-purple-500 text-white'
+                  : 'border-gray-300 bg-white text-gray-600 hover:border-purple-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300'
+              }`}
+            >
+              {pill.label}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setOrderMode((current) => !current)}
+          className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+            orderMode
+              ? 'border-purple-500 bg-purple-500 text-white'
+              : 'border-gray-300 bg-white text-gray-600 hover:border-purple-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300'
+          }`}
+        >
+          {orderMode ? 'Select tasks' : 'Order tasks'}
+        </button>
+      </div>
+
+      {note && <p className="mb-2 text-xs text-gray-400 italic">{note}</p>}
+
+      <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+        {rows.length === 0 && (
+          <div className="flex h-full min-h-24 items-center justify-center px-4 text-sm text-gray-400">
+            {orderMode ? 'No tasks selected yet.' : 'No templates match this filter.'}
+          </div>
+        )}
+
+        <div className="divide-y divide-gray-100 dark:divide-gray-700">
+          {rows.map(({ id, template }) => {
+            const checked = taskPool.includes(id);
+            const primaryStat = getPrimaryStat(template);
+
+            return (
+              <div
+                key={id}
+                draggable={orderMode && !readOnly}
+                onDragStart={() => setDraggedId(id)}
+                onDragOver={(event) => {
+                  if (orderMode && !readOnly) {
+                    event.preventDefault();
+                  }
+                }}
+                onDrop={(event: DragEvent<HTMLDivElement>) => {
+                  event.preventDefault();
+                  moveSelectedItem(id);
+                }}
+                onDragEnd={() => setDraggedId(null)}
+                className="flex items-center gap-3 px-3 py-2"
+              >
+                {orderMode ? (
+                  <span className="w-5 text-center text-sm text-gray-400">{readOnly ? '' : '☰'}</span>
+                ) : (
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={readOnly}
+                    onChange={() => togglePoolItem(id)}
+                    className="h-4 w-4 accent-purple-500"
+                  />
+                )}
+                <span className="w-6 text-center text-base" aria-hidden="true">{resolveIcon(primaryStat)}</span>
+                <span className="w-6 text-center text-base" aria-hidden="true">{getTaskTypeIcon(template.taskType)}</span>
+                <span className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-200">{template.name}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false }: RoutinePopupProps) {
   const setPlannedEvent = useScheduleStore((s) => s.setPlannedEvent);
@@ -127,96 +288,78 @@ export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false
 
   const isEditMode = editRoutine !== null;
 
-  // ── Build template list from user-owned templates only ───────────────────
   const allTemplates = useMemo(() => {
     return Object.entries(taskTemplates)
-      .filter(([, t]) => t.isSystem !== true)
-      .map(([id, t]) => ({ id, name: t.name }));
+      .filter(([, template]) => template.isSystem !== true)
+      .map(([id, template]) => ({ id, template }));
   }, [taskTemplates]);
 
-  // ── Form state ────────────────────────────────────────────────────────────
-  const [name, setName] = useState(
-    isEditMode ? editRoutine.name : (prefill?.name ?? ''),
-  );
-  const [iconKey, setIconKey] = useState(
-    isEditMode ? editRoutine.icon : (prefill?.icon ?? 'routine'),
-  );
-  const [color, setColor] = useState(
-    isEditMode ? editRoutine.color : (prefill?.color ?? COLOUR_SWATCHES[0]),
-  );
-  const [taskPool, setTaskPool] = useState<string[]>(
-    isEditMode ? editRoutine.taskPool : (prefill?.taskPool ?? []),
-  );
+  const [name, setName] = useState(isEditMode ? editRoutine.name : (prefill?.name ?? ''));
+  const [iconKey, setIconKey] = useState(isEditMode ? editRoutine.icon : (prefill?.icon ?? 'routine'));
+  const [color, setColor] = useState(isEditMode ? editRoutine.color : (prefill?.color ?? '#6366f1'));
+  const [taskPool, setTaskPool] = useState<string[]>(isEditMode ? editRoutine.taskPool : (prefill?.taskPool ?? []));
   const [frequency, setFrequency] = useState<RecurrenceFrequency>(
-    isEditMode
-      ? editRoutine.recurrenceInterval.frequency
-      : (prefill?.recurrenceInterval.frequency ?? 'daily'),
+    isEditMode ? editRoutine.recurrenceInterval.frequency : (prefill?.recurrenceInterval.frequency ?? 'daily'),
   );
   const [days, setDays] = useState<Weekday[]>(
-    isEditMode
-      ? editRoutine.recurrenceInterval.days
-      : (prefill?.recurrenceInterval.days ?? []),
+    isEditMode ? editRoutine.recurrenceInterval.days : (prefill?.recurrenceInterval.days ?? []),
   );
   const [interval, setInterval] = useState<number | ''>(
+    isEditMode ? editRoutine.recurrenceInterval.interval : (prefill?.recurrenceInterval.interval ?? 1),
+  );
+  const [monthlyDay, setMonthlyDay] = useState<number | ''>(
     isEditMode
-      ? editRoutine.recurrenceInterval.interval
-      : (prefill?.recurrenceInterval.interval ?? 1),
+      ? (editRoutine.recurrenceInterval.monthlyDay ?? Number(editRoutine.seedDate.split('-')[2] ?? 1))
+      : (prefill?.recurrenceInterval.monthlyDay ?? Number((prefill ? todayISO() : todayISO()).split('-')[2] ?? 1)),
   );
-  const [endsOn, setEndsOn] = useState<string>(
-    isEditMode && editRoutine.recurrenceInterval.endsOn
-      ? editRoutine.recurrenceInterval.endsOn
-      : (prefill?.recurrenceInterval.endsOn ?? ''),
-  );
+  const [dieDate, setDieDate] = useState<string>(isEditMode ? (editRoutine.dieDate ?? '') : '');
   const [customCondition, setCustomCondition] = useState<string>(
     isEditMode && editRoutine.recurrenceInterval.customCondition
       ? editRoutine.recurrenceInterval.customCondition
       : (prefill?.recurrenceInterval.customCondition ?? ''),
   );
-  const [conflictMode, setConflictMode] = useState<ConflictMode>(
-    isEditMode ? editRoutine.conflictMode : 'concurrent',
-  );
+  const [conflictMode, setConflictMode] = useState<ConflictMode>(isEditMode ? editRoutine.conflictMode : 'concurrent');
   const [startTime, setStartTime] = useState(isEditMode ? editRoutine.startTime : '09:00');
   const [endTime, setEndTime] = useState(isEditMode ? editRoutine.endTime : '10:00');
-  const isOvernight = startTime !== '' && endTime !== '' && endTime < startTime;
-
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
-  // Seed date state
-  const getAppDate = todayISO; // alias for clarity
-  const [seedDate, setSeedDate] = useState(
-    isEditMode ? editRoutine.seedDate : getAppDate()
-  );
+  const [seedDate, setSeedDate] = useState(isEditMode ? editRoutine.seedDate : todayISO());
 
-  // ── Task pool toggle ──────────────────────────────────────────────────────
-  function togglePoolItem(id: string) {
-    setTaskPool((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  }
+  const isOvernight = startTime !== '' && endTime !== '' && endTime < startTime;
+  const inputCls =
+    'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200';
 
-  // ── Weekday toggle ────────────────────────────────────────────────────────
   function toggleDay(day: Weekday) {
-    setDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
-    );
+    setDays((prev) => (prev.includes(day) ? prev.filter((entry) => entry !== day) : [...prev, day]));
   }
 
-  // ── Save ──────────────────────────────────────────────────────────────────
   function handleSave() {
     if (!name.trim()) {
       setError('Name is required.');
       return;
     }
 
-    const today = todayISO();
-    // Use selected seedDate (string, YYYY-MM-DD)
-    const selectedSeedDate = seedDate;
+    if (interval !== '' && interval < 1) {
+      setError('Recurrence interval must be at least 1.');
+      return;
+    }
+    if (frequency === 'monthly' && (monthlyDay === '' || monthlyDay < 1 || monthlyDay > 31)) {
+      setError('Monthly day must be between 1 and 31.');
+      return;
+    }
 
-    const recurrenceInterval = {
+    if (dieDate && dieDate < seedDate) {
+      setError('Die date cannot be before seed date.');
+      return;
+    }
+
+    const today = todayISO();
+    const recurrenceInterval: RecurrenceRule = {
       frequency,
       days: frequency === 'weekly' ? days : [],
+      monthlyDay: frequency === 'monthly' ? (monthlyDay === '' ? null : monthlyDay) : null,
       interval: interval === '' ? 1 : interval,
-      endsOn: endsOn.trim() || null,
+      endsOn: dieDate || null,
       customCondition: frequency === 'custom' ? (customCondition.trim() || null) : null,
     };
 
@@ -226,6 +369,8 @@ export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false
         name: name.trim(),
         icon: iconKey,
         color,
+        seedDate,
+        dieDate: dieDate || null,
         taskPool,
         recurrenceInterval,
         conflictMode,
@@ -242,8 +387,8 @@ export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false
         description: '',
         icon: iconKey,
         color,
-        seedDate: selectedSeedDate,
-        dieDate: null,
+        seedDate,
+        dieDate: dieDate || null,
         recurrenceInterval,
         activeState: 'active',
         taskPool,
@@ -262,9 +407,7 @@ export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false
       addRoutineRef(id);
       autoCheckQuestItem(STARTER_TEMPLATE_IDS.setupSchedule, 'add_routine');
 
-      // D14 — same-day creation triggers immediate materialisation only when
-      // today is a valid recurrence day for this routine's frequency/days filter.
-      if (selectedSeedDate <= today && isTodayARecurrenceDay(recurrenceInterval)) {
+      if (seedDate <= today && isTodayARecurrenceDay(recurrenceInterval)) {
         const currentTemplates = useScheduleStore.getState().taskTemplates;
         materialisePlannedEvent(newRoutine, today, currentTemplates);
       }
@@ -273,7 +416,6 @@ export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false
     onClose();
   }
 
-  // ── Delete ────────────────────────────────────────────────────────────────
   function handleDelete() {
     if (!confirmDelete) {
       setConfirmDelete(true);
@@ -287,311 +429,217 @@ export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false
     onClose();
   }
 
-  // ── Input class shared across form controls ───────────────────────────────
-  const inputCls =
-    'w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-800 dark:text-gray-200 dark:bg-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500';
-
-  const title = isEditMode ? 'Edit Routine' : 'Add Routine';
-
   return (
-    <PopupShell title={title} onClose={onClose}>
-      <div className="flex flex-col gap-4 max-h-[75vh] overflow-y-auto pb-2">
+    <PopupShell title={isEditMode ? 'Edit Routine' : 'Add Routine'} onClose={onClose} size="large">
+      <div className="flex h-full min-h-0 flex-col gap-4">
+        <div className="grid grid-cols-[56px_minmax(0,1fr)_56px] gap-3 sm:gap-4">
+          <Field label="Icon">
+            <IconPicker value={iconKey} onChange={setIconKey} align="left" />
+          </Field>
 
-        {/* Name */}
-        <Field label="Name *">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => { setName(e.target.value); setError(''); }}
-            placeholder="e.g. Morning routine"
-            className={inputCls}
-          />
-        </Field>
-
-        {/* Icon */}
-        <Field label="Icon">
-          <IconPicker value={iconKey} onChange={setIconKey} />
-        </Field>
-
-        {/* Colour */}
-        <Field label="Colour">
-          <div className="flex flex-wrap gap-2">
-            {COLOUR_SWATCHES.map((hex) => (
-              <button
-                key={hex}
-                type="button"
-                aria-label={hex}
-                onClick={() => setColor(hex)}
-                className="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110"
-                style={{
-                  backgroundColor: hex,
-                  borderColor: color === hex ? '#1e293b' : 'transparent',
-                }}
-              />
-            ))}
-          </div>
-        </Field>
-
-        {/* Time */}
-        <div className="flex gap-3">
-          <Field label="Start time">
+          <Field label="Name">
             <input
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
+              type="text"
+              value={name}
+              onChange={(event) => {
+                setName(event.target.value);
+                setError('');
+              }}
+              placeholder="Morning routine"
               className={inputCls}
             />
           </Field>
-          <Field label="End time">
-            <input
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className={inputCls}
+
+          <Field label="Color">
+            <ColorPicker value={color} onChange={setColor} align="right" />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <Field label="Start time">
+            <input type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} className={inputCls} />
+          </Field>
+          <Field label="End time" hint={isOvernight ? 'Overnight routine: ends the following day.' : undefined}>
+            <input type="time" value={endTime} onChange={(event) => setEndTime(event.target.value)} className={inputCls} />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <Field label="Seed date" hint="When this routine begins.">
+            <input type="date" value={seedDate} onChange={(event) => setSeedDate(event.target.value)} className={inputCls} />
+          </Field>
+          <Field label="Die date" hint="Leave empty to keep this routine forever.">
+            <input type="date" value={dieDate} onChange={(event) => setDieDate(event.target.value)} className={inputCls} />
+          </Field>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4 dark:border-gray-700 dark:bg-gray-900/20">
+          <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+            <h4 className="min-w-0 text-base font-semibold text-gray-700 dark:text-gray-100">Recurrence rule</h4>
+            <div className="flex items-center justify-end gap-2 self-center">
+              <label className="text-sm font-medium text-gray-500 dark:text-gray-300">Frequency</label>
+              <select
+                value={frequency}
+                onChange={(event) => setFrequency(event.target.value as RecurrenceFrequency)}
+                className={`${inputCls} w-[8.5rem] shrink-0`}
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+              {(frequency === 'daily' || frequency === 'monthly') && (
+                <div className={`grid gap-3 sm:gap-4 ${frequency === 'monthly' ? 'grid-cols-[110px_minmax(0,1fr)]' : 'grid-cols-1'}`}>
+                  {frequency === 'monthly' && (
+                    <Field label="Day" hint="31 uses the last day in shorter months.">
+                      <input
+                        type="number"
+                        min={1}
+                        max={31}
+                        step={1}
+                        value={monthlyDay}
+                        onChange={(event) => setMonthlyDay(event.target.value === '' ? '' : Number(event.target.value))}
+                        className={inputCls}
+                      />
+                    </Field>
+                  )}
+                  <Field label="Interval" hint={getIntervalHint(frequency)}>
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={interval}
+                      onChange={(event) => setInterval(event.target.value === '' ? '' : Number(event.target.value))}
+                      className={inputCls}
+                    />
+                  </Field>
+                </div>
+              )}
+
+              {frequency === 'weekly' && (
+                <div className="grid grid-cols-[minmax(0,1fr)_110px] gap-3 sm:gap-4">
+                  <Field label="Days">
+                    <div className="flex flex-wrap gap-2">
+                      {WEEKDAYS.map(({ key, label }) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => toggleDay(key)}
+                          className={`h-9 w-9 rounded-full border text-xs font-semibold transition-colors ${
+                            days.includes(key)
+                              ? 'border-purple-500 bg-purple-500 text-white'
+                              : 'border-gray-300 bg-white text-gray-600 hover:border-purple-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+
+                  <Field label="Interval" hint={getIntervalHint(frequency)}>
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={interval}
+                      onChange={(event) => setInterval(event.target.value === '' ? '' : Number(event.target.value))}
+                      className={inputCls}
+                    />
+                  </Field>
+                </div>
+              )}
+
+              {frequency === 'custom' && (
+                <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3 sm:gap-4">
+                  <Field label="Interval" hint={getIntervalHint(frequency)}>
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={interval}
+                      onChange={(event) => setInterval(event.target.value === '' ? '' : Number(event.target.value))}
+                      className={inputCls}
+                    />
+                  </Field>
+                  <Field label="Expression">
+                    <input
+                      type="text"
+                      value={customCondition}
+                      onChange={(event) => setCustomCondition(event.target.value)}
+                      placeholder="last-monday-of-month"
+                      className={inputCls}
+                    />
+                  </Field>
+                </div>
+              )}
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <Field
+            label="Task pool"
+            hint="Filter by stat, switch to selected-only to drag the order, and use the list below as the rotation pool."
+            className="h-full min-h-0"
+          >
+            <ScheduleTaskPool
+              templates={allTemplates}
+              taskPool={taskPool}
+              setTaskPool={setTaskPool}
+              readOnly={isPrebuilt}
+              note={isPrebuilt ? 'Task pool set by coach. You can review it here, but editing is disabled for this prebuilt routine.' : undefined}
             />
           </Field>
         </div>
-        {isOvernight && (
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            🌙 Overnight routine — ends the following day
-          </p>
-        )}
 
-        {/* Recurrence — frequency */}
-        <Field label="Recurrence">
-          <select
-            value={frequency}
-            onChange={(e) => setFrequency(e.target.value as RecurrenceFrequency)}
-            className={inputCls}
-          >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="custom">Custom</option>
-          </select>
-        </Field>
+        {error && <p className="text-sm text-red-500">{error}</p>}
 
-        {/* Days — only for weekly */}
-        {frequency === 'weekly' && (
-          <Field label="Days">
-            <div className="flex gap-1.5 flex-wrap">
-              {WEEKDAYS.map(({ key, label }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => toggleDay(key)}
-                  className={`w-8 h-8 rounded-full text-xs font-medium border transition-colors ${
-                    days.includes(key)
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </Field>
-        )}
-
-        {/* Interval */}
-        <Field label="Repeat every (interval)" hint="e.g. 2 = every 2 days/weeks/months">
-          <input
-            type="number"
-            value={interval}
-            onChange={(e) => setInterval(e.target.value === '' ? '' : Number(e.target.value))}
-            min={1}
-            step={1}
-            placeholder="1"
-            className={inputCls}
-          />
-        </Field>
-
-        {/* Custom condition — only for custom frequency */}
-        {frequency === 'custom' && (
-          <Field label="Custom condition" hint='e.g. "friday-13th", "last-monday-of-month"'>
-            <input
-              type="text"
-              value={customCondition}
-              onChange={(e) => setCustomCondition(e.target.value)}
-              placeholder="Describe the custom rule"
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 sm:gap-4">
+          <Field label="Conflict mode">
+            <select
+              value={conflictMode}
+              onChange={(event) => setConflictMode(event.target.value as ConflictMode)}
               className={inputCls}
-            />
-          </Field>
-        )}
-
-        {/* Ends on */}
-        <Field label="Ends on (optional)" hint="Leave empty for no end date (indefinite)">
-          <input
-            type="date"
-            value={endsOn}
-            onChange={(e) => setEndsOn(e.target.value)}
-            className={inputCls}
-          />
-        </Field>
-
-        {/* Seed date */}
-        <Field label="Start date" hint="Date when this routine will first appear. Default: today.">
-          <input
-            type="date"
-            value={seedDate}
-            onChange={(e) => setSeedDate(e.target.value)}
-            className={inputCls}
-            min={getAppDate()}
-          />
-        </Field>
-
-        {/* Task Pool */}
-        {isPrebuilt ? (
-          <Field
-            label="Task pool"
-            hint="Task pool set by coach — edit anytime from your Schedule room"
-          >
-            <div className="max-h-36 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md divide-y divide-gray-100 dark:divide-gray-700">
-              {taskPool.length === 0 && (
-                <p className="text-xs text-gray-400 italic p-3">No tasks in this routine.</p>
-              )}
-              {taskPool.map((id) => {
-                const template = allTemplates.find((t) => t.id === id);
-                return template ? (
-                  <div key={id} className="flex items-center gap-2 px-3 py-2">
-                    <span className="text-base">📋</span>
-                    <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{template.name}</span>
-                  </div>
-                ) : null;
-              })}
-            </div>
-          </Field>
-        ) : (
-          <Field
-            label="Task pool"
-            hint="Tasks are drawn from this pool one at a time, cycling through in order."
-          >
-            <div className="max-h-36 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md divide-y divide-gray-100 dark:divide-gray-700">
-              {allTemplates.length === 0 && (
-                <p className="text-xs text-gray-400 italic p-3">No templates available yet.</p>
-              )}
-              {allTemplates.map(({ id, name: tName }) => (
-                <label
-                  key={id}
-                  className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  <input
-                    type="checkbox"
-                    checked={taskPool.includes(id)}
-                    onChange={() => togglePoolItem(id)}
-                    className="accent-indigo-500"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{tName}</span>
-                </label>
+            >
+              {CONFLICT_MODES.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
               ))}
-            </div>
+            </select>
           </Field>
-        )}
 
-        {/* Days — only for weekly */}
-        {frequency === 'weekly' && (
-          <Field label="Days">
-            <div className="flex gap-1.5 flex-wrap">
-              {WEEKDAYS.map(({ key, label }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => toggleDay(key)}
-                  className={`w-8 h-8 rounded-full text-xs font-medium border transition-colors ${
-                    days.includes(key)
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </Field>
-        )}
-
-        {/* Interval */}
-        <Field label="Repeat every (interval)" hint="e.g. 2 = every 2 days/weeks/months">
-          <input
-            type="number"
-            value={interval}
-            onChange={(e) => setInterval(e.target.value === '' ? '' : Number(e.target.value))}
-            min={1}
-            step={1}
-            placeholder="1"
-            className={inputCls}
-          />
-        </Field>
-
-        {/* Custom condition — only for custom frequency */}
-        {frequency === 'custom' && (
-          <Field label="Custom condition" hint='e.g. "friday-13th", "last-monday-of-month"'>
-            <input
-              type="text"
-              value={customCondition}
-              onChange={(e) => setCustomCondition(e.target.value)}
-              placeholder="Describe the custom rule"
-              className={inputCls}
-            />
-          </Field>
-        )}
-
-        {/* Ends on */}
-        <Field label="Ends on (optional)" hint="Leave empty for no end date (indefinite)">
-          <input
-            type="date"
-            value={endsOn}
-            onChange={(e) => setEndsOn(e.target.value)}
-            className={inputCls}
-          />
-        </Field>
-
-        {/* Conflict mode */}
-        <Field label="Conflict mode (D08)">
-          <select
-            value={conflictMode}
-            onChange={(e) => setConflictMode(e.target.value as ConflictMode)}
-            className={inputCls}
-          >
-            {CONFLICT_MODES.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-        </Field>
-
-        {/* Error */}
-        {error && <p className="text-xs text-red-500">{error}</p>}
-
-        {/* Actions */}
-        <div className="flex items-center gap-2 pt-1">
-          {isEditMode && (
+          <div className="flex items-center justify-end gap-2">
+            {isEditMode && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  confirmDelete
+                    ? 'bg-red-600 text-white'
+                    : 'border border-red-300 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                }`}
+              >
+                {confirmDelete ? 'Confirm Delete' : 'Delete'}
+              </button>
+            )}
             <button
               type="button"
-              onClick={handleDelete}
-              className={`text-sm px-3 py-2 rounded-lg font-medium transition-colors ${
-                confirmDelete
-                  ? 'bg-red-600 text-white'
-                  : 'text-red-500 border border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20'
-              }`}
+              onClick={onClose}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             >
-              {confirmDelete ? 'Confirm Delete' : 'Delete'}
+              Cancel
             </button>
-          )}
-          <div className="flex-1" />
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="text-sm px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
-          >
-            Save
-          </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700"
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
     </PopupShell>

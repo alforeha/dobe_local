@@ -86,6 +86,10 @@ function computeMarkerNextFire(marker: Marker): string {
       break;
     case 'monthly':
       anchor.setMonth(anchor.getMonth() + (rule.interval || 1));
+      if (rule.monthlyDay) {
+        const lastDay = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0).getDate();
+        anchor.setDate(Math.min(rule.monthlyDay, lastDay));
+      }
       break;
     default:
       break;

@@ -46,6 +46,14 @@ const WEEKDAY_MAP: Record<string, number> = {
   sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6,
 };
 
+function getLastDayOfMonth(year: number, monthIndex: number): number {
+  return new Date(year, monthIndex + 1, 0).getDate();
+}
+
+function resolveMonthlyDay(targetDate: Date, requestedDay: number): number {
+  return Math.min(requestedDay, getLastDayOfMonth(targetDate.getFullYear(), targetDate.getMonth()));
+}
+
 /**
  * Return true if a PlannedEvent is due on the given date.
  * Checks activeState, seedDate ≤ targetDate, dieDate not passed,
@@ -81,13 +89,9 @@ export function isPlannedEventDue(pe: PlannedEvent, targetDate: string): boolean
       return rule.days.includes(dayName as import('../types/taskTemplate').Weekday);
     }
     case 'monthly': {
-      // nth-weekday resolution: same day-of-week in same ordinal position as seedDate
-      const seedDow  = seed.getDay();
-      const targetDow = target.getDay();
-      if (seedDow !== targetDow) return false;
-      const seedNth  = Math.floor((seed.getDate() - 1) / 7);
-      const targetNth = Math.floor((target.getDate() - 1) / 7);
-      if (seedNth !== targetNth) return false;
+      const requestedDay = rule.monthlyDay ?? seed.getDate();
+      const targetDay = resolveMonthlyDay(target, requestedDay);
+      if (target.getDate() !== targetDay) return false;
       const monthDiff =
         (target.getFullYear() - seed.getFullYear()) * 12 +
         (target.getMonth() - seed.getMonth());

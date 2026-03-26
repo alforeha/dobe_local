@@ -1,45 +1,34 @@
-// ─────────────────────────────────────────
-// OneOffEventPopup — ADD / EDIT One-off PlannedEvent
-// W18 — SCHEDULE room / DayView.
-// A one-off event has recurrence: { frequency:'daily', interval:1, endsOn:seedDate }
-// set automatically from the chosen date — no recurrence controls exposed.
-// Same-day or past creation triggers immediate materialisation (D14).
-// ─────────────────────────────────────────
-
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import type { DragEvent, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { PopupShell } from '../../../../shared/popups/PopupShell';
 import { IconPicker } from '../../../../shared/IconPicker';
+import { ColorPicker } from '../../../../shared/ColorPicker';
+import { resolveIcon } from '../../../../../constants/iconMap';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
-
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
 import { storageDelete, storageKey } from '../../../../../storage';
 import { localISODate } from '../../../../../utils/dateUtils';
 import type { PlannedEvent, ConflictMode } from '../../../../../types/plannedEvent';
-
-// ── CONSTANTS ─────────────────────────────────────────────────────────────────
-
-const COLOUR_SWATCHES = [
-  '#6366f1', // indigo
-  '#8b5cf6', // violet
-  '#ec4899', // pink
-  '#f59e0b', // amber
-  '#10b981', // emerald
-  '#3b82f6', // blue
-  '#ef4444', // red
-  '#f97316', // orange
-  '#14b8a6', // teal
-  '#84cc16', // lime
-];
+import type { TaskTemplate, TaskType } from '../../../../../types/taskTemplate';
+import type { StatGroupKey } from '../../../../../types/user';
 
 const CONFLICT_MODES: { value: ConflictMode; label: string }[] = [
-  { value: 'concurrent', label: 'Concurrent — run alongside other events' },
-  { value: 'override', label: 'Override — replace conflicting event' },
-  { value: 'shift', label: 'Shift — push conflicting event later' },
-  { value: 'truncate', label: 'Truncate — cut conflicting event short' },
+  { value: 'concurrent', label: 'Concurrent' },
+  { value: 'override', label: 'Override' },
+  { value: 'shift', label: 'Shift' },
+  { value: 'truncate', label: 'Truncate' },
 ];
 
-// ── HELPERS ───────────────────────────────────────────────────────────────────
+const STAT_PILLS: { key: 'all' | StatGroupKey; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'health', label: resolveIcon('health') },
+  { key: 'strength', label: resolveIcon('strength') },
+  { key: 'agility', label: resolveIcon('agility') },
+  { key: 'defense', label: resolveIcon('defense') },
+  { key: 'charisma', label: resolveIcon('charisma') },
+  { key: 'wisdom', label: resolveIcon('wisdom') },
+];
 
 function todayISO(): string {
   return localISODate(new Date());
@@ -53,52 +42,201 @@ function addHour(time: string): string {
   return `${String(nextHours).padStart(2, '0')}:${String(nextMinutes).padStart(2, '0')}`;
 }
 
-function diffDaysInclusive(startIso: string, endIso: string): number {
-  const start = new Date(`${startIso}T00:00:00`);
-  const end = new Date(`${endIso}T00:00:00`);
-  const msPerDay = 24 * 60 * 60 * 1000;
-  return Math.floor((end.getTime() - start.getTime()) / msPerDay) + 1;
+function getPrimaryStat(template: TaskTemplate): StatGroupKey {
+  const groups: StatGroupKey[] = ['health', 'strength', 'agility', 'defense', 'charisma', 'wisdom'];
+  let best: StatGroupKey = 'health';
+  let bestValue = -1;
+
+  for (const group of groups) {
+    const value = template.xpAward[group] ?? 0;
+    if (value > bestValue) {
+      best = group;
+      bestValue = value;
+    }
+  }
+
+  return bestValue > 0 ? best : 'wisdom';
 }
 
-function formatDateLabel(iso: string): string {
-  if (!iso) return '';
-  const [year, month, day] = iso.split('-').map(Number);
-  const d = new Date(year, month - 1, day);
-  return d.toLocaleDateString(undefined, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+function getTaskTypeIcon(taskType: TaskType): string {
+  const map: Record<TaskType, string> = {
+    CHECK: 'check',
+    COUNTER: 'counter',
+    SETS_REPS: 'sets_reps',
+    CIRCUIT: 'circuit',
+    DURATION: 'duration',
+    TIMER: 'timer',
+    RATING: 'rating',
+    TEXT: 'text',
+    FORM: 'form',
+    CHOICE: 'choice',
+    CHECKLIST: 'checklist',
+    SCAN: 'scan',
+    LOG: 'log',
+    LOCATION_POINT: 'location_point',
+    LOCATION_TRAIL: 'location_trail',
+    ROLL: 'roll',
+  };
+
+  return resolveIcon(map[taskType]);
 }
 
-// ── TYPES ─────────────────────────────────────────────────────────────────────
+function reorderList<T>(list: T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || to < 0) return list;
+  const next = [...list];
+  const [moved] = next.splice(from, 1);
+  if (moved === undefined) return list;
+  next.splice(to, 0, moved);
+  return next;
+}
 
 interface OneOffEventPopupProps {
-  /** null = add mode; PlannedEvent = edit mode */
   editEvent: PlannedEvent | null;
   onClose: () => void;
 }
 
-// ── FORM FIELD WRAPPER ────────────────────────────────────────────────────────
-
 interface FieldProps {
   label: string;
   hint?: string;
-  children: React.ReactNode;
+  children: ReactNode;
+  className?: string;
 }
 
-function Field({ label, hint, children }: FieldProps) {
+function Field({ label, hint, children, className }: FieldProps) {
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</label>
+    <div className={`flex flex-col gap-1 ${className ?? ''}`}>
+      <label className="text-xs font-medium uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">{label}</label>
       {children}
       {hint && <p className="text-xs text-gray-400 italic">{hint}</p>}
     </div>
   );
 }
 
-// ── COMPONENT ─────────────────────────────────────────────────────────────────
+interface ScheduleTaskPoolProps {
+  templates: { id: string; template: TaskTemplate }[];
+  taskPool: string[];
+  setTaskPool: React.Dispatch<React.SetStateAction<string[]>>;
+}
+
+function ScheduleTaskPool({ templates, taskPool, setTaskPool }: ScheduleTaskPoolProps) {
+  const [statFilter, setStatFilter] = useState<'all' | StatGroupKey>('all');
+  const [orderMode, setOrderMode] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+
+  const templateMap = useMemo(
+    () => Object.fromEntries(templates.map((entry) => [entry.id, entry.template])),
+    [templates],
+  );
+
+  const filteredTemplates = useMemo(() => {
+    const alphabetized = [...templates].sort((a, b) => a.template.name.localeCompare(b.template.name));
+    return alphabetized.filter(({ template }) => statFilter === 'all' || getPrimaryStat(template) === statFilter);
+  }, [statFilter, templates]);
+
+  const selectedTemplates = useMemo(() => {
+    return taskPool
+      .map((id) => {
+        const template = templateMap[id];
+        return template ? { id, template } : null;
+      })
+      .filter((entry): entry is { id: string; template: TaskTemplate } => entry !== null);
+  }, [taskPool, templateMap]);
+
+  function togglePoolItem(id: string) {
+    setTaskPool((prev) => (
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    ));
+  }
+
+  function moveSelectedItem(targetId: string) {
+    if (!draggedId || draggedId === targetId) return;
+    setTaskPool((prev) => reorderList(prev, prev.indexOf(draggedId), prev.indexOf(targetId)));
+  }
+
+  const rows = orderMode ? selectedTemplates : filteredTemplates;
+
+  return (
+    <div className="flex h-full min-h-0 flex-col rounded-xl border border-gray-200 bg-gray-50/60 p-3 dark:border-gray-700 dark:bg-gray-900/20">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {!orderMode && STAT_PILLS.map((pill) => (
+            <button
+              key={pill.key}
+              type="button"
+              onClick={() => setStatFilter(pill.key)}
+              className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                statFilter === pill.key
+                  ? 'border-purple-500 bg-purple-500 text-white'
+                  : 'border-gray-300 bg-white text-gray-600 hover:border-purple-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300'
+              }`}
+            >
+              {pill.label}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setOrderMode((current) => !current)}
+          className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+            orderMode
+              ? 'border-purple-500 bg-purple-500 text-white'
+              : 'border-gray-300 bg-white text-gray-600 hover:border-purple-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300'
+          }`}
+        >
+          {orderMode ? 'Select tasks' : 'Order tasks'}
+        </button>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+        {rows.length === 0 && (
+          <div className="flex h-full min-h-24 items-center justify-center px-4 text-sm text-gray-400">
+            {orderMode ? 'No tasks selected yet.' : 'No templates match this filter.'}
+          </div>
+        )}
+
+        <div className="divide-y divide-gray-100 dark:divide-gray-700">
+          {rows.map(({ id, template }) => {
+            const checked = taskPool.includes(id);
+            const primaryStat = getPrimaryStat(template);
+
+            return (
+              <div
+                key={id}
+                draggable={orderMode}
+                onDragStart={() => setDraggedId(id)}
+                onDragOver={(event) => {
+                  if (orderMode) {
+                    event.preventDefault();
+                  }
+                }}
+                onDrop={(event: DragEvent<HTMLDivElement>) => {
+                  event.preventDefault();
+                  moveSelectedItem(id);
+                }}
+                onDragEnd={() => setDraggedId(null)}
+                className="flex items-center gap-3 px-3 py-2"
+              >
+                {orderMode ? (
+                  <span className="w-5 text-center text-sm text-gray-400">☰</span>
+                ) : (
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => togglePoolItem(id)}
+                    className="h-4 w-4 accent-purple-500"
+                  />
+                )}
+                <span className="w-6 text-center text-base" aria-hidden="true">{resolveIcon(primaryStat)}</span>
+                <span className="w-6 text-center text-base" aria-hidden="true">{getTaskTypeIcon(template.taskType)}</span>
+                <span className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-200">{template.name}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) {
   const setPlannedEvent = useScheduleStore((s) => s.setPlannedEvent);
@@ -107,73 +245,47 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
 
   const isEditMode = editEvent !== null;
 
-  // ── Build template list from user-owned templates only ───────────────────
   const allTemplates = useMemo(() => {
     return Object.entries(taskTemplates)
-      .filter(([, t]) => t.isSystem !== true)
-      .map(([id, t]) => ({ id, name: t.name }));
+      .filter(([, template]) => template.isSystem !== true)
+      .map(([id, template]) => ({ id, template }));
   }, [taskTemplates]);
 
-  // ── Form state ────────────────────────────────────────────────────────────
   const [name, setName] = useState(isEditMode ? editEvent.name : '');
   const [iconKey, setIconKey] = useState(isEditMode ? editEvent.icon : 'event');
-  const [date, setDate] = useState(isEditMode ? editEvent.seedDate : todayISO());
+  const [startDate, setStartDate] = useState(isEditMode ? editEvent.seedDate : todayISO());
   const [startTime, setStartTime] = useState(isEditMode ? editEvent.startTime : '09:00');
-  const [endDate, setEndDate] = useState(
-    isEditMode ? (editEvent.dieDate ?? editEvent.seedDate) : todayISO(),
-  );
-  const [endTime, setEndTime] = useState(
-    isEditMode ? editEvent.endTime : addHour('09:00'),
-  );
-  const [color, setColor] = useState(isEditMode ? editEvent.color : COLOUR_SWATCHES[0]);
-  const [taskPool, setTaskPool] = useState<string[]>(
-    isEditMode ? editEvent.taskPool : [],
-  );
-  const [conflictMode, setConflictMode] = useState<ConflictMode>(
-    isEditMode ? editEvent.conflictMode : 'concurrent',
-  );
+  const [endDate, setEndDate] = useState(isEditMode ? (editEvent.dieDate ?? editEvent.seedDate) : todayISO());
+  const [endTime, setEndTime] = useState(isEditMode ? editEvent.endTime : addHour('09:00'));
+  const [color, setColor] = useState(isEditMode ? editEvent.color : '#6366f1');
+  const [taskPool, setTaskPool] = useState<string[]>(isEditMode ? editEvent.taskPool : []);
+  const [conflictMode, setConflictMode] = useState<ConflictMode>(isEditMode ? editEvent.conflictMode : 'concurrent');
   const [description, setDescription] = useState(isEditMode ? editEvent.description : '');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
-  const endDateBeforeStart = endDate < date;
-  const multiDaySpan = !endDateBeforeStart && endDate > date
-    ? diffDaysInclusive(date, endDate)
-    : 0;
 
-  // ── Task pool toggle ──────────────────────────────────────────────────────
-  function togglePoolItem(id: string) {
-    setTaskPool((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  }
+  const inputCls =
+    'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200';
+  const startsAt = `${startDate}T${startTime}:00`;
+  const endsAt = `${endDate}T${endTime}:00`;
+  const endsAfterStart = new Date(endsAt).getTime() > new Date(startsAt).getTime();
 
-  // ── Save ──────────────────────────────────────────────────────────────────
   function handleSave() {
     if (!name.trim()) {
       setError('Name is required.');
       return;
     }
-    if (!date) {
-      setError('Date is required.');
-      return;
-    }
-    if (!endDate) {
-      setError('End date is required.');
-      return;
-    }
-    if (endDateBeforeStart) {
-      setError('End date cannot be before start date');
+    if (!endsAfterStart) {
+      setError('End date and time must be after the start.');
       return;
     }
 
     const today = todayISO();
-
-    // One-off recurrence: frequency daily, interval 1, endsOn = date (auto-set from date field)
     const recurrenceInterval = {
       frequency: 'daily' as const,
       days: [],
       interval: 1,
-      endsOn: date,
+      endsOn: startDate,
       customCondition: null,
     };
 
@@ -184,7 +296,7 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
         description,
         icon: iconKey,
         color,
-        seedDate: date,
+        seedDate: startDate,
         dieDate: endDate,
         recurrenceInterval,
         conflictMode,
@@ -194,10 +306,9 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
       };
       setPlannedEvent(updated);
 
-      // If updated date is today or in the past, trigger materialisation
-      if (date <= today) {
+      if (startDate <= today) {
         const currentTemplates = useScheduleStore.getState().taskTemplates;
-        materialisePlannedEvent(updated, date <= today ? today : date, currentTemplates);
+        materialisePlannedEvent(updated, today, currentTemplates);
       }
     } else {
       const id = uuidv4();
@@ -207,7 +318,7 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
         description,
         icon: iconKey,
         color,
-        seedDate: date,
+        seedDate: startDate,
         dieDate: endDate,
         recurrenceInterval,
         activeState: 'active',
@@ -224,8 +335,7 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
 
       setPlannedEvent(newEvent);
 
-      // D14 — same-day or past creation triggers immediate materialisation
-      if (date <= today) {
+      if (startDate <= today) {
         const currentTemplates = useScheduleStore.getState().taskTemplates;
         materialisePlannedEvent(newEvent, today, currentTemplates);
       }
@@ -234,7 +344,6 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
     onClose();
   }
 
-  // ── Delete ────────────────────────────────────────────────────────────────
   function handleDelete() {
     if (!confirmDelete) {
       setConfirmDelete(true);
@@ -247,58 +356,57 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
     onClose();
   }
 
-  // ── Shared input class ────────────────────────────────────────────────────
-  const inputCls =
-    'w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-800 dark:text-gray-200 dark:bg-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500';
-
-  const title = isEditMode ? 'Edit Event' : 'Add One-off Event';
-
   return (
-    <PopupShell title={title} onClose={onClose}>
-      <div className="flex flex-col gap-4 max-h-[75vh] overflow-y-auto pb-2">
+    <PopupShell title={isEditMode ? 'Edit Event' : 'Add One-off Event'} onClose={onClose} size="large">
+      <div className="flex h-full min-h-0 flex-col gap-4">
+        <div className="grid grid-cols-[56px_minmax(0,1fr)_56px] gap-3 sm:gap-4">
+          <Field label="Icon">
+            <IconPicker value={iconKey} onChange={setIconKey} align="left" />
+          </Field>
 
-        {/* Name */}
-        <Field label="Name *">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => { setName(e.target.value); setError(''); }}
-            placeholder="e.g. Doctor appointment"
-            className={inputCls}
-          />
-        </Field>
+          <Field label="Name">
+            <input
+              type="text"
+              value={name}
+              onChange={(event) => {
+                setName(event.target.value);
+                setError('');
+              }}
+              placeholder="Doctor appointment"
+              className={inputCls}
+            />
+          </Field>
 
-        {/* Date */}
-        <Field label="Date *">
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => {
-              const nextDate = e.target.value;
-              setDate(nextDate);
-              setEndDate((prev) => (prev < nextDate ? nextDate : prev));
-              setError('');
-            }}
-            className={inputCls}
-          />
-          {date && (
-            <p className="text-xs text-indigo-500 font-medium">
-              One-off event — scheduled for {formatDateLabel(date)} only
-            </p>
-          )}
-        </Field>
+          <Field label="Color">
+            <ColorPicker value={color} onChange={setColor} align="right" />
+          </Field>
+        </div>
 
-        {/* Time */}
-        <div className="flex gap-3">
-          <Field label="Start time *">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <Field label="Start date">
+            <input
+              type="date"
+              value={startDate}
+              onChange={(event) => {
+                const nextDate = event.target.value;
+                setStartDate(nextDate);
+                if (endDate < nextDate) {
+                  setEndDate(nextDate);
+                }
+                setError('');
+              }}
+              className={inputCls}
+            />
+          </Field>
+          <Field label="Start time">
             <input
               type="time"
               value={startTime}
-              onChange={(e) => {
-                const nextStartTime = e.target.value;
-                setStartTime(nextStartTime);
-                if (!isEditMode && endDate === date) {
-                  setEndTime(addHour(nextStartTime));
+              onChange={(event) => {
+                const nextTime = event.target.value;
+                setStartTime(nextTime);
+                if (!isEditMode && startDate === endDate) {
+                  setEndTime(addHour(nextTime));
                 }
               }}
               className={inputCls}
@@ -306,139 +414,93 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
           </Field>
         </div>
 
-        <div className="flex gap-3">
-          <Field label="End date *">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <Field label="End date">
             <input
               type="date"
               value={endDate}
-              onChange={(e) => { setEndDate(e.target.value); setError(''); }}
-              min={date}
+              min={startDate}
+              onChange={(event) => {
+                setEndDate(event.target.value);
+                setError('');
+              }}
               className={inputCls}
             />
           </Field>
-          <Field label="End time *">
+          <Field label="End time" hint={!endsAfterStart ? 'End date/time must be after the start.' : undefined}>
             <input
               type="time"
               value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
+              onChange={(event) => {
+                setEndTime(event.target.value);
+                setError('');
+              }}
               className={inputCls}
             />
           </Field>
         </div>
-        {multiDaySpan > 0 && (
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            📅 Multi-day event — spans {multiDaySpan} days
-          </p>
-        )}
-        {endDateBeforeStart && (
-          <p className="text-xs text-red-500">End date cannot be before start date</p>
-        )}
 
-        {/* Icon */}
-        <Field label="Icon">
-          <IconPicker value={iconKey} onChange={setIconKey} />
-        </Field>
-
-        {/* Colour */}
-        <Field label="Colour">
-          <div className="flex flex-wrap gap-2">
-            {COLOUR_SWATCHES.map((hex) => (
-              <button
-                key={hex}
-                type="button"
-                aria-label={hex}
-                onClick={() => setColor(hex)}
-                className="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110"
-                style={{
-                  backgroundColor: hex,
-                  borderColor: color === hex ? '#1e293b' : 'transparent',
-                }}
-              />
-            ))}
-          </div>
-        </Field>
-
-        {/* Task Pool */}
-        <Field
-          label="Task pool"
-          hint="Optional — tasks assigned to this event."
-        >
-          <div className="max-h-36 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md divide-y divide-gray-100 dark:divide-gray-700">
-            {allTemplates.length === 0 && (
-              <p className="text-xs text-gray-400 italic p-3">No templates available yet.</p>
-            )}
-            {allTemplates.map(({ id, name: tName }) => (
-              <label
-                key={id}
-                className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                <input
-                  type="checkbox"
-                  checked={taskPool.includes(id)}
-                  onChange={() => togglePoolItem(id)}
-                  className="accent-indigo-500"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{tName}</span>
-              </label>
-            ))}
-          </div>
-        </Field>
-
-        {/* Conflict mode */}
-        <Field label="Conflict mode (D08)">
-          <select
-            value={conflictMode}
-            onChange={(e) => setConflictMode(e.target.value as ConflictMode)}
-            className={inputCls}
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <Field
+            label="Task pool"
+            hint="Filter by stat, toggle selected-only, and drag rows to control task order."
+            className="h-full min-h-0"
           >
-            {CONFLICT_MODES.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-        </Field>
+            <ScheduleTaskPool templates={allTemplates} taskPool={taskPool} setTaskPool={setTaskPool} />
+          </Field>
+        </div>
 
-        {/* Description */}
-        <Field label="Description (optional)">
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Notes about this event..."
-            rows={3}
-            className={`${inputCls} resize-none`}
-          />
-        </Field>
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3 sm:gap-4">
+          <Field label="Conflict mode">
+            <select
+              value={conflictMode}
+              onChange={(event) => setConflictMode(event.target.value as ConflictMode)}
+              className={inputCls}
+            >
+              {CONFLICT_MODES.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </Field>
 
-        {/* Error */}
-        {error && <p className="text-xs text-red-500">{error}</p>}
+          <Field label="Description">
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              rows={2}
+              className={`${inputCls} resize-none`}
+              placeholder="Optional notes"
+            />
+          </Field>
+        </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2 pt-1">
+        {error && <p className="text-sm text-red-500">{error}</p>}
+
+        <div className="flex items-center justify-end gap-2">
           {isEditMode && (
             <button
               type="button"
               onClick={handleDelete}
-              className={`text-sm px-3 py-2 rounded-lg font-medium transition-colors ${
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 confirmDelete
                   ? 'bg-red-600 text-white'
-                  : 'text-red-500 border border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20'
+                  : 'border border-red-300 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
               }`}
             >
               {confirmDelete ? 'Confirm Delete' : 'Delete'}
             </button>
           )}
-          <div className="flex-1" />
           <button
             type="button"
             onClick={onClose}
-            className="text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSave}
-            disabled={endDateBeforeStart}
-            className="text-sm px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+            className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700"
           >
             Save
           </button>
