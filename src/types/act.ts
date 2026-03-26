@@ -61,7 +61,7 @@ export interface Quest {
 
 // ── CHAIN (WOOP framework — array-indexed within Act) ────────────────────────
 
-export type ChainCompletionState = 'active' | 'complete';
+export type ChainCompletionState = 'active' | 'complete' | 'failed';
 
 export interface Chain {
   name: string;

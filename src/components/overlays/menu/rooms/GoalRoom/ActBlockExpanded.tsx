@@ -31,6 +31,8 @@ export function ActBlockExpanded({ act }: ActBlockExpandedProps) {
             className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${
               chain.completionState === 'complete'
                 ? 'bg-green-100 text-green-600'
+                : chain.completionState === 'failed'
+                  ? 'bg-red-100 text-red-600'
                 : 'bg-blue-100 text-blue-600'
             }`}
           >

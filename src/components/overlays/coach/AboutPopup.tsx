@@ -3,13 +3,13 @@ import type { ChangeEvent } from 'react';
 import { useSystemStore } from '../../../stores/useSystemStore';
 import { executeRollover } from '../../../engine/rollover';
 import { seedTestDataset } from '../../../engine/__validate__/testDataset';
-import { localISODate, addDays, getAppTime } from '../../../utils/dateUtils';
+import { localISODate, addDays, getAppDate, getAppTime } from '../../../utils/dateUtils';
 import { downloadExport, importAppData } from '../../../utils/dataPortability';
 
 const APP_VERSION = '0.1.0-local';
 
 function tomorrowISO(): string {
-  return localISODate(addDays(new Date(), 1));
+  return localISODate(addDays(new Date(getAppDate() + 'T00:00:00'), 1));
 }
 
 function todayDisplay(): string {
@@ -32,6 +32,7 @@ export function AboutPopup({ onClose }: AboutPopupProps) {
   const appDate = useSystemStore((s) => s.appDate);
   const timeOffset = useSystemStore((s) => s.timeOffset);
   const setTimeOffset = useSystemStore((s) => s.setTimeOffset);
+  const setAppDateTime = useSystemStore((s) => s.setAppDateTime);
   const [versionTaps, setVersionTaps] = useState(0);
   const [clearConfirm, setClearConfirm] = useState(false);
   const [rolling, setRolling] = useState(false);
@@ -56,8 +57,10 @@ export function AboutPopup({ onClose }: AboutPopupProps) {
     if (rolling) return;
     setRolling(true);
     try {
-      await executeRollover(tomorrowISO());
-      window.location.reload();
+      const nextDate = tomorrowISO();
+      await executeRollover(nextDate);
+      setAppDateTime(nextDate, getAppTime());
+      setRolling(false);
     } catch (err) {
       setRolling(false);
       alert(`Rollover failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -68,12 +71,15 @@ export function AboutPopup({ onClose }: AboutPopupProps) {
     if (skippingWeek) return;
     setSkippingWeek(true);
     try {
-      const today = new Date();
+      const today = new Date(getAppDate() + 'T00:00:00');
+      let finalDate = getAppDate();
       for (let i = 1; i <= 7; i++) {
         const date = localISODate(addDays(today, i));
         await executeRollover(date);
+        finalDate = date;
       }
-      window.location.reload();
+      setAppDateTime(finalDate, getAppTime());
+      setSkippingWeek(false);
     } catch (err) {
       setSkippingWeek(false);
       alert(`Week skip failed: ${err instanceof Error ? err.message : String(err)}`);

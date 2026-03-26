@@ -20,8 +20,9 @@ import { useSystemStore } from '../stores/useSystemStore';
 import { useUserStore } from '../stores/useUserStore';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useProgressionStore } from '../stores/useProgressionStore';
+import { STARTER_ACT_IDS, makeDailyChain } from '../coach/StarterQuestLibrary';
 import { materialisePlannedEvent } from './materialise';
-import { fireMarker } from './markerEngine';
+import { fireInitialIntervalMarkers, fireMarker } from './markerEngine';
 import { evaluateMarkerCondition, evaluateTaskCountMarker } from './questEngine';
 import { ribbet } from '../coach/ribbet';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
@@ -284,7 +285,61 @@ function step7_archiveEvents(rolloverDate: string): void {
 
 // ── STEP 8 — Update RecurrenceRules ──────────────────────────────────────────
 
+function step8_rolloverDailyAdventureChain(rolloverDate: string): void {
+  const progressionStore = useProgressionStore.getState();
+  const dailyAct = progressionStore.acts[STARTER_ACT_IDS.daily];
+  if (!dailyAct) return;
+
+  const updatedChains = [...dailyAct.chains];
+
+  if (updatedChains.length > 0) {
+    const lastChainIndex = updatedChains.length - 1;
+    const lastChain = updatedChains[lastChainIndex];
+    if (lastChain && lastChain.completionState !== 'complete') {
+      const allQuestsComplete = lastChain.quests.every(
+        (quest) => quest.completionState === 'complete',
+      );
+      updatedChains[lastChainIndex] = {
+        ...lastChain,
+        completionState: allQuestsComplete ? 'complete' : 'failed',
+        quests: lastChain.quests.map((quest) =>
+          quest.completionState === 'complete'
+            ? quest
+            : {
+                ...quest,
+                completionState: 'failed',
+                timely: {
+                  ...quest.timely,
+                  markers: quest.timely.markers.map((marker) => ({
+                    ...marker,
+                    activeState: false,
+                  })),
+                },
+              },
+        ),
+      };
+    }
+  }
+
+  const nextChain = makeDailyChain(
+    STARTER_ACT_IDS.daily,
+    updatedChains.length + 1,
+    rolloverDate,
+  );
+  updatedChains.push(nextChain);
+
+  progressionStore.setAct({
+    ...dailyAct,
+    chains: updatedChains,
+    completionState: 'active',
+  });
+
+  fireInitialIntervalMarkers(STARTER_ACT_IDS.daily, updatedChains.length - 1);
+}
+
 function step8_updateRecurrence(resolved: PlannedEvent[], rolloverDate: string): void {
+  step8_rolloverDailyAdventureChain(rolloverDate);
+
   const scheduleStore = useScheduleStore.getState();
 
   for (const pe of resolved) {

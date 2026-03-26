@@ -159,7 +159,7 @@ export interface FireMarkerParams {
   actId: string;
 }
 
-function fireInitialIntervalMarkers(actId: string, chainIndex: number): void {
+export function fireInitialIntervalMarkers(actId: string, chainIndex: number): void {
   const act = useProgressionStore.getState().acts[actId];
   const chain = act?.chains[chainIndex];
   if (!chain) return;

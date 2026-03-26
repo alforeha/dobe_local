@@ -27,6 +27,7 @@ import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge, checkQuestReward } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
+import { getAppNowISO } from '../utils/dateUtils';
 
 // ── TASK RESULT SHAPE ─────────────────────────────────────────────────────────
 
@@ -89,7 +90,7 @@ export function completeTask(
     `[completeTask] taskId=${taskId} questRef=${task.questRef ?? 'null'} actRef=${task.actRef ?? 'null'}`,
   );
 
-  const now = new Date().toISOString();
+  const now = getAppNowISO();
 
   const updatedTask: Task = {
     ...task,

@@ -518,12 +518,16 @@ async function main(): Promise<void> {
       secondaryTag: null,
     } as never);
     const existingQaDay1 = useScheduleStore.getState().activeEvents[qaDay1Id];
-    useScheduleStore.getState().setActiveEvent(
+    const existingQuickActionsDay1: import('../../types/event').QuickActionsEvent | null =
       existingQaDay1 && 'eventType' in existingQaDay1 && existingQaDay1.eventType === 'quickActions'
+        ? (existingQaDay1 as import('../../types/event').QuickActionsEvent)
+        : null;
+    useScheduleStore.getState().setActiveEvent(
+      existingQuickActionsDay1
         ? {
-            ...existingQaDay1,
+            ...existingQuickActionsDay1,
             completions: [
-              ...existingQaDay1.completions,
+              ...existingQuickActionsDay1.completions,
               { taskRef: rollTaskId, completedAt: `${DAY1}T12:00:00.000Z` },
             ],
           }
@@ -659,13 +663,8 @@ async function main(): Promise<void> {
   );
 
   // New Daily Adventure chain for Day 2 — simulate app behaviour by adding chain 2
-  const dailyActBeforeChain2 = useProgressionStore.getState().acts[dailyActId]!;
-  const chain2 = makeDailyChain(dailyActId, 2, DAY2);
-  useProgressionStore.getState().setAct({
-    ...dailyActBeforeChain2,
-    chains: [...dailyActBeforeChain2.chains, chain2],
-  });
   const dailyActAfterChain2 = useProgressionStore.getState().acts[dailyActId];
+  const day2DailyChain = dailyActAfterChain2?.chains[1];
 
   assert(
     'Daily Adventure Act — chain count increased to 2 after Day 2',
@@ -682,6 +681,21 @@ async function main(): Promise<void> {
   // ═══════════════════════════════════════════════════════════════════════
 
   section('PHASE 4 — Day 2 + Day 3 Activity');
+
+  assert(
+    'Daily Adventure Act â€” Day 1 chain closes as failed after missed day',
+    dailyActAfterChain2?.chains[0]?.completionState === 'failed',
+    `got: ${dailyActAfterChain2?.chains[0]?.completionState}`,
+  );
+  assert(
+    'Daily Adventure Act â€” Day 2 chain starts active',
+    day2DailyChain?.completionState === 'active',
+    `got: ${day2DailyChain?.completionState}`,
+  );
+  assert(
+    'Daily Adventure Act â€” Day 2 chain has 4 fresh active quests',
+    day2DailyChain?.quests.every((quest) => quest.completionState === 'active') ?? false,
+  );
 
   const xpBeforeDay2 = useUserStore.getState().user!.progression.stats.xp;
 
@@ -720,6 +734,24 @@ async function main(): Promise<void> {
 
   const day2EventInHistory = useScheduleStore.getState().historyEvents[d2evId];
   assert('Day 2 — event archived after Day 3 rollover', !!day2EventInHistory);
+
+  const dailyActAfterDay3 = useProgressionStore.getState().acts[dailyActId];
+  const day3DailyChain = dailyActAfterDay3?.chains[2];
+  assert(
+    'Daily Adventure Act â€” chain count increased to 3 after Day 3 rollover',
+    (dailyActAfterDay3?.chains.length ?? 0) >= 3,
+    `chains: ${dailyActAfterDay3?.chains.length}`,
+  );
+  assert(
+    'Daily Adventure Act â€” Day 2 chain closes as failed after missed day',
+    dailyActAfterDay3?.chains[1]?.completionState === 'failed',
+    `got: ${dailyActAfterDay3?.chains[1]?.completionState}`,
+  );
+  assert(
+    'Daily Adventure Act â€” Day 3 chain starts active',
+    day3DailyChain?.completionState === 'active',
+    `got: ${day3DailyChain?.completionState}`,
+  );
 
   const xpBeforeDay3 = useUserStore.getState().user!.progression.stats.xp;
 

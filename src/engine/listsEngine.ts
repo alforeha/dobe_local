@@ -18,7 +18,7 @@ import type { Task } from '../types/task';
 import type { GTDItem } from '../types/task';
 import type { QuickActionsEvent } from '../types/event';
 import type { Resource } from '../types/resource';
-import { getAppDate } from '../utils/dateUtils';
+import { getAppDate, getAppNowISO } from '../utils/dateUtils';
 import type { AccountMeta, PendingTransaction } from '../types/resource';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useUserStore } from '../stores/useUserStore';
@@ -85,7 +85,7 @@ export function removeFavourite(taskTemplateRef: string, user: User): void {
  */
 export function completeFavourite(taskTemplateRef: string, user: User): void {
   const scheduleStore = useScheduleStore.getState();
-  const now = new Date().toISOString();
+  const now = getAppNowISO();
   const today = todayISO();
 
   const template = scheduleStore.taskTemplates[taskTemplateRef];
@@ -227,7 +227,7 @@ export function removeShoppingItem(listId: string, itemId: string, user: User): 
  * @param user    Current User
  */
 export function completeShoppingItem(listId: string, itemId: string, user: User): void {
-  const now = new Date().toISOString();
+  const now = getAppNowISO();
 
   // Find the item first so we can write the pending transaction
   let targetItem: ShoppingItem | null = null;
@@ -319,7 +319,7 @@ function _writePendingTransaction(
  * @param user    Current User
  */
 export function completeShoppingList(listId: string, user: User): void {
-  const now = new Date().toISOString();
+  const now = getAppNowISO();
 
   // Find the list
   const list = user.lists.shoppingLists.find((l) => l.id === listId);
@@ -439,7 +439,7 @@ export function completeManualGTDItem(itemId: string, user: User): void {
   const item = latestUser.lists.manualGtdList.find((i) => i.id === itemId);
   if (!item || item.completionState !== 'pending') return;
 
-  const now = new Date().toISOString();
+  const now = getAppNowISO();
   const today = todayISO();
 
   // Create a stub Task representing this completion for the QA event record

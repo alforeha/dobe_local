@@ -4,7 +4,7 @@ import { useScheduleStore } from '../../../../../../stores/useScheduleStore';
 import { useUserStore } from '../../../../../../stores/useUserStore';
 import { awardXP, awardStat } from '../../../../../../engine/awardPipeline';
 import { STARTER_TEMPLATE_IDS } from '../../../../../../coach/StarterQuestLibrary';
-import { getAppDate } from '../../../../../../utils/dateUtils';
+import { getAppDate, getAppNowISO } from '../../../../../../utils/dateUtils';
 import type { Task } from '../../../../../../types/task';
 import type { QuickActionsEvent } from '../../../../../../types/event';
 import type { RollInputFields } from '../../../../../../types/taskTemplate';
@@ -70,7 +70,7 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
         setRolling(false);
 
         const store = scheduleStore();
-        const now = new Date().toISOString();
+        const now = getAppNowISO();
         const taskId = uuidv4();
 
         const rollTask: Task = {

@@ -19,7 +19,7 @@ import type { PlannedEvent } from '../types/plannedEvent';
 import type { Task } from '../types/task';
 import type { TaskTemplate } from '../types/taskTemplate';
 import type { User } from '../types/user';
-import { getAppDate } from '../utils/dateUtils';
+import { getAppDate, getAppNowISO } from '../utils/dateUtils';
 import type { QuickActionsEvent } from '../types/event';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useUserStore } from '../stores/useUserStore';
@@ -515,7 +515,7 @@ export function completeGTDItem(itemId: string, user: User): void {
   }
   if (task.completionState !== 'pending') return;
 
-  const now = new Date().toISOString();
+  const now = getAppNowISO();
   const updatedTask: Task = { ...task, completionState: 'complete', completedAt: now };
 
   scheduleStore.setTask(updatedTask);

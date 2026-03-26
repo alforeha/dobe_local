@@ -123,6 +123,24 @@ export function getAppDateTime(): { date: string; time: string } {
 }
 
 /**
+ * Returns an ISO timestamp whose local date/time matches the app's current
+ * simulated date and time reference.
+ *
+ * Uses getAppDate() + getAppTime() for the visible calendar/clock and carries
+ * over seconds/milliseconds from getOffsetNow() so repeated actions still get
+ * stable ordering within the same minute.
+ */
+export function getAppNowISO(): string {
+  const date = getAppDate();
+  const time = getAppTime();
+  const offsetNow = getOffsetNow();
+  const seconds = String(offsetNow.getSeconds()).padStart(2, '0');
+  const millis = String(offsetNow.getMilliseconds()).padStart(3, '0');
+  const local = new Date(`${date}T${time}:${seconds}.${millis}`);
+  return local.toISOString();
+}
+
+/**
  * Returns a Date object representing "now" with the dev time offset applied.
  * Use this anywhere the live clock is needed but should respect the offset
  * (e.g. the day-view time indicator, coach hour checks).
