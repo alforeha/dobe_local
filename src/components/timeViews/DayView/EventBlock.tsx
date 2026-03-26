@@ -4,7 +4,9 @@ interface EventBlockProps {
   eventId: string;
   name: string;
   color: string;
+  startDate?: string;
   startTime: string;
+  endDate?: string;
   endTime: string;
   icon?: string;
   heightPx: number;
@@ -25,7 +27,9 @@ interface EventBlockProps {
 export function EventBlock({
   name,
   color,
+  startDate,
   startTime,
+  endDate,
   endTime,
   icon,
   heightPx,
@@ -46,6 +50,8 @@ export function EventBlock({
   const leftPct = (colIndex / colCount) * 100;
   const isComplete = completionState === 'complete';
   const opacityClass = muted ? 'opacity-40' : isComplete ? 'opacity-50' : (!interactive ? 'opacity-70' : '');
+  const crossesMidnight = Boolean(startDate && endDate && endDate !== startDate);
+  const timeLabel = `${startTime} → ${endTime}${crossesMidnight ? ' +' : ''}`;
 
   return (
     <div
@@ -82,9 +88,18 @@ export function EventBlock({
             <span className="mr-1 opacity-90" aria-hidden="true">{resolveIcon(icon)}</span>
           )}
           {name}
+          {crossesMidnight && (
+            <span
+              className="ml-1 inline-flex rounded-full bg-white/20 px-1 py-0.5 text-[10px] font-semibold align-middle"
+              aria-label="Overnight event"
+              title="Overnight event"
+            >
+              🌙
+            </span>
+          )}
         </div>
         {heightPx >= 30 && (
-          <div className="text-white/80 text-[11px] leading-tight truncate">{startTime} → {endTime}</div>
+          <div className="text-white/80 text-[11px] leading-tight truncate">{timeLabel}</div>
         )}
         {multiDayLabel && (
           <div className="text-white/90 text-[9px] font-medium truncate">{multiDayLabel}</div>

@@ -17,6 +17,7 @@ import type { TaskTemplate, TaskSecondaryTag } from '../types/taskTemplate';
 import { useScheduleStore } from '../stores/useScheduleStore';
 import { useProgressionStore } from '../stores/useProgressionStore';
 import { encodeQuestRef } from './markerEngine';
+import { addDays, localISODate } from '../utils/dateUtils';
 
 
 // ── RESULT SHAPE ─────────────────────────────────────────────────────────────
@@ -148,6 +149,10 @@ export function materialisePlannedEvent(
   }
 
   const taskRefs = tasks.map((t) => t.id);
+  const resolvedEndDate = pe.dieDate
+    ?? (pe.isOvernight === true
+      ? localISODate(addDays(new Date(`${forDate}T00:00:00`), 1))
+      : forDate);
 
   // Build the materialised Event
   const event: Event = {
@@ -157,7 +162,7 @@ export function materialisePlannedEvent(
     name: pe.name,
     startDate: forDate,
     startTime: pe.startTime,
-    endDate: pe.dieDate ?? forDate,
+    endDate: resolvedEndDate,
     endTime: pe.endTime,
     tasks: taskRefs,
     completionState: 'pending',

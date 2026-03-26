@@ -601,7 +601,9 @@ export function DayViewBody({ date, onEventOpen, onEditPlanned }: DayViewBodyPro
                 eventId={eventId}
                 name={'name' in ev ? ev.name : '\u2014'}
                 color={resolvedColor}
+                startDate={'startDate' in ev ? ev.startDate : undefined}
                 startTime={'startTime' in ev ? ev.startTime : ''}
+                endDate={'endDate' in ev ? ev.endDate : undefined}
                 endTime={displayEnd}
                 icon={evIcon}
                 heightPx={layout.heightPx}

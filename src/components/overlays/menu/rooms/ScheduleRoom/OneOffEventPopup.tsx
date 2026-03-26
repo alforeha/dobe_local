@@ -45,6 +45,21 @@ function todayISO(): string {
   return localISODate(new Date());
 }
 
+function addHour(time: string): string {
+  const [hours, minutes] = time.split(':').map(Number);
+  const totalMinutes = ((hours * 60 + minutes + 60) % 1440 + 1440) % 1440;
+  const nextHours = Math.floor(totalMinutes / 60);
+  const nextMinutes = totalMinutes % 60;
+  return `${String(nextHours).padStart(2, '0')}:${String(nextMinutes).padStart(2, '0')}`;
+}
+
+function diffDaysInclusive(startIso: string, endIso: string): number {
+  const start = new Date(`${startIso}T00:00:00`);
+  const end = new Date(`${endIso}T00:00:00`);
+  const msPerDay = 24 * 60 * 60 * 1000;
+  return Math.floor((end.getTime() - start.getTime()) / msPerDay) + 1;
+}
+
 function formatDateLabel(iso: string): string {
   if (!iso) return '';
   const [year, month, day] = iso.split('-').map(Number);
@@ -104,7 +119,12 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
   const [iconKey, setIconKey] = useState(isEditMode ? editEvent.icon : 'event');
   const [date, setDate] = useState(isEditMode ? editEvent.seedDate : todayISO());
   const [startTime, setStartTime] = useState(isEditMode ? editEvent.startTime : '09:00');
-  const [endTime, setEndTime] = useState(isEditMode ? editEvent.endTime : '10:00');
+  const [endDate, setEndDate] = useState(
+    isEditMode ? (editEvent.dieDate ?? editEvent.seedDate) : todayISO(),
+  );
+  const [endTime, setEndTime] = useState(
+    isEditMode ? editEvent.endTime : addHour('09:00'),
+  );
   const [color, setColor] = useState(isEditMode ? editEvent.color : COLOUR_SWATCHES[0]);
   const [taskPool, setTaskPool] = useState<string[]>(
     isEditMode ? editEvent.taskPool : [],
@@ -115,6 +135,10 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
   const [description, setDescription] = useState(isEditMode ? editEvent.description : '');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
+  const endDateBeforeStart = endDate < date;
+  const multiDaySpan = !endDateBeforeStart && endDate > date
+    ? diffDaysInclusive(date, endDate)
+    : 0;
 
   // ── Task pool toggle ──────────────────────────────────────────────────────
   function togglePoolItem(id: string) {
@@ -131,6 +155,14 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
     }
     if (!date) {
       setError('Date is required.');
+      return;
+    }
+    if (!endDate) {
+      setError('End date is required.');
+      return;
+    }
+    if (endDateBeforeStart) {
+      setError('End date cannot be before start date');
       return;
     }
 
@@ -153,6 +185,7 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
         icon: iconKey,
         color,
         seedDate: date,
+        dieDate: endDate,
         recurrenceInterval,
         conflictMode,
         startTime,
@@ -175,7 +208,7 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
         icon: iconKey,
         color,
         seedDate: date,
-        dieDate: date,
+        dieDate: endDate,
         recurrenceInterval,
         activeState: 'active',
         taskPool,
@@ -240,7 +273,12 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
           <input
             type="date"
             value={date}
-            onChange={(e) => { setDate(e.target.value); setError(''); }}
+            onChange={(e) => {
+              const nextDate = e.target.value;
+              setDate(nextDate);
+              setEndDate((prev) => (prev < nextDate ? nextDate : prev));
+              setError('');
+            }}
             className={inputCls}
           />
           {date && (
@@ -256,7 +294,25 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
             <input
               type="time"
               value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
+              onChange={(e) => {
+                const nextStartTime = e.target.value;
+                setStartTime(nextStartTime);
+                if (!isEditMode && endDate === date) {
+                  setEndTime(addHour(nextStartTime));
+                }
+              }}
+              className={inputCls}
+            />
+          </Field>
+        </div>
+
+        <div className="flex gap-3">
+          <Field label="End date *">
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => { setEndDate(e.target.value); setError(''); }}
+              min={date}
               className={inputCls}
             />
           </Field>
@@ -269,6 +325,14 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
             />
           </Field>
         </div>
+        {multiDaySpan > 0 && (
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            📅 Multi-day event — spans {multiDaySpan} days
+          </p>
+        )}
+        {endDateBeforeStart && (
+          <p className="text-xs text-red-500">End date cannot be before start date</p>
+        )}
 
         {/* Icon */}
         <Field label="Icon">
@@ -373,7 +437,8 @@ export function OneOffEventPopup({ editEvent, onClose }: OneOffEventPopupProps) 
           <button
             type="button"
             onClick={handleSave}
-            className="text-sm px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
+            disabled={endDateBeforeStart}
+            className="text-sm px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
           >
             Save
           </button>

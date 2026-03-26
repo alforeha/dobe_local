@@ -177,6 +177,7 @@ export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false
   );
   const [startTime, setStartTime] = useState(isEditMode ? editRoutine.startTime : '09:00');
   const [endTime, setEndTime] = useState(isEditMode ? editRoutine.endTime : '10:00');
+  const isOvernight = startTime !== '' && endTime !== '' && endTime < startTime;
 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
@@ -230,6 +231,7 @@ export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false
         conflictMode,
         startTime,
         endTime,
+        isOvernight,
       };
       setPlannedEvent(updated);
     } else {
@@ -250,6 +252,7 @@ export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false
         conflictMode,
         startTime,
         endTime,
+        isOvernight,
         location: null,
         sharedWith: null,
         pushReminder: null,
@@ -348,6 +351,11 @@ export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false
             />
           </Field>
         </div>
+        {isOvernight && (
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            🌙 Overnight routine — ends the following day
+          </p>
+        )}
 
         {/* Recurrence — frequency */}
         <Field label="Recurrence">

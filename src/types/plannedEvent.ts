@@ -63,6 +63,8 @@ export interface PlannedEvent {
   conflictMode: ConflictMode;
   startTime: string; // HH:MM
   endTime: string;   // HH:MM
+  /** True when the routine ends after midnight on the following day. */
+  isOvernight?: boolean;
   /** STUB: LOCATION-SHARING — reserved for saved venue/location metadata once the LOCATION-SHARING chapter is enabled. */
   location: EventLocation | null;
   /** STUB: MULTI-USER — stores invitees and shared ownership once the MULTI-USER chapter is enabled. */
