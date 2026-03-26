@@ -20,6 +20,7 @@ import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge, checkCoachDrops } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
+import { calculateAwardedXP, type XPAwardContext } from './xpBoosts';
 
 // ── XP CURVE PARAMETERS (D49) ────────────────────────────────────────────────
 
@@ -89,23 +90,14 @@ export function xpProgress(totalXP: number): {
 // ── MULTIPLIER SPEC ───────────────────────────────────────────────────────────
 
 export interface XPMultipliers {
-  /** e.g. 3 for a 3-day streak (×3 total XP) */
-  streak?: number;
-  /** e.g. 2 for early bird mode (×2 task XP) */
-  earlyBird?: number;
+  /** True when the award came from a wisdom-tagged task. */
+  isWisdomTask?: boolean;
 }
 
 /** Apply additive multipliers to a base XP value (D43 — additive by default) */
 function applyMultipliers(base: number, multipliers?: XPMultipliers): number {
-  if (!multipliers) return base;
-  let total = base;
-  if (multipliers.streak && multipliers.streak > 1) {
-    total *= multipliers.streak;
-  }
-  if (multipliers.earlyBird && multipliers.earlyBird > 1) {
-    total *= multipliers.earlyBird;
-  }
-  return Math.floor(total);
+  const user = useUserStore.getState().user;
+  return calculateAwardedXP(base, user, multipliers as XPAwardContext | undefined);
 }
 
 // ── AWARD XP ──────────────────────────────────────────────────────────────────
@@ -117,8 +109,8 @@ function applyMultipliers(base: number, multipliers?: XPMultipliers): number {
  * Writes — useUserStore (stats.xp, stats.level), storageLayer (user)
  *
  * @param userId      User.system.id — validated against current store user
- * @param amount      Raw XP to award (before multipliers)
- * @param multipliers Optional streak/earlyBird multipliers (D43)
+ * @param amount      Raw XP to award before boost rules are applied
+ * @param multipliers Optional task context for boost eligibility
  */
 export function awardXP(
   userId: string,

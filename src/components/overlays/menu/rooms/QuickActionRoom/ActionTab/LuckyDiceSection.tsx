@@ -12,6 +12,7 @@ import { GlowRing } from '../../../../../shared/GlowRing';
 import { ONBOARDING_GLOW } from '../../../../../../constants/onboardingKeys';
 import { useGlows } from '../../../../../../hooks/useOnboardingGlow';
 import { autoCheckQuestItem } from '../../../../../../engine/resourceEngine';
+import { isEarlyBirdActive } from '../../../../../../engine/xpBoosts';
 
 const DIE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 const SIDES = 6;
@@ -23,7 +24,7 @@ function todayISO(): string {
 function getTodayRoll(
   tasks: Record<string, Task>,
   qaCompletions: { taskRef: string; completedAt: string }[],
-): { result: number; boostApplied: string } | null {
+): { result: number; boostApplied?: string } | null {
   for (const completion of qaCompletions) {
     const task = tasks[completion.taskRef];
     if (!task) continue;
@@ -31,7 +32,10 @@ function getTodayRoll(
     if (task.completionState !== 'complete') continue;
     const rf = task.resultFields as Partial<RollInputFields>;
     if (rf.result != null) {
-      return { result: rf.result, boostApplied: rf.boostApplied ?? `x${rf.result}` };
+      return {
+        result: rf.result,
+        boostApplied: rf.boostApplied,
+      };
     }
   }
   return null;
@@ -58,8 +62,10 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
     if (rolling || todayRoll || !user) return;
 
     setRolling(true);
-    const result = Math.floor(Math.random() * SIDES) + 1;
-    const boostApplied = `x${result}`;
+    const earlyBirdBonus = isEarlyBirdActive() ? 1 : 0;
+    const rawResult = Math.floor(Math.random() * SIDES) + 1;
+    const result = rawResult + earlyBirdBonus;
+    const boostApplied = earlyBirdBonus > 0 ? '+1' : undefined;
     let ticks = 0;
 
     const id = window.setInterval(() => {
@@ -120,7 +126,7 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
         <div className="flex flex-col items-center justify-center gap-0.5">
           <span className="text-3xl select-none leading-none">{face}</span>
           <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 leading-tight">
-            x{todayRoll.result} Bonus
+            Roll {todayRoll.result}{todayRoll.boostApplied ? ` ${todayRoll.boostApplied}` : ''}
           </p>
         </div>
       );
@@ -154,7 +160,7 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
       <div className="mb-5 flex flex-col items-center gap-2 py-4">
         <span className="text-6xl select-none">{face}</span>
         <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">
-          x{todayRoll.result} Bonus
+          Roll {todayRoll.result}{todayRoll.boostApplied ? ` ${todayRoll.boostApplied}` : ''}
         </p>
       </div>
     );

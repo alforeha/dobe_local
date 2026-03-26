@@ -190,13 +190,13 @@ export interface LocationTrailInputFields {
 /**
  * D78 — ROLL task input fields.
  * Result is system-generated (1–6). User cannot edit.
- * boostApplied stores the XP multiplier string e.g. "1.4x".
+ * boostApplied stores any displayed roll bonus note e.g. "+1".
  */
 export interface RollInputFields {
   sides: number;
   /** System-generated result (1–sides). Set on completion. */
   result?: number;
-  /** e.g. "1.4x" — computed from result at fire time */
+  /** e.g. "+1" — computed from result at fire time */
   boostApplied?: string;
 }
 

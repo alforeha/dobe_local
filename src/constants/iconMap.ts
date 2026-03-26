@@ -50,6 +50,10 @@ export const ICON_MAP: Record<string, string> = {
   welcome: '\ud83d\udc4b',
   quest: '\ud83c\udfaf',
   daily: '\u2600\ufe0f',
+  'boost-early-bird': '\ud83c\udf05',
+  'boost-late-night': '\ud83c\udf19',
+  'boost-streak': '\ud83d\udd25',
+  'boost-roll': '\ud83c\udfb2',
   // act types
   'act-onboarding': '\ud83d\udc38',
   'act-daily': '\u2600\ufe0f',

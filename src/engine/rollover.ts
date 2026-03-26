@@ -361,6 +361,9 @@ function step9_coachReview(newDate: string): void {
 
   // Create the new day's QuickActionsEvent
   const qaId = `qa-${newDate}`;
+  const hasExistingQa =
+    scheduleStore.activeEvents[qaId] !== undefined ||
+    scheduleStore.historyEvents[qaId] !== undefined;
   const qa: QuickActionsEvent = {
     id: qaId,
     eventType: 'quickActions',
@@ -372,14 +375,36 @@ function step9_coachReview(newDate: string): void {
 
   scheduleStore.setActiveEvent(qa);
 
-  // Push a rollover feed entry if user exists
+  // Advance the login streak once when this rollover creates a genuinely new day.
   const user = userStore.user;
   if (user) {
+    if (!hasExistingQa) {
+      const current = user.progression.stats.milestones.streakCurrent;
+      const nextStreak = current + 1;
+      const bestStreak = Math.max(user.progression.stats.milestones.streakBest, nextStreak);
+      userStore.setUser({
+        ...user,
+        progression: {
+          ...user.progression,
+          stats: {
+            ...user.progression.stats,
+            milestones: {
+              ...user.progression.stats.milestones,
+              streakCurrent: nextStreak,
+              streakBest: bestStreak,
+            },
+          },
+        },
+      });
+    }
+
+    // Push a rollover feed entry if user exists
+    const latestUser = userStore.user ?? user;
     appendFeedEntry({
-      commentBlock: ribbet(user),
+      commentBlock: ribbet(latestUser),
       sourceType: FEED_SOURCE.ROLLOVER,
       timestamp: new Date().toISOString(),
-    }, user);
+    }, latestUser);
   }
 }
 

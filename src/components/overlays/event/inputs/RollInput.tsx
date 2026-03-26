@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { RollInputFields } from '../../../../types/taskTemplate';
 import type { Task } from '../../../../types/task';
+import { isEarlyBirdActive } from '../../../../engine/xpBoosts';
 
 interface RollInputProps {
   inputFields: RollInputFields;
@@ -13,7 +14,7 @@ const DIE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 /**
  * D78 — ROLL task input.
  * System-generated result (1–sides). User taps to roll. Locked on complete.
- * Result displays die face + multiplier.
+ * Result displays die face + early-bird bonus when applicable.
  */
 export function RollInput({ inputFields, task, onComplete }: RollInputProps) {
   const isComplete = task.completionState === 'complete';
@@ -28,8 +29,10 @@ export function RollInput({ inputFields, task, onComplete }: RollInputProps) {
     setRolling(true);
 
     // Short visual animation — cycle faces rapidly then settle on real result
-    const result = Math.floor(Math.random() * sides) + 1;
-    const boostApplied = `${(1 + result * 0.1).toFixed(1)}x`;
+    const earlyBirdBonus = isEarlyBirdActive() ? 1 : 0;
+    const rawResult = Math.floor(Math.random() * sides) + 1;
+    const result = rawResult + earlyBirdBonus;
+    const boostApplied = earlyBirdBonus > 0 ? '+1' : undefined;
     let ticks = 0;
     const maxTicks = 12;
     const id = window.setInterval(() => {
@@ -57,7 +60,7 @@ export function RollInput({ inputFields, task, onComplete }: RollInputProps) {
         <div className="flex flex-col items-center gap-2">
           <span className="text-6xl select-none">{dieFace}</span>
           <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
-            Rolled {displayResult} — {displayBoost ?? ''}
+            Rolled {displayResult}{displayBoost ? ` ${displayBoost}` : ''}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">Today&apos;s roll is locked</p>
         </div>

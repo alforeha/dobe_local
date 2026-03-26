@@ -32,6 +32,7 @@ import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
 import { starterTaskTemplates, STARTER_TEMPLATE_IDS } from '../coach/StarterQuestLibrary';
+import { isWisdomTemplate } from './xpBoosts';
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
@@ -557,13 +558,15 @@ export function completeGTDItem(itemId: string, user: User): void {
   if (template) {
     const baseXP = Object.values(template.xpAward).reduce((s, v) => s + v, 0) + (template.xpBonus ?? 0);
     const onboardingQuestTask = isOnboardingQuestTemplate(task.templateRef);
-    awardXP(userId, onboardingQuestTask ? baseXP : baseXP + 4);
+    awardXP(userId, onboardingQuestTask ? baseXP : baseXP + 4, {
+      isWisdomTask: isWisdomTemplate(template),
+    });
     if (!onboardingQuestTask) {
       awardStat(userId, 'agility', 2);
       awardStat(userId, 'defense', 2);
     }
   } else {
-    awardXP(userId, 9);
+    awardXP(userId, 9, { isWisdomTask: true });
     awardStat(userId, 'wisdom', 25);
   }
 

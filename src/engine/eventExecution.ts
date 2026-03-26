@@ -28,6 +28,7 @@ import { awardBadge, checkQuestReward } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
 import { getAppNowISO } from '../utils/dateUtils';
+import { isWisdomTemplate } from './xpBoosts';
 
 // ── TASK RESULT SHAPE ─────────────────────────────────────────────────────────
 
@@ -155,7 +156,7 @@ export function completeTask(
       if (hasResourceRef) contextBonuses.push(2); // +2 defense bonus
 
       const bonusTotal = contextBonuses.reduce((s, v) => s + v, 0);
-      awardXP(userId, baseXP + bonusTotal);
+      awardXP(userId, baseXP + bonusTotal, { isWisdomTask: isWisdomTemplate(template) });
 
       // Award stat points per xpAward distribution
       const statGroups = template.xpAward;
@@ -174,7 +175,7 @@ export function completeTask(
       }
     } else {
       // No template found — apply wisdom fallback (D48)
-      awardXP(userId, 5);
+      awardXP(userId, 5, { isWisdomTask: true });
       awardStat(userId, 'wisdom', 25);
     }
 

@@ -68,7 +68,7 @@ export function QACompletionPopup({ completion, onClose }: QACompletionPopupProp
             </div>
             {rollFields?.boostApplied && (
               <div className="text-xs text-purple-600 dark:text-purple-400">
-                Multiplier:{' '}
+                Early bird bonus:{' '}
                 <span className="font-semibold">{rollFields.boostApplied}</span>
               </div>
             )}

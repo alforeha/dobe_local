@@ -30,6 +30,7 @@ import { awardBadge } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
 import { autoCheckQuestItem } from './resourceEngine';
 import { STARTER_TEMPLATE_IDS } from '../coach/StarterQuestLibrary';
+import { isWisdomTemplate } from './xpBoosts';
 
 // ── HELPERS ────────────────────────────────────────────────────────────────────────────────
 
@@ -125,10 +126,10 @@ export function completeFavourite(taskTemplateRef: string, user: User): void {
   const userId = user.system.id;
   if (template) {
     const baseXP = Object.values(template.xpAward).reduce((s, v) => s + v, 0) + (template.xpBonus ?? 0);
-    awardXP(userId, baseXP + 2);
+    awardXP(userId, baseXP + 2, { isWisdomTask: isWisdomTemplate(template) });
     awardStat(userId, 'agility', 2);
   } else {
-    awardXP(userId, 7);
+    awardXP(userId, 7, { isWisdomTask: true });
     awardStat(userId, 'wisdom', 25);
   }
 
@@ -487,7 +488,7 @@ export function completeManualGTDItem(itemId: string, user: User): void {
   }
 
   // XP award — +5 wisdom for manual GTD completion
-  awardXP(latestUser.system.id, 5);
+  awardXP(latestUser.system.id, 5, { isWisdomTask: true });
   awardStat(latestUser.system.id, 'wisdom', 5);
 
   // Achievement check
