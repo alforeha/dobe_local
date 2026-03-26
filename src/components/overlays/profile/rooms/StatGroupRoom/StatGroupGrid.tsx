@@ -1,4 +1,5 @@
 import { useMemo, useRef, useLayoutEffect, useEffect, useState } from 'react';
+import { resolveIcon } from '../../../../../constants/iconMap';
 import type { StatGroupKey } from '../../../../../types/user';
 import type { TalentGroupStats } from '../../../../../types/stats';
 import type { Task } from '../../../../../types/task';
@@ -13,11 +14,6 @@ const STAT_ORDER: StatGroupKey[] = ['health', 'strength', 'agility', 'defense', 
 const STAT_LABELS: Record<StatGroupKey, string> = {
   health: 'Health', strength: 'Strength', agility: 'Agility',
   defense: 'Defense', charisma: 'Charisma', wisdom: 'Wisdom',
-};
-
-const STAT_ICONS: Record<StatGroupKey, string> = {
-  health: '❤️', strength: '⚔️', agility: '⚡',
-  defense: '🛡️', charisma: '💬', wisdom: '📖',
 };
 
 // Full class strings required for Tailwind content scanning
@@ -151,7 +147,7 @@ function CubePopup({ selected, statCounts, onClose }: CubePopupProps) {
       >
         <div className="flex items-center justify-between mb-2">
           <span className={`font-semibold text-base ${STAT_TEXT[selected.stat]}`}>
-            {STAT_ICONS[selected.stat]} {STAT_LABELS[selected.stat]}
+            {resolveIcon(selected.stat)} {STAT_LABELS[selected.stat]}
           </span>
           <button
             type="button"
@@ -159,7 +155,7 @@ function CubePopup({ selected, statCounts, onClose }: CubePopupProps) {
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none"
             aria-label="Close"
           >
-            ✕
+            {resolveIcon('close')}
           </button>
         </div>
         <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">{label}</p>
@@ -255,7 +251,7 @@ export function StatGroupGrid({ talents, historyEvents, tasks, taskTemplates }: 
               className="flex-1 flex flex-col items-center justify-center"
             >
               <span style={{ fontSize: iconFs, lineHeight: 1 }}>
-                {STAT_ICONS[stat]}
+                {resolveIcon(stat)}
               </span>
               <span
                 className={`font-bold leading-none mt-0.5 ${STAT_TEXT[stat]}`}

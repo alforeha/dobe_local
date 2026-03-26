@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { resolveIcon } from '../../../constants/iconMap';
 import { deriveLevelFromXP } from '../../../engine/awardPipeline';
 import { useUserStore } from '../../../stores/useUserStore';
 import type { StatGroupKey } from '../../../types/user';
@@ -16,12 +17,12 @@ import {
   getSlotIcon,
 } from './rooms/EquipmentRoom/equipmentRoomData';
 
-const STAKE_TIERS: { minLevel: number; emoji: string; label: string }[] = [
-  { minLevel: 21, emoji: '\u26fa\ufe0f', label: 'Forest' },
-  { minLevel: 11, emoji: '\ud83c\udf32', label: 'Grove' },
-  { minLevel: 6, emoji: '\ud83c\udf33', label: 'Sapling' },
-  { minLevel: 3, emoji: '\ud83c\udf3f', label: 'Sprout' },
-  { minLevel: 1, emoji: '\ud83c\udf31', label: 'Seed' },
+const STAKE_TIERS: { minLevel: number; iconKey: string; label: string }[] = [
+  { minLevel: 21, iconKey: 'stake-forest', label: 'Forest' },
+  { minLevel: 11, iconKey: 'stake-grove', label: 'Grove' },
+  { minLevel: 6, iconKey: 'stake-sapling', label: 'Sapling' },
+  { minLevel: 3, iconKey: 'stake-sprout', label: 'Sprout' },
+  { minLevel: 1, iconKey: 'stake-seed', label: 'Seed' },
 ];
 
 function getStake(level: number) {
@@ -105,7 +106,7 @@ export function ProfileTopSection({ onNav }: ProfileTopSectionProps) {
           onClick={() => onNav('preferences')}
           aria-label="Preferences"
         >
-          {'\ud83d\udc64'}
+          {resolveIcon('contact')}
         </button>
 
         <div className="w-44 shrink-0 rounded-2xl border border-gray-100 bg-white px-3 py-2.5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
@@ -125,7 +126,7 @@ export function ProfileTopSection({ onNav }: ProfileTopSectionProps) {
           onClick={() => onNav('storage')}
           aria-label="Storage"
         >
-          {'\ud83d\udd12'}
+          {resolveIcon('lock')}
         </button>
       </div>
 
@@ -138,7 +139,7 @@ export function ProfileTopSection({ onNav }: ProfileTopSectionProps) {
           aria-label="View stat groups"
         >
           <span className="leading-none" style={{ fontSize: emojiFontSize }}>
-            {stake.emoji}
+            {resolveIcon(stake.iconKey)}
           </span>
           <span
             className="mt-1.5 font-medium leading-none text-emerald-700 dark:text-emerald-300"
@@ -169,7 +170,7 @@ export function ProfileTopSection({ onNav }: ProfileTopSectionProps) {
           onClick={handleBadgeNav}
           aria-label="Badge Room"
         >
-          {'\ud83c\udfc6'}
+          {resolveIcon('badge')}
           {badgeRoomGlows && (
             <div className="pointer-events-none absolute inset-0 animate-pulse rounded-full ring-2 ring-emerald-400" />
           )}
@@ -181,7 +182,7 @@ export function ProfileTopSection({ onNav }: ProfileTopSectionProps) {
           onClick={handleEquipmentNav}
           aria-label="Equipment"
         >
-          {'\ud83c\udf92'}
+          {resolveIcon('equipment')}
           {equipmentRoomGlows && (
             <div className="pointer-events-none absolute inset-0 animate-pulse rounded-full ring-2 ring-emerald-400" />
           )}

@@ -301,7 +301,7 @@ function TaskTemplateRow({ template, active, locked, onToggle }: TaskTemplateRow
           className="shrink-0 flex flex-col items-center gap-0.5"
           title="Required by active quest"
         >
-          <span className="text-base leading-none" aria-hidden="true">🔒</span>
+          <span className="text-base leading-none" aria-hidden="true">{resolveIcon('lock')}</span>
           <span className="text-[9px] text-gray-400 dark:text-gray-500 leading-none">Quest</span>
         </div>
       ) : (

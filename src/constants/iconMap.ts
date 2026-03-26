@@ -79,6 +79,40 @@ export const ICON_MAP: Record<string, string> = {
   'gear:gear-task-master-ring': '\ud83d\udc8d',
   'gear:gear-all-rounder-amulet': '\ud83d\udcff',
   'gear:gear-coach-drop-ribbon': '\ud83c\udf80',
+  // stake tiers
+  'stake-forest': '\u26fa\ufe0f',
+  'stake-grove': '\ud83c\udf32',
+  'stake-sapling': '\ud83c\udf33',
+  'stake-sprout': '\ud83c\udf3f',
+  'stake-seed': '\ud83c\udf31',
+  // ui controls
+  star: '\u2b50',
+  'star-outline': '\u2606',
+  close: '\u2715',
+  expand: '\u25bc',
+  collapse: '\u25b2',
+  add: '+',
+  edit: '\u270f\ufe0f',
+  delete: '\ud83d\uddd1\ufe0f',
+  lock: '\ud83d\udd12',
+  unlock: '\ud83d\udd13',
+  // resources & roles
+  contact: '\ud83d\udc64',
+  account: '\ud83d\udcb3',
+  inventory: '\ud83d\udce6',
+  doc: '\ud83d\udcc4',
+  badge: '\ud83c\udfc6',
+  equipment: '\ud83c\udf92',
+  // time-of-day
+  morning: '\ud83c\udf05',
+  night: '\ud83c\udf19',
+  // xp / progression
+  gold: '\ud83e\ude99',
+  xp: '\u2728',
+  streak: '\ud83d\udd25',
+  level: '\u2b06\ufe0f',
+  boost: '\u26a1',
+  glow: '\ud83d\udcab',
   // general
   default: '\ud83d\udccc',
 };

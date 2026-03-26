@@ -55,7 +55,7 @@ export function TaskBlock({
             aria-label={isFavourited ? 'Remove from favourites' : 'Add to favourites'}
             className="text-lg leading-none shrink-0 transition-colors"
           >
-            {isFavourited ? '⭐' : '☆'}
+            {isFavourited ? resolveIcon('star') : resolveIcon('star-outline')}
           </button>
         </GlowRing>
       )}

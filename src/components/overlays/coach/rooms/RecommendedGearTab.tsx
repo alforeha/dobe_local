@@ -9,27 +9,8 @@
 import { useMemo, useState } from 'react';
 import { characterLibrary } from '../../../../coach';
 import { useUserStore } from '../../../../stores/useUserStore';
+import { resolveIcon } from '../../../../constants/iconMap';
 import type { GearDefinition } from '../../../../types/coach';
-
-// ── EMOJI ICONS ─────────────────────────────────────────────────────────────
-
-const ASSET_EMOJI: Record<string, string> = {
-  'gear:gear-starter-hat':       '🧢',
-  'gear:gear-work-shirt':        '👕',
-  'gear:gear-adventurer-jacket': '🧥',
-  'gear:gear-work-gloves':       '🧤',
-  'gear:gear-streak-gloves':     '🥊',
-  'gear:gear-veteran-boots':     '👢',
-  'gear:gear-endurance-boots':   '👟',
-  'gear:gear-legendary-crown':   '👑',
-  'gear:gear-task-master-ring':  '💍',
-  'gear:gear-all-rounder-amulet':'🔮',
-  'gear:gear-coach-drop-ribbon': '🎀',
-};
-
-function getGearEmoji(assetRef: string): string {
-  return ASSET_EMOJI[assetRef] ?? '⚙️';
-}
 
 // ── RARITY STYLES ────────────────────────────────────────────────────────────
 
@@ -59,15 +40,6 @@ const STAT_LABELS: Record<StatKey, string> = {
   defense:  'Defense',
   charisma: 'Charisma',
   wisdom:   'Wisdom',
-};
-
-const STAT_ICONS: Record<StatKey, string> = {
-  health:   '❤️',
-  strength: '⚔️',
-  agility:  '⚡',
-  defense:  '🛡️',
-  charisma: '💬',
-  wisdom:   '📖',
 };
 
 // ── SLOT FILTERS ─────────────────────────────────────────────────────────────
@@ -153,7 +125,7 @@ export function RecommendedGearTab() {
           {STAT_KEYS.map((k) => (
             <FilterPill
               key={k}
-              label={`${STAT_ICONS[k]} ${STAT_LABELS[k]}`}
+              label={`${resolveIcon(k)} ${STAT_LABELS[k]}`}
               active={statFilter === k}
               onClick={() => setStatFilter(k)}
             />
@@ -214,7 +186,7 @@ interface GearCardProps {
 }
 
 function GearCard({ gear, owned }: GearCardProps) {
-  const emoji = getGearEmoji(gear.assetRef);
+  const emoji = resolveIcon(gear.assetRef);
   const rarityBadge = RARITY_BADGE[gear.rarity] ?? RARITY_BADGE.common;
   const rarityRing  = RARITY_RING[gear.rarity]  ?? RARITY_RING.common;
   const statLabel = owned ? formatStatBonus(gear) : null;

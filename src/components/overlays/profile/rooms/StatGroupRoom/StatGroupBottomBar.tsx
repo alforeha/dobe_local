@@ -1,3 +1,5 @@
+import { resolveIcon } from '../../../../../constants/iconMap';
+
 interface StatGroupBottomBarProps {
   talentPoints: number;
   onTalentTree: () => void;
@@ -15,7 +17,7 @@ export function StatGroupBottomBar({ talentPoints, onTalentTree }: StatGroupBott
         onClick={onTalentTree}
         aria-label="Open talent tree"
       >
-        ★
+        {resolveIcon('star')}
       </button>
     </div>
   );

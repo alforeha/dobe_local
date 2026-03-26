@@ -1,4 +1,5 @@
 import type { StatGroupKey } from '../../types';
+import { resolveIcon } from '../../constants/iconMap';
 
 const STAT_LABELS: Record<StatGroupKey, string> = {
   health: 'HP',
@@ -7,15 +8,6 @@ const STAT_LABELS: Record<StatGroupKey, string> = {
   defense: 'DEF',
   charisma: 'CHA',
   wisdom: 'WIS',
-};
-
-const STAT_ICONS: Record<StatGroupKey, string> = {
-  health: '❤️',
-  strength: '⚔️',
-  agility: '⚡',
-  defense: '🛡️',
-  charisma: '💬',
-  wisdom: '📖',
 };
 
 const STAT_COLORS: Record<StatGroupKey, string> = {
@@ -48,7 +40,7 @@ export function StatIcon({ stat, value, size = 'sm', showLabel = true, onClick }
       {showLabel ? (
         <span className={`${textSize} font-medium ${color}`}>{label}</span>
       ) : (
-        <span className="text-sm leading-none">{STAT_ICONS[stat]}</span>
+        <span className="text-sm leading-none">{resolveIcon(stat)}</span>
       )}
       <span className={`${valueSize} text-gray-800 dark:text-gray-100`}>{value}</span>
     </>

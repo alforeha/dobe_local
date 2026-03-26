@@ -43,7 +43,7 @@ export function ActBlock({ act, onEdit }: ActBlockProps) {
             onClick={() => onEdit(act)}
             className="shrink-0 text-xs text-gray-400 hover:text-blue-500 transition-colors px-1"
           >
-            ✏️
+            {resolveIcon('edit')}
           </button>
         )}
       </div>
