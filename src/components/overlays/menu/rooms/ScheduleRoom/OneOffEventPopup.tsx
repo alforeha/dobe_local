@@ -228,6 +228,7 @@ function ScheduleTaskPool({ templates, taskPool, setTaskPool }: ScheduleTaskPool
                 )}
                 <span className="w-6 text-center text-base" aria-hidden="true">{resolveIcon(primaryStat)}</span>
                 <span className="w-6 text-center text-base" aria-hidden="true">{getTaskTypeIcon(template.taskType)}</span>
+                <span className="w-6 text-center text-base" aria-hidden="true">{resolveIcon(template.icon)}</span>
                 <span className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-200">{template.name}</span>
               </div>
             );

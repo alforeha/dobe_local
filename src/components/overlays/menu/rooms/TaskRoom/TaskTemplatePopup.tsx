@@ -1,24 +1,11 @@
-// ─────────────────────────────────────────
-// TaskTemplatePopup — ADD / EDIT custom TaskTemplate
-// Renders inside the Menu overlay via PopupShell.
-// inputFields set to sensible BUILD-TIME defaults per taskType on save.
-// Full inputFields editor is FUTURE SCOPE.
-// ─────────────────────────────────────────
-
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { PopupShell } from '../../../../shared/popups/PopupShell';
 import { IconPicker } from '../../../../shared/IconPicker';
+import { resolveIcon } from '../../../../../constants/iconMap';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
-import type {
-  TaskTemplate,
-  TaskType,
-  TaskSecondaryTag,
-  InputFields,
-} from '../../../../../types';
+import type { TaskTemplate, TaskType, TaskSecondaryTag, InputFields } from '../../../../../types';
 import type { StatGroupKey } from '../../../../../types/user';
-
-// ── CONSTANTS ─────────────────────────────────────────────────────────────────
 
 const TASK_TYPES: TaskType[] = [
   'CHECK',
@@ -40,35 +27,34 @@ const TASK_TYPES: TaskType[] = [
 ];
 
 const TASK_TYPE_LABELS: Record<TaskType, string> = {
-  CHECK: 'Check (simple tick)',
-  COUNTER: 'Counter (count toward target)',
-  SETS_REPS: 'Sets & Reps (weights)',
-  CIRCUIT: 'Circuit (multi-exercise)',
-  DURATION: 'Duration (timed activity)',
-  TIMER: 'Timer (countdown)',
-  RATING: 'Rating (scale score)',
-  TEXT: 'Text (free-text response)',
-  FORM: 'Form (multi-field)',
-  CHOICE: 'Choice (select option)',
-  CHECKLIST: 'Checklist (tick items)',
-  SCAN: 'Scan (barcode/QR)',
-  LOG: 'Log (open entry)',
-  LOCATION_POINT: 'Location Point (pin drop)',
-  LOCATION_TRAIL: 'Location Trail (route track)',
-  ROLL: 'Roll (system dice — D78)',
+  CHECK: 'Check',
+  COUNTER: 'Counter',
+  SETS_REPS: 'Sets & Reps',
+  CIRCUIT: 'Circuit',
+  DURATION: 'Duration',
+  TIMER: 'Timer',
+  RATING: 'Rating',
+  TEXT: 'Text',
+  FORM: 'Form',
+  CHOICE: 'Choice',
+  CHECKLIST: 'Checklist',
+  SCAN: 'Scan',
+  LOG: 'Log',
+  LOCATION_POINT: 'Location Point',
+  LOCATION_TRAIL: 'Location Trail',
+  ROLL: 'Roll',
 };
 
 const SECONDARY_TAGS: TaskSecondaryTag[] = [
   'fitness',
-  'nutrition',
   'health',
+  'nutrition',
   'mindfulness',
   'home',
-  'finance',
   'admin',
-  'learning',
+  'finance',
   'social',
-  'work',
+  'learning',
 ];
 
 const STAT_GROUPS: { key: StatGroupKey; label: string }[] = [
@@ -79,9 +65,6 @@ const STAT_GROUPS: { key: StatGroupKey; label: string }[] = [
   { key: 'charisma', label: 'Charisma' },
   { key: 'wisdom', label: 'Wisdom' },
 ];
-
-// ── DEFAULT inputFields per TaskType (BUILD-TIME STUB — D41) ──────────────────
-// Full inputFields editor is FUTURE SCOPE. On save, sensible defaults are applied.
 
 function defaultInputFields(taskType: TaskType): InputFields {
   switch (taskType) {
@@ -120,9 +103,6 @@ function defaultInputFields(taskType: TaskType): InputFields {
   }
 }
 
-// ── XP AWARD BUILDER ─────────────────────────────────────────────────────────
-// D48: all XP goes to the selected stat group. Other groups stay at 0.
-
 function buildXpAward(statGroup: StatGroupKey, xpValue: number) {
   return {
     health: 0,
@@ -135,65 +115,60 @@ function buildXpAward(statGroup: StatGroupKey, xpValue: number) {
   };
 }
 
-// ── TYPES ─────────────────────────────────────────────────────────────────────
+function summariseInputFields(inputFields: InputFields): string[] {
+  return Object.entries(inputFields).map(([key, value]) => {
+    const title = key.charAt(0).toUpperCase() + key.slice(1);
+    if (Array.isArray(value)) {
+      const summary = value
+        .map((entry) => {
+          if (entry && typeof entry === 'object' && 'label' in entry && typeof entry.label === 'string') {
+            return entry.label;
+          }
+          return String(entry);
+        })
+        .join(', ');
+      return `${title}: ${summary || '—'}`;
+    }
+    return `${title}: ${value === null || value === undefined || value === '' ? '—' : String(value)}`;
+  });
+}
+
+function inputClassName(disabled: boolean) {
+  return `w-full rounded-xl border px-3 py-2 text-sm focus:outline-none ${
+    disabled
+      ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-500'
+      : 'border-gray-300 bg-white text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100'
+  }`;
+}
 
 interface TaskTemplatePopupProps {
-  /** If provided, editing an existing custom template. null = add mode. */
   editKey: string | null;
-  /** Existing template data when in edit mode. */
   editTemplate: TaskTemplate | null;
   onClose: () => void;
+  readOnly?: boolean;
 }
 
-// ── FORM FIELD ────────────────────────────────────────────────────────────────
-
-interface FormField {
-  label: string;
-  className?: string;
-  hint?: string;
-  children: React.ReactNode;
-}
-
-function Field({ label, hint, children }: FormField) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-medium text-gray-500">{label}</label>
-      {children}
-      {hint && <p className="text-xs text-gray-400 italic">{hint}</p>}
-    </div>
-  );
-}
-
-// ── COMPONENT ─────────────────────────────────────────────────────────────────
-
-export function TaskTemplatePopup({ editKey, editTemplate, onClose }: TaskTemplatePopupProps) {
+export function TaskTemplatePopup({
+  editKey,
+  editTemplate,
+  onClose,
+  readOnly = false,
+}: TaskTemplatePopupProps) {
   const setTaskTemplate = useScheduleStore((s) => s.setTaskTemplate);
-  const removeTaskTemplate = useScheduleStore((s) => s.removeTaskTemplate);
-
   const isEditMode = editKey !== null && editTemplate !== null;
 
-  // ── Determine initial statGroup from existing xpAward (edit mode)
   const initialStatGroup: StatGroupKey = (() => {
     if (!isEditMode || !editTemplate) return 'health';
-    const a = editTemplate.xpAward;
     const groups: StatGroupKey[] = ['health', 'strength', 'agility', 'defense', 'charisma', 'wisdom'];
-    const dominant = groups.find((g) => a[g] > 0);
-    return dominant ?? 'health';
+    return groups.find((group) => editTemplate.xpAward[group] > 0) ?? 'health';
   })();
 
-  const initialXpValue = isEditMode && editTemplate
-    ? editTemplate.xpAward[initialStatGroup]
-    : 30;
+  const initialXpValue = isEditMode && editTemplate ? editTemplate.xpAward[initialStatGroup] : 30;
 
-  // ── Form state
   const [name, setName] = useState(isEditMode && editTemplate ? editTemplate.name : '');
-  const [taskType, setTaskType] = useState<TaskType>(
-    isEditMode && editTemplate ? editTemplate.taskType : 'CHECK',
-  );
-  const [icon, setIcon] = useState(
-    isEditMode && editTemplate ? editTemplate.icon : 'check',
-  );
-  const [secondaryTag, setSecondaryTag] = useState<TaskSecondaryTag | ''>( 
+  const [taskType, setTaskType] = useState<TaskType>(isEditMode && editTemplate ? editTemplate.taskType : 'CHECK');
+  const [icon, setIcon] = useState(isEditMode && editTemplate ? editTemplate.icon : 'check');
+  const [secondaryTag, setSecondaryTag] = useState<TaskSecondaryTag | ''>(
     isEditMode && editTemplate ? (editTemplate.secondaryTag ?? '') : '',
   );
   const [statGroup, setStatGroup] = useState<StatGroupKey>(initialStatGroup);
@@ -201,14 +176,13 @@ export function TaskTemplatePopup({ editKey, editTemplate, onClose }: TaskTempla
   const [cooldown, setCooldown] = useState<number | ''>(
     isEditMode && editTemplate && editTemplate.cooldown !== null ? editTemplate.cooldown : '',
   );
-  const [description, setDescription] = useState(
-    isEditMode && editTemplate ? editTemplate.description : '',
-  );
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [description, setDescription] = useState(isEditMode && editTemplate ? editTemplate.description : '');
   const [error, setError] = useState('');
 
-  // ── Handlers
+  const inputSummary = useMemo(() => summariseInputFields(defaultInputFields(taskType)), [taskType]);
+
   function handleSave() {
+    if (readOnly) return;
     if (!name.trim()) {
       setError('Name is required.');
       return;
@@ -232,11 +206,14 @@ export function TaskTemplatePopup({ editKey, editTemplate, onClose }: TaskTempla
     };
 
     if (isEditMode && editKey) {
-      // Edit: preserve id and isCustom flag, update in store
-      const updated: TaskTemplate = { ...template, id: editTemplate?.id, isCustom: editTemplate?.isCustom };
-      setTaskTemplate(editKey, updated);
+      setTaskTemplate(editKey, {
+        ...template,
+        id: editTemplate?.id,
+        isCustom: editTemplate?.isCustom,
+        isSystem: editTemplate?.isSystem,
+        xpBonus: editTemplate?.xpBonus,
+      });
     } else {
-      // Add: generate UUID, mark as user-custom, write to schedule store (D88)
       const id = uuidv4();
       setTaskTemplate(id, { ...template, isCustom: true });
     }
@@ -244,162 +221,164 @@ export function TaskTemplatePopup({ editKey, editTemplate, onClose }: TaskTempla
     onClose();
   }
 
-  function handleDelete() {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
-    if (editKey) {
-      removeTaskTemplate(editKey);
-    }
-    onClose();
-  }
-
-  const title = isEditMode ? 'Edit Task Template' : 'Add Task Template';
-
-  // ── Render ────────────────────────────────────────────────────────────────
+  const title = readOnly
+    ? 'View Task Template'
+    : isEditMode
+      ? 'Edit Task Template'
+      : 'Add Task Template';
 
   return (
-    <PopupShell title={title} onClose={onClose}>
-      <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto pb-2">
+    <PopupShell
+      title={title}
+      onClose={onClose}
+      size="large"
+      headerRight={
+        readOnly ? (
+          <span className="rounded-full bg-gray-200 px-2.5 py-1 text-[11px] font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+            Prebuilt template no editing
+          </span>
+        ) : undefined
+      }
+    >
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden pb-4">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-4">
+            <div className="w-24 shrink-0">
+              <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Icon</label>
+              <div className={readOnly ? 'pointer-events-none opacity-60' : ''}>
+                <IconPicker value={icon} onChange={setIcon} align="left" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setError('');
+                }}
+                disabled={readOnly}
+                placeholder="e.g. Morning walk"
+                className={inputClassName(readOnly)}
+              />
+            </div>
+          </div>
 
-        {/* Name */}
-        <Field label="Name *">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => { setName(e.target.value); setError(''); }}
-            placeholder="e.g. Morning walk"
-            className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-800 dark:text-gray-200 dark:bg-gray-700 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-          />
-        </Field>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={readOnly}
+              rows={4}
+              className={`${inputClassName(readOnly)} resize-none`}
+              placeholder="Short description of what this task involves"
+            />
+          </div>
 
-        {/* Task Type */}
-        <Field label="Task Type *">
-          <select
-            value={taskType}
-            onChange={(e) => setTaskType(e.target.value as TaskType)}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-800 dark:text-gray-200 dark:bg-gray-700 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-          >
-            {TASK_TYPES.map((t) => (
-              <option key={t} value={t}>{TASK_TYPE_LABELS[t]}</option>
-            ))}
-          </select>
-        </Field>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Stat Group</label>
+              <select
+                value={statGroup}
+                onChange={(e) => setStatGroup(e.target.value as StatGroupKey)}
+                disabled={readOnly}
+                className={inputClassName(readOnly)}
+              >
+                {STAT_GROUPS.map(({ key, label }) => (
+                  <option key={key} value={key}>{`${resolveIcon(key)} ${label}`}</option>
+                ))}
+              </select>
+            </div>
 
-        {/* Icon */}
-        <Field label="Icon">
-          <IconPicker value={icon} onChange={setIcon} />
-        </Field>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Category</label>
+              <select
+                value={secondaryTag}
+                onChange={(e) => setSecondaryTag(e.target.value as TaskSecondaryTag | '')}
+                disabled={readOnly}
+                className={inputClassName(readOnly)}
+              >
+                <option value="">None</option>
+                {SECONDARY_TAGS.map((tag) => (
+                  <option key={tag} value={tag}>{tag}</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-        {/* Secondary Tag */}
-        <Field label="Category (optional)">
-          <select
-            value={secondaryTag}
-            onChange={(e) => setSecondaryTag(e.target.value as TaskSecondaryTag | '')}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-800 dark:text-gray-200 dark:bg-gray-700 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-          >
-            <option value="">— None —</option>
-            {SECONDARY_TAGS.map((t) => (
-              <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-            ))}
-          </select>
-        </Field>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Task Type</label>
+              <select
+                value={taskType}
+                onChange={(e) => setTaskType(e.target.value as TaskType)}
+                disabled={readOnly}
+                className={inputClassName(readOnly)}
+              >
+                {TASK_TYPES.map((type) => (
+                  <option key={type} value={type}>{`${resolveIcon(type.toLowerCase())} ${TASK_TYPE_LABELS[type]}`}</option>
+                ))}
+              </select>
+            </div>
 
-        {/* Stat Group */}
-        <Field label="Stat Group *">
-          <select
-            value={statGroup}
-            onChange={(e) => setStatGroup(e.target.value as StatGroupKey)}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-800 dark:text-gray-200 dark:bg-gray-700 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-          >
-            {STAT_GROUPS.map(({ key, label }) => (
-              <option key={key} value={key}>{label}</option>
-            ))}
-          </select>
-        </Field>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Cooldown (minutes)</label>
+              <input
+                type="number"
+                value={cooldown}
+                onChange={(e) => setCooldown(e.target.value === '' ? '' : Number(e.target.value))}
+                disabled={readOnly}
+                min={1}
+                className={inputClassName(readOnly)}
+                placeholder="Optional"
+              />
+            </div>
+          </div>
 
-        {/* XP Value */}
-        <Field
-          label="XP Value *"
-          hint="Suggested: light 20–30 • standard 30–50 • physical 50–80 • complex 80–120"
-        >
-          <input
-            type="number"
-            value={xpValue}
-            onChange={(e) => {
-              setXpValue(e.target.value === '' ? '' : Number(e.target.value));
-              setError('');
-            }}
-            placeholder="e.g. 30"
-            min={1}
-            max={500}
-            step={5}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-800 dark:text-gray-200 dark:bg-gray-700 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-          />
-        </Field>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Task inputs summary</label>
+            <div className={`flex min-h-0 flex-1 flex-col rounded-2xl border px-4 py-3 ${
+              readOnly
+                ? 'border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900'
+                : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/40'
+            }`}>
+              <div className="min-h-0 flex-1 overflow-y-auto space-y-1">
+                {inputSummary.map((line) => (
+                  <p key={line} className={`text-sm ${readOnly ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                    {line}
+                  </p>
+                ))}
+              </div>
+              <p className={`mt-3 text-xs italic ${readOnly ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                Full input editor coming in future update.
+              </p>
+            </div>
+          </div>
+        </div>
 
-        {/* Cooldown */}
-        <Field label="Cooldown (minutes, optional)">
-          <input
-            type="number"
-            value={cooldown}
-            onChange={(e) => setCooldown(e.target.value === '' ? '' : Number(e.target.value))}
-            placeholder="e.g. 60 — leave empty for no cooldown"
-            min={1}
-            step={1}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-800 dark:text-gray-200 dark:bg-gray-700 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-          />
-        </Field>
+        {error && <p className="mb-3 text-sm text-red-500">{error}</p>}
 
-        {/* Description */}
-        <Field label="Description (optional)">
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Short description of what this task involves"
-            rows={3}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-800 dark:text-gray-200 dark:bg-gray-700 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 resize-none"
-          />
-        </Field>
-
-        {/* inputFields editor — BUILD-TIME stub */}
-        <p className="text-xs text-gray-400 italic">
-          Input fields are set automatically based on the chosen task type. Full editor — future scope.
-        </p>
-
-        {/* Error */}
-        {error && <p className="text-xs text-red-500">{error}</p>}
-
-        {/* Actions */}
-        <div className="flex items-center gap-2 pt-1">
-          {isEditMode && (
-            <button
-              type="button"
-              onClick={handleDelete}
-              className={`text-sm px-3 py-2 rounded-lg font-medium transition-colors ${
-                confirmDelete
-                  ? 'bg-red-600 text-white'
-                  : 'text-red-500 border border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20'
-              }`}
-            >
-              {confirmDelete ? 'Confirm Delete' : 'Delete'}
-            </button>
-          )}
-          <div className="flex-1" />
+        <div className="flex items-center justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-700">
           <button
             type="button"
             onClick={onClose}
-            className="text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSave}
-            className="text-sm px-4 py-2 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors"
+            disabled={readOnly}
+            className={`rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+              readOnly
+                ? 'cursor-not-allowed bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                : 'bg-blue-500 text-white hover:bg-blue-600'
+            }`}
           >
-            {isEditMode ? 'Save Changes' : 'Add Template'}
+            Save
           </button>
         </div>
       </div>

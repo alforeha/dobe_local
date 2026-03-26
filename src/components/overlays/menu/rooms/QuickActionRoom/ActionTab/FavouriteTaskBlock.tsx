@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Task, TaskTemplate } from '../../../../../../types';
-import type { InputFields, XpAward } from '../../../../../../types/taskTemplate';
+import type { InputFields, TaskType, XpAward } from '../../../../../../types/taskTemplate';
 import type { StatGroupKey } from '../../../../../../types/user';
 import { useUserStore } from '../../../../../../stores/useUserStore';
+import { useScheduleStore } from '../../../../../../stores/useScheduleStore';
 import { completeFavourite } from '../../../../../../engine/listsEngine';
 import { resolveIcon } from '../../../../../../constants/iconMap';
 import { GlowRing } from '../../../../../shared/GlowRing';
 import { ONBOARDING_GLOW } from '../../../../../../constants/onboardingKeys';
 import { useGlows } from '../../../../../../hooks/useOnboardingGlow';
 import { TaskTypeInputRenderer } from '../../../../event/TaskTypeInputRenderer';
+import { getOffsetNow } from '../../../../../../utils/dateUtils';
+import { getTaskCooldownState } from '../../../../../../utils/taskCooldown';
 
 interface FavouriteTaskBlockProps {
   templateKey: string;
@@ -37,11 +40,41 @@ function getPrimaryStatKey(xpAward: XpAward): StatGroupKey | null {
   return best;
 }
 
+function getTaskTypeIcon(taskType: TaskType): string {
+  const map: Record<TaskType, string> = {
+    CHECK: 'check',
+    COUNTER: 'counter',
+    SETS_REPS: 'sets_reps',
+    CIRCUIT: 'circuit',
+    DURATION: 'duration',
+    TIMER: 'timer',
+    RATING: 'rating',
+    TEXT: 'text',
+    FORM: 'form',
+    CHOICE: 'choice',
+    CHECKLIST: 'checklist',
+    SCAN: 'scan',
+    LOG: 'log',
+    LOCATION_POINT: 'location_point',
+    LOCATION_TRAIL: 'location_trail',
+    ROLL: 'roll',
+  };
+
+  return resolveIcon(map[taskType]);
+}
+
 export function FavouriteTaskBlock({ templateKey, template }: FavouriteTaskBlockProps) {
   const [expanded, setExpanded] = useState(false);
+  const [nowMs, setNowMs] = useState(() => getOffsetNow().getTime());
   const user = useUserStore((s) => s.user);
+  const tasks = useScheduleStore((s) => s.tasks);
   const favouriteActionGlows = useGlows(ONBOARDING_GLOW.FAVOURITE_ACTION);
   const statKey = getPrimaryStatKey(template.xpAward);
+  const { isCoolingDown, msRemaining, progress } = useMemo(
+    () => getTaskCooldownState(template, templateKey, tasks, nowMs),
+    [template, templateKey, tasks, nowMs],
+  );
+  const cooldownOverlayWidth = isCoolingDown ? `${Math.max(0, (1 - progress) * 100)}%` : '0%';
 
   const previewTask: Task = {
     id: `favourite-preview-${templateKey}`,
@@ -58,27 +91,59 @@ export function FavouriteTaskBlock({ templateKey, template }: FavouriteTaskBlock
     secondaryTag: template.secondaryTag,
   };
 
+  useEffect(() => {
+    if (!isCoolingDown) return undefined;
+
+    const interval = window.setInterval(() => {
+      setNowMs(getOffsetNow().getTime());
+    }, 15000);
+
+    return () => window.clearInterval(interval);
+  }, [isCoolingDown]);
+
   function handleComplete(resultFields: Partial<InputFields>) {
     if (!user) return;
+    if (isCoolingDown) return;
     completeFavourite(templateKey, user, resultFields);
     setExpanded(false);
   }
 
   return (
     <GlowRing active={favouriteActionGlows} rounded="lg" className="block">
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        {isCoolingDown && (
+          <div
+            className="pointer-events-none absolute inset-y-0 left-0 z-10 bg-white/60 dark:bg-gray-900/65"
+            style={{ width: cooldownOverlayWidth }}
+          />
+        )}
         <button
           type="button"
           onClick={() => setExpanded((current) => !current)}
           className="flex w-full items-center gap-3 px-3 py-3 text-left"
         >
           <span className="text-lg leading-none">{resolveIcon(statKey ?? 'agility')}</span>
+          <span className="text-lg leading-none">{getTaskTypeIcon(template.taskType)}</span>
           <span className="text-xl leading-none">{resolveIcon(template.icon)}</span>
-          <span className="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100">
-            {template.name}
+          <span className="flex-1 flex items-center gap-2 min-w-0">
+            <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+              {template.name}
+            </span>
           </span>
-          <span className="text-sm text-gray-500 dark:text-gray-300">
-            {resolveIcon(expanded ? 'collapse' : 'expand')}
+          <span className="flex shrink-0 items-center gap-2">
+            {template.secondaryTag && (
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                {template.secondaryTag}
+              </span>
+            )}
+            {isCoolingDown && (
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                {Math.max(1, Math.ceil(msRemaining / 60000))}m
+              </span>
+            )}
+            <span className="text-sm text-gray-500 dark:text-gray-300">
+              {resolveIcon(expanded ? 'collapse' : 'expand')}
+            </span>
           </span>
         </button>
 
@@ -89,12 +154,21 @@ export function FavouriteTaskBlock({ templateKey, template }: FavouriteTaskBlock
                 {template.description}
               </p>
             )}
-            <TaskTypeInputRenderer
-              taskType={template.taskType}
-              template={template}
-              task={previewTask}
-              onComplete={handleComplete}
-            />
+            {isCoolingDown ? (
+              <div className="rounded-xl bg-gray-100 px-3 py-3 dark:bg-gray-900/40">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Cooling down</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {Math.max(1, Math.ceil(msRemaining / 60000))} min remaining
+                </p>
+              </div>
+            ) : (
+              <TaskTypeInputRenderer
+                taskType={template.taskType}
+                template={template}
+                task={previewTask}
+                onComplete={handleComplete}
+              />
+            )}
           </div>
         )}
       </div>

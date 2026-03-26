@@ -3,6 +3,8 @@ import type { PlannedEvent } from '../../../../../types';
 import { isOneOffEvent } from '../../../../../utils/isOneOffEvent';
 import { resolveIcon } from '../../../../../constants/iconMap';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
+import type { TaskTemplate, TaskType } from '../../../../../types/taskTemplate';
+import type { StatGroupKey } from '../../../../../types/user';
 
 interface PlannedEventBlockProps {
   event: PlannedEvent;
@@ -52,6 +54,45 @@ function getOrdinalSuffix(day: number): string {
   return 'th';
 }
 
+function getPrimaryStat(template: TaskTemplate): StatGroupKey {
+  const groups: StatGroupKey[] = ['health', 'strength', 'agility', 'defense', 'charisma', 'wisdom'];
+  let best: StatGroupKey = 'health';
+  let bestValue = -1;
+
+  for (const group of groups) {
+    const value = template.xpAward[group] ?? 0;
+    if (value > bestValue) {
+      best = group;
+      bestValue = value;
+    }
+  }
+
+  return bestValue > 0 ? best : 'wisdom';
+}
+
+function getTaskTypeIcon(taskType: TaskType): string {
+  const map: Record<TaskType, string> = {
+    CHECK: 'check',
+    COUNTER: 'counter',
+    SETS_REPS: 'sets_reps',
+    CIRCUIT: 'circuit',
+    DURATION: 'duration',
+    TIMER: 'timer',
+    RATING: 'rating',
+    TEXT: 'text',
+    FORM: 'form',
+    CHOICE: 'choice',
+    CHECKLIST: 'checklist',
+    SCAN: 'scan',
+    LOG: 'log',
+    LOCATION_POINT: 'location_point',
+    LOCATION_TRAIL: 'location_trail',
+    ROLL: 'roll',
+  };
+
+  return resolveIcon(map[taskType]);
+}
+
 export function PlannedEventBlock({ event, onEdit }: PlannedEventBlockProps) {
   const [expanded, setExpanded] = useState(false);
   const taskTemplates = useScheduleStore((s) => s.taskTemplates);
@@ -61,9 +102,17 @@ export function PlannedEventBlock({ event, onEdit }: PlannedEventBlockProps) {
     return event.taskPool
       .map((id) => {
         const template = taskTemplates[id];
-        return template ? { id, name: template.name, icon: template.icon } : null;
+        return template
+          ? {
+              id,
+              name: template.name,
+              icon: template.icon,
+              primaryStat: getPrimaryStat(template),
+              taskType: template.taskType,
+            }
+          : null;
       })
-      .filter((entry): entry is { id: string; name: string; icon: string } => entry !== null);
+      .filter((entry): entry is { id: string; name: string; icon: string; primaryStat: StatGroupKey; taskType: TaskType } => entry !== null);
   }, [event.taskPool, taskTemplates]);
 
   return (
@@ -137,7 +186,9 @@ export function PlannedEventBlock({ event, onEdit }: PlannedEventBlockProps) {
               {orderedTasks.map((task, index) => (
                 <div key={task.id} className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm dark:bg-gray-900/40">
                   <span className="w-5 text-center text-xs text-gray-400">{index + 1}</span>
-                  <span className="text-base">{resolveIcon(task.icon)}</span>
+                  <span className="w-6 text-center text-base" aria-hidden="true">{resolveIcon(task.primaryStat)}</span>
+                  <span className="w-6 text-center text-base" aria-hidden="true">{getTaskTypeIcon(task.taskType)}</span>
+                  <span className="w-6 text-center text-base" aria-hidden="true">{resolveIcon(task.icon)}</span>
                   <span className="truncate text-gray-700 dark:text-gray-200">{task.name}</span>
                 </div>
               ))}

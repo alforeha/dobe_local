@@ -1,40 +1,166 @@
-import type { TaskType, TaskSecondaryTag } from '../../../../../types';
+import { useEffect, useMemo, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import type { QuickActionsEvent, Task, TaskTemplate } from '../../../../../types';
+import type { InputFields, TaskSecondaryTag, TaskType, XpAward } from '../../../../../types/taskTemplate';
+import type { StatGroupKey } from '../../../../../types/user';
 import { resolveIcon } from '../../../../../constants/iconMap';
 import { useUserStore } from '../../../../../stores/useUserStore';
+import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { GlowRing } from '../../../../shared/GlowRing';
 import { ONBOARDING_GLOW } from '../../../../../constants/onboardingKeys';
 import { useGlows } from '../../../../../hooks/useOnboardingGlow';
 import { autoCheckQuestItem } from '../../../../../engine/resourceEngine';
 import { STARTER_TEMPLATE_IDS } from '../../../../../coach/StarterQuestLibrary';
+import { getAppDate, getOffsetNow } from '../../../../../utils/dateUtils';
+import { getTaskCooldownState } from '../../../../../utils/taskCooldown';
+import { completeTask } from '../../../../../engine/eventExecution';
+import { TaskTypeInputRenderer } from '../../../event/TaskTypeInputRenderer';
+import { TaskTemplatePopup } from './TaskTemplatePopup';
 
 interface TaskBlockProps {
   templateKey: string;
-  name: string;
-  icon: string;
-  taskType: TaskType;
-  secondaryTag: TaskSecondaryTag | null;
-  xpTotal: number;
+  template: TaskTemplate;
   isCustom: boolean;
   isSystem?: boolean;
   onEdit?: () => void;
 }
 
-export function TaskBlock({
-  templateKey,
-  name,
-  icon,
-  taskType,
-  secondaryTag,
-  xpTotal,
-  isCustom,
-  isSystem,
-  onEdit,
-}: TaskBlockProps) {
+const STAT_KEYS: StatGroupKey[] = ['health', 'strength', 'agility', 'defense', 'charisma', 'wisdom'];
+
+const SECONDARY_TAG_COLOURS: Record<TaskSecondaryTag, string> = {
+  fitness: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+  nutrition: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+  health: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  mindfulness: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
+  home: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
+  finance: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+  admin: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+  learning: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+  social: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
+  work: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300',
+};
+
+function getPrimaryStatKey(xpAward: XpAward): StatGroupKey | null {
+  let best: StatGroupKey | null = null;
+  let bestValue = 0;
+
+  for (const stat of STAT_KEYS) {
+    const value = xpAward[stat] ?? 0;
+    if (value > bestValue) {
+      best = stat;
+      bestValue = value;
+    }
+  }
+
+  return best;
+}
+
+function getTaskTypeIcon(taskType: TaskType): string {
+  const map: Record<TaskType, string> = {
+    CHECK: 'check',
+    COUNTER: 'counter',
+    SETS_REPS: 'sets_reps',
+    CIRCUIT: 'circuit',
+    DURATION: 'duration',
+    TIMER: 'timer',
+    RATING: 'rating',
+    TEXT: 'text',
+    FORM: 'form',
+    CHOICE: 'choice',
+    CHECKLIST: 'checklist',
+    SCAN: 'scan',
+    LOG: 'log',
+    LOCATION_POINT: 'location_point',
+    LOCATION_TRAIL: 'location_trail',
+    ROLL: 'roll',
+  };
+
+  return resolveIcon(map[taskType]);
+}
+
+function summariseInputFields(inputFields: TaskTemplate['inputFields']): string[] {
+  return Object.entries(inputFields).map(([key, value]) => {
+    if (Array.isArray(value)) {
+      const formatted = value
+        .map((entry) => {
+          if (entry && typeof entry === 'object') {
+            if ('label' in entry && typeof entry.label === 'string') return entry.label;
+            if ('key' in entry && typeof entry.key === 'string') return entry.key;
+          }
+          return String(entry);
+        })
+        .join(', ');
+      return `${key}: ${formatted || '—'}`;
+    }
+
+    if (value && typeof value === 'object') {
+      return `${key}: ${Object.entries(value)
+        .map(([nestedKey, nestedValue]) => `${nestedKey}=${String(nestedValue)}`)
+        .join(', ')}`;
+    }
+
+    return `${key}: ${value === null || value === undefined || value === '' ? '—' : String(value)}`;
+  });
+}
+
+function formatMinutesRemaining(msRemaining: number): string {
+  return `${Math.max(1, Math.ceil(msRemaining / 60000))} min remaining`;
+}
+
+export function TaskBlock({ templateKey, template, isCustom, isSystem, onEdit }: TaskBlockProps) {
+  const [expanded, setExpanded] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [showCompleteInput, setShowCompleteInput] = useState(false);
+  const [viewPopupOpen, setViewPopupOpen] = useState(false);
+  const [nowMs, setNowMs] = useState(() => getOffsetNow().getTime());
+
   const favouritesList = useUserStore((s) => s.user?.lists.favouritesList ?? []);
   const addFavourite = useUserStore((s) => s.addFavourite);
   const removeFavourite = useUserStore((s) => s.removeFavourite);
+  const tasks = useScheduleStore((s) => s.tasks);
+  const setTask = useScheduleStore((s) => s.setTask);
+  const setActiveEvent = useScheduleStore((s) => s.setActiveEvent);
+  const removeTaskTemplate = useScheduleStore((s) => s.removeTaskTemplate);
   const isFavourited = favouritesList.includes(templateKey);
   const starGlows = useGlows(ONBOARDING_GLOW.TASK_FAVOURITE_STAR);
+
+  const primaryStat = getPrimaryStatKey(template.xpAward);
+  const secondaryTagColour = template.secondaryTag
+    ? SECONDARY_TAG_COLOURS[template.secondaryTag] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+    : null;
+  const inputSummary = useMemo(() => summariseInputFields(template.inputFields), [template.inputFields]);
+  const { isCoolingDown, msRemaining, progress: cooldownProgress } = useMemo(
+    () => getTaskCooldownState(template, templateKey, tasks, nowMs),
+    [template, templateKey, tasks, nowMs],
+  );
+  const cooldownOverlayWidth = isCoolingDown ? `${Math.max(0, (1 - cooldownProgress) * 100)}%` : '0%';
+  const previewTask: Task = useMemo(
+    () => ({
+      id: `task-room-preview-${templateKey}`,
+      templateRef: templateKey,
+      completionState: 'pending',
+      completedAt: null,
+      resultFields: {},
+      attachmentRef: null,
+      resourceRef: null,
+      location: null,
+      sharedWith: null,
+      questRef: null,
+      actRef: null,
+      secondaryTag: template.secondaryTag,
+    }),
+    [template.secondaryTag, templateKey],
+  );
+
+  useEffect(() => {
+    if (!isCoolingDown) return undefined;
+
+    const interval = window.setInterval(() => {
+      setNowMs(getOffsetNow().getTime());
+    }, 15000);
+
+    return () => window.clearInterval(interval);
+  }, [isCoolingDown]);
 
   function handleStarClick() {
     if (isFavourited) {
@@ -45,53 +171,291 @@ export function TaskBlock({
     }
   }
 
+  function resetInlineStates() {
+    setConfirmRemove(false);
+    setShowCompleteInput(false);
+  }
+
+  function toggleExpanded() {
+    setExpanded((current) => {
+      const next = !current;
+      if (!next) resetInlineStates();
+      return next;
+    });
+  }
+
+  function ensureQaEvent(): string {
+    const scheduleStore = useScheduleStore.getState();
+    const today = getAppDate();
+    const qaId = `qa-${today}`;
+    const qa = scheduleStore.activeEvents[qaId] as QuickActionsEvent | undefined;
+
+    if (!qa) {
+      setActiveEvent({
+        id: qaId,
+        eventType: 'quickActions',
+        date: today,
+        completions: [],
+        xpAwarded: 0,
+        sharedCompletions: null,
+      });
+    }
+
+    return qaId;
+  }
+
+  function handleInlineComplete(resultFields: Partial<InputFields>) {
+    const qaId = ensureQaEvent();
+    const qa = useScheduleStore.getState().activeEvents[qaId] as QuickActionsEvent | undefined;
+    const taskId = uuidv4();
+
+    setTask({
+      id: taskId,
+      templateRef: templateKey,
+      completionState: 'pending',
+      completedAt: null,
+      resultFields: {},
+      attachmentRef: null,
+      resourceRef: null,
+      location: null,
+      sharedWith: null,
+      questRef: null,
+      actRef: null,
+      secondaryTag: template.secondaryTag,
+    });
+
+    completeTask(taskId, qaId, { resultFields });
+
+    const completedTask = useScheduleStore.getState().tasks[taskId];
+    const freshQa = useScheduleStore.getState().activeEvents[qaId] as QuickActionsEvent | undefined;
+    const qaBase = freshQa ?? qa;
+
+    if (completedTask && qaBase) {
+      setActiveEvent({
+        ...qaBase,
+        completions: [
+          ...qaBase.completions,
+          { taskRef: completedTask.id, completedAt: completedTask.completedAt ?? new Date().toISOString() },
+        ],
+      });
+    }
+
+    setShowCompleteInput(false);
+    setExpanded(false);
+    setConfirmRemove(false);
+  }
+
+  function handleRemoveClick() {
+    if (!confirmRemove) {
+      setConfirmRemove(true);
+      return;
+    }
+
+    removeTaskTemplate(templateKey);
+  }
+
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 min-h-[44px] bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg">
-      {!isSystem && (
-        <GlowRing active={starGlows} className="inline-flex">
+    <>
+      <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        {isCoolingDown && (
+          <div
+            className="pointer-events-none absolute inset-y-0 left-0 z-10 bg-white/60 dark:bg-gray-900/65"
+            style={{ width: cooldownOverlayWidth }}
+          />
+        )}
+        <div className="flex items-center gap-3 px-3 py-3">
+          {!isSystem && (
+            <GlowRing active={starGlows} className="inline-flex shrink-0">
+              <button
+                type="button"
+                onClick={handleStarClick}
+                aria-label={isFavourited ? 'Remove from favourites' : 'Add to favourites'}
+                className="text-lg leading-none transition-colors"
+              >
+                {isFavourited ? resolveIcon('star') : resolveIcon('star-outline')}
+              </button>
+            </GlowRing>
+          )}
+
+          <span className="w-6 shrink-0 text-center text-lg leading-none" aria-hidden="true">
+            {resolveIcon(primaryStat ?? 'agility')}
+          </span>
+          <span className="w-6 shrink-0 text-center text-lg leading-none" aria-hidden="true">
+            {getTaskTypeIcon(template.taskType)}
+          </span>
+          <span className="w-6 shrink-0 text-center text-lg leading-none" aria-hidden="true">
+            {resolveIcon(template.icon)}
+          </span>
+
           <button
             type="button"
-            onClick={handleStarClick}
-            aria-label={isFavourited ? 'Remove from favourites' : 'Add to favourites'}
-            className="text-lg leading-none shrink-0 transition-colors"
+            onClick={toggleExpanded}
+            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+            aria-expanded={expanded}
           >
-            {isFavourited ? resolveIcon('star') : resolveIcon('star-outline')}
-          </button>
-        </GlowRing>
-      )}
-      <span className="w-8 shrink-0 text-xl leading-none text-center" aria-hidden="true">
-        {resolveIcon(icon)}
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-gray-800 dark:text-gray-200 truncate">{name}</p>
-        <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="text-xs text-gray-400">{taskType}</span>
-          {secondaryTag && (
-            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
-              {secondaryTag}
+            <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+              {template.name}
             </span>
-          )}
+            <span className="ml-auto shrink-0 flex items-center gap-2">
+              {template.secondaryTag && secondaryTagColour && (
+                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${secondaryTagColour}`}>
+                  {template.secondaryTag}
+                </span>
+              )}
+              {isCoolingDown && (
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  {Math.max(1, Math.ceil(msRemaining / 60000))}m
+                </span>
+              )}
+              <span className="text-sm text-gray-500 dark:text-gray-300">
+                {resolveIcon(expanded ? 'collapse' : 'expand')}
+              </span>
+            </span>
+          </button>
         </div>
+
+        {expanded && (
+          <div className="border-t border-gray-200 px-4 py-4 dark:border-gray-700">
+            <div className="mb-4 flex items-start gap-3">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gray-100 text-2xl dark:bg-gray-700">
+                {resolveIcon(template.icon)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{template.name}</h3>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                  {template.description || 'No description yet.'}
+                </p>
+              </div>
+            </div>
+
+            {!showCompleteInput ? (
+              <>
+                <div className="mb-4 flex flex-wrap gap-2">
+                  <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                    {resolveIcon(primaryStat ?? 'agility')} {primaryStat ?? 'no stat'}
+                  </span>
+                  <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                    {getTaskTypeIcon(template.taskType)} {template.taskType}
+                  </span>
+                  {template.cooldown !== null && (
+                    <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                      Cooldown {template.cooldown} min
+                    </span>
+                  )}
+                  {template.secondaryTag && secondaryTagColour && (
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${secondaryTagColour}`}>
+                      {template.secondaryTag}
+                    </span>
+                  )}
+                  {isCoolingDown && (
+                    <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                      Cooling down
+                    </span>
+                  )}
+                </div>
+
+                <div className="rounded-xl bg-gray-50 px-3 py-3 dark:bg-gray-900/40">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      Task Inputs
+                    </p>
+                    {!isCustom && (
+                      <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                        Prebuilt task template
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-2 space-y-1">
+                    {inputSummary.map((line) => (
+                      <p key={line} className={`text-sm ${isCustom ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                        {line}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmRemove(false);
+                      if (isCustom) {
+                        onEdit?.();
+                      } else {
+                        setViewPopupOpen(true);
+                      }
+                    }}
+                    className="rounded-xl border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+                  >
+                    {isCustom ? '✏️ Edit' : '👁 View'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleRemoveClick}
+                    className={`rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
+                      confirmRemove
+                        ? 'bg-red-600 text-white'
+                        : 'border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/20'
+                    }`}
+                  >
+                    {confirmRemove ? `Confirm ${isCustom ? 'Delete' : 'Remove'}` : isCustom ? '🗑 Delete' : '🗑 Remove'}
+                  </button>
+
+                  <div className="flex flex-col">
+                    <button
+                      type="button"
+                      disabled={isCoolingDown}
+                      onClick={() => {
+                        if (isCoolingDown) return;
+                        setConfirmRemove(false);
+                        setShowCompleteInput(true);
+                      }}
+                      className={`rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
+                        isCoolingDown
+                          ? 'cursor-not-allowed bg-gray-300 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                          : 'bg-blue-500 text-white hover:bg-blue-600'
+                      }`}
+                    >
+                      {isCoolingDown ? 'Cooling down' : '✓ Complete Task'}
+                    </button>
+                    {isCoolingDown && (
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {formatMinutesRemaining(msRemaining)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-3">
+                <TaskTypeInputRenderer
+                  taskType={template.taskType}
+                  template={template}
+                  task={previewTask}
+                  onComplete={handleInlineComplete}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCompleteInput(false)}
+                  className="rounded-xl border border-gray-300 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-      <span className="text-xs font-medium text-amber-500 shrink-0">+{xpTotal} XP</span>
-      {isCustom ? (
-        <button
-          type="button"
-          onClick={onEdit}
-          aria-label="Edit task template"
-          className="text-xs text-gray-400 hover:text-purple-500 shrink-0 transition-colors px-1"
-        >
-          Edit
-        </button>
-      ) : (
-        <span
-          title="Prebuilt templates are read-only"
-          className="text-xs text-gray-300 shrink-0 select-none cursor-default px-1"
-          aria-label="Prebuilt template - read-only"
-        >
-          •••
-        </span>
+
+      {viewPopupOpen && (
+        <TaskTemplatePopup
+          editKey={templateKey}
+          editTemplate={template}
+          readOnly
+          onClose={() => setViewPopupOpen(false)}
+        />
       )}
-    </div>
+    </>
   );
 }

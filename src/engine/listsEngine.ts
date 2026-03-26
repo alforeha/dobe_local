@@ -33,6 +33,7 @@ import { autoCheckQuestItem } from './resourceEngine';
 import { STARTER_TEMPLATE_IDS, starterTaskTemplates } from '../coach/StarterQuestLibrary';
 import { isWisdomTemplate } from './xpBoosts';
 import { completeTask } from './eventExecution';
+import { getTaskCooldownState } from '../utils/taskCooldown';
 
 // ── HELPERS ────────────────────────────────────────────────────────────────────────────────
 
@@ -96,6 +97,12 @@ export function completeFavourite(
   const today = todayISO();
 
   const template = scheduleStore.taskTemplates[taskTemplateRef];
+  if (template) {
+    const cooldown = getTaskCooldownState(template, taskTemplateRef, scheduleStore.tasks, new Date(now).getTime());
+    if (cooldown.isCoolingDown) {
+      return;
+    }
+  }
 
   // Create a completed Task instance
   const task: Task = {
