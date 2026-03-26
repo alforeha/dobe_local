@@ -526,7 +526,6 @@ export function completeManualGTDItem(
         ],
       };
       scheduleStore.setActiveEvent(updatedQa);
-      storageSet(storageKey.quickActions(today), updatedQa);
     }
   }
 
