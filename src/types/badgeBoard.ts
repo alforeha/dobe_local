@@ -6,7 +6,7 @@
 
 import type { Badge } from './itemTemplate';
 
-/** [MULTI-USER] stub — null in LOCAL */
+/** STUB: MULTI-USER — reserved for badge-board sharing visibility once the MULTI-USER chapter ships. */
 export type BadgeBoardPublicVisibilityStub = null;
 
 // ── BADGE BOARD ROOT ──────────────────────────────────────────────────────────
@@ -16,6 +16,6 @@ export interface BadgeBoard {
   earned: Badge[];
   /** Badge refs placed on board by user */
   pinned: Badge[];
-  /** [MULTI-USER] stub — null in LOCAL */
+  /** STUB: MULTI-USER — stores whether the badge board is publicly visible once the MULTI-USER chapter is enabled. */
   publicVisibility: BadgeBoardPublicVisibilityStub;
 }

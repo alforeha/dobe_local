@@ -19,10 +19,10 @@ export type EventCompletionState = 'pending' | 'complete' | 'skipped';
 
 // ── STUBS ─────────────────────────────────────────────────────────────────────
 
-/** [MULTI-USER] stub — null in LOCAL */
+/** STUB: MULTI-USER — reserved for users the Event is shared with once the MULTI-USER chapter ships. */
 export type EventSharedWithStub = null;
 
-/** [MULTI-USER] stub — null in LOCAL */
+/** STUB: MULTI-USER — reserved for additional attendee records once the MULTI-USER chapter ships. */
 export type CoAttendeesStub = null;
 
 // ── EVENT ROOT ────────────────────────────────────────────────────────────────
@@ -49,11 +49,12 @@ export interface Event {
   xpAwarded: number;
   /** Attachment refs — max 5, max 200 KB each (D09) */
   attachments: string[];
+  /** STUB: LOCATION-SHARING — reserved for captured venue/location metadata once the LOCATION-SHARING chapter is enabled. */
   location: EventLocation | null;
   note: string | null;
-  /** [MULTI-USER] stub — null in LOCAL */
+  /** STUB: MULTI-USER — stores people this Event is shared with once the MULTI-USER chapter is enabled. */
   sharedWith: EventSharedWithStub;
-  /** [MULTI-USER] stub — null in LOCAL */
+  /** STUB: MULTI-USER — stores attendee identities beyond the owner once the MULTI-USER chapter is enabled. */
   coAttendees: CoAttendeesStub;
 }
 
@@ -68,7 +69,7 @@ export interface QuickActionsCompletion {
   completedAt: string; // ISO date
 }
 
-/** [MULTI-USER] stub — null in LOCAL */
+/** STUB: MULTI-USER — reserved for cross-user Quick Actions activity once the MULTI-USER chapter ships. */
 export type SharedCompletionsStub = null;
 
 export interface QuickActionsEvent {
@@ -81,6 +82,6 @@ export interface QuickActionsEvent {
   completions: QuickActionsCompletion[];
   /** Running daily total */
   xpAwarded: number;
-  /** [MULTI-USER] stub — null in LOCAL */
+  /** STUB: MULTI-USER — stores shared Quick Actions completions once the MULTI-USER chapter is enabled. */
   sharedCompletions: SharedCompletionsStub;
 }

@@ -105,7 +105,7 @@ export interface HomeMeta {
   linkedInventoryRef: string | null;
   /** Lease, photos, and other Doc refs */
   linkedDocs: string[];
-  /** [MULTI-USER] stub — null in LOCAL */
+  /** STUB: MULTI-USER — reserved for generated/shared home tasks once the MULTI-USER chapter is enabled. */
   recurringTasksStub: null;
   /** Physical address — W23 */
   address?: string;
@@ -175,7 +175,7 @@ export interface VehicleMeta {
   memberContactRefs: string[];
   /** Loan doc, photos, insurance refs */
   linkedDocs: string[];
-  /** [MULTI-USER] stub — null in LOCAL */
+  /** STUB: MULTI-USER — reserved for generated/shared vehicle tasks once the MULTI-USER chapter is enabled. */
   recurringTasksStub: null;
   /** License plate — W24 */
   licensePlate?: string | null;
@@ -309,7 +309,7 @@ export interface DocMeta {
   linkedResourceRef: string | null;
   /** RecommendationsLibrary course ref — for 'course' type docs */
   courseRef: string | null;
-  /** [BUILD-time] Locked progression state for course docs — stub null in LOCAL */
+  /** STUB: COURSE-PROGRESSION — reserved for locked course completion state once the COURSE-PROGRESSION chapter is enabled. */
   progression: null;
   tags: string[];
   createdAt: string; // ISO date

@@ -90,10 +90,10 @@ export interface Chain {
 
 export type ActCompletionState = 'active' | 'complete';
 
-/** [MULTI-USER] stub — null in LOCAL */
+/** STUB: MULTI-USER — reserved for accountability partner/group settings once the MULTI-USER chapter ships. */
 export type AccountabilityStub = null;
 
-/** [MULTI-USER] stub — null in LOCAL */
+/** STUB: MULTI-USER — reserved for linked contacts shared into an Act once the MULTI-USER chapter ships. */
 export type SharedContactsStub = null;
 
 export type ActHabitat = 'habitats' | 'adventures';
@@ -111,13 +111,13 @@ export interface Act {
   habitat?: ActHabitat;
   /** Array of Chain objects — array-indexed (D27) */
   chains: Chain[];
-  /** [MULTI-USER] stub — null in LOCAL (D08) */
+  /** STUB: MULTI-USER — tracks accountability partners and shared progress rules when the MULTI-USER chapter is enabled. */
   accountability: AccountabilityStub;
   /** ACTS C — trackedTaskRefs and routineRefs (D07, D08) */
   commitment: ActCommitment;
   /** ACTS T — gating logic stub — BUILD-time (D08) */
   toggle: Record<string, unknown>;
   completionState: ActCompletionState;
-  /** [MULTI-USER] stub — null in LOCAL */
+  /** STUB: MULTI-USER — stores contact refs shared into this Act when the MULTI-USER chapter is enabled. */
   sharedContacts: SharedContactsStub;
 }

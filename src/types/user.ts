@@ -12,7 +12,7 @@ import type { GTDItem } from './task';
 
 // ── AUTH (STUB) ────────────────────────────────────────────────────────────────
 
-/** [MULTI-USER] auth shape — null in LOCAL */
+/** STUB: MULTI-USER — reserved for cloud auth/session identity once the MULTI-USER chapter ships. */
 export type AuthStub = null;
 
 // ── SUB-OBJECTS ────────────────────────────────────────────────────────────────
@@ -21,7 +21,7 @@ export interface UserSystem {
   id: string; // uuid
   displayName: string; // settable annually
   wrappedAnchor: string; // ISO date — gates annual review (D31)
-  /** [MULTI-USER] stub — null in LOCAL */
+  /** STUB: MULTI-USER — stores the signed-in account/session identity when the MULTI-USER chapter is enabled. */
   auth: AuthStub;
 }
 
@@ -43,7 +43,7 @@ export interface UserProgression {
   equipment: Equipment;
   gold: number;
   statGroups: StatGroups;
-  /** [future] talent tree — null in LOCAL */
+  /** STUB: TALENT-TREE — reserved for unlocked talent-node state when the TALENT-TREE chapter is enabled. */
   talentTree: null;
 }
 
@@ -92,7 +92,7 @@ export interface UserResources {
   docs: string[];
 }
 
-/** [MULTI-USER] stub — null in LOCAL */
+/** STUB: MULTI-USER — reserved for the user's shareable public-facing profile once the MULTI-USER chapter ships. */
 export type PublicProfileStub = null;
 
 // ── USER ROOT ──────────────────────────────────────────────────────────────────
@@ -104,6 +104,6 @@ export interface User {
   lists: UserLists;
   resources: UserResources;
   feed: Feed;
-  /** [MULTI-USER] stub — null in LOCAL */
+  /** STUB: MULTI-USER — stores the user's shareable profile card once the MULTI-USER chapter is enabled. */
   publicProfile: PublicProfileStub;
 }

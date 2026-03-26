@@ -17,7 +17,7 @@ export interface FeedEntry {
   reaction?: string;
 }
 
-/** [MULTI-USER] stub — null in LOCAL */
+/** STUB: MULTI-USER — reserved for activity entries pulled from other users once the MULTI-USER chapter ships. */
 export type SharedActivityEntriesStub = null;
 
 // ── FEED ROOT ─────────────────────────────────────────────────────────────────
@@ -26,6 +26,6 @@ export interface Feed {
   entries: FeedEntry[];
   /** UI unread indicator — reset on markRead() */
   unreadCount: number;
-  /** [MULTI-USER] stub — null in LOCAL */
+  /** STUB: MULTI-USER — stores incoming shared activity stream entries once the MULTI-USER chapter is enabled. */
   sharedActivityEntries: SharedActivityEntriesStub;
 }

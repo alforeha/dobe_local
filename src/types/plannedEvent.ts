@@ -24,10 +24,10 @@ export type ConflictMode = 'override' | 'shift' | 'truncate' | 'concurrent';
 
 export type PlannedEventActiveState = 'active' | 'sleep';
 
-/** [MULTI-USER] stub — null in LOCAL */
+/** STUB: MULTI-USER — reserved for invitees and shared access on a PlannedEvent once the MULTI-USER chapter ships. */
 export type PlannedEventSharedWithStub = null;
 
-/** [APP-STORE] stub — null in LOCAL */
+/** STUB: APP-STORE — reserved for scheduled local/device reminder metadata once the APP-STORE chapter ships. */
 export type PushReminderStub = null;
 
 // ── PLANNED EVENT ROOT ────────────────────────────────────────────────────────
@@ -63,9 +63,10 @@ export interface PlannedEvent {
   conflictMode: ConflictMode;
   startTime: string; // HH:MM
   endTime: string;   // HH:MM
+  /** STUB: LOCATION-SHARING — reserved for saved venue/location metadata once the LOCATION-SHARING chapter is enabled. */
   location: EventLocation | null;
-  /** [MULTI-USER] stub — null in LOCAL */
+  /** STUB: MULTI-USER — stores invitees and shared ownership once the MULTI-USER chapter is enabled. */
   sharedWith: PlannedEventSharedWithStub;
-  /** [APP-STORE] stub — null in LOCAL */
+  /** STUB: APP-STORE — stores reminder scheduling/config once the APP-STORE chapter is enabled. */
   pushReminder: PushReminderStub;
 }

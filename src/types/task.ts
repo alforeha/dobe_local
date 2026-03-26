@@ -16,7 +16,7 @@ export interface TaskLocation {
   placeName?: string;
 }
 
-/** [MULTI-USER] stub — null in LOCAL */
+/** STUB: MULTI-USER — reserved for users a Task is shared with once the MULTI-USER chapter ships. */
 export type SharedWithStub = null;
 
 // ── TASK ROOT ─────────────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ export interface Task {
   completedAt: string | null; // ISO date
   /** Recorded values matching inputFields shape of TaskTemplate (D41) */
   resultFields: Partial<InputFields>;
-  /** Optional Attachment ref — user evidence on completion */
+  /** STUB: TASK-EVIDENCE — reserved for a per-task evidence pointer once the TASK-EVIDENCE chapter is enabled. */
   attachmentRef: string | null;
   /**
    * Optional ref to Resource that contextualised completion.
@@ -41,7 +41,7 @@ export interface Task {
   resourceRef: string | null;
   /** Optional coordinates recorded during completion */
   location: TaskLocation | null;
-  /** [MULTI-USER] stub — null in LOCAL */
+  /** STUB: MULTI-USER — stores users this Task is shared with once the MULTI-USER chapter is enabled. */
   sharedWith: SharedWithStub;
   /**
    * Encoded quest navigation path: "${actId}|${chainIndex}|${questIndex}".
