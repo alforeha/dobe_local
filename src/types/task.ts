@@ -75,6 +75,8 @@ export interface GTDItem {
   id: string;
   title: string;
   note: string | null;
+  /** Optional TaskTemplate ref chosen in the Add GTD popup */
+  templateRef?: string | null;
   /** Optional ref to a Resource the user chose to link this item to */
   resourceRef: string | null;
   /** ISO date — null if no due date set */

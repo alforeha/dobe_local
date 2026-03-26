@@ -397,11 +397,17 @@ function makeDailyRollQuest(actId: string, chainIdx: number): Quest {
 }
 
 function makeDailyWaterQuest(actId: string, chainIdx: number): Quest {
-  const marker = makeIntervalMarker(`${actId}|${chainIdx}|1`, STARTER_TEMPLATE_IDS.drinkWater);
+  const marker = makeTaskCountMarker(
+    `${actId}|${chainIdx}|1`,
+    STARTER_TEMPLATE_IDS.drinkWater,
+    3,
+    'taskTemplateRef',
+    STARTER_TEMPLATE_IDS.drinkWater,
+  );
   return makeQuest(
     'Daily Water',
     'Complete 3 Drink Water tasks across the day.',
-    makeTimely(marker),
+    makeTimely(marker, 'taskCount'),
     { taskTypes: ['CHECK'] },
     taskInputSpecific(1),
     'xp-water',
@@ -409,11 +415,17 @@ function makeDailyWaterQuest(actId: string, chainIdx: number): Quest {
 }
 
 function makeDailyLogQuest(actId: string, chainIdx: number): Quest {
-  const marker = makeIntervalMarker(`${actId}|${chainIdx}|2`, STARTER_TEMPLATE_IDS.logEntry);
+  const marker = makeTaskCountMarker(
+    `${actId}|${chainIdx}|2`,
+    STARTER_TEMPLATE_IDS.logEntry,
+    1,
+    'taskTemplateRef',
+    STARTER_TEMPLATE_IDS.logEntry,
+  );
   return makeQuest(
     'Log Something',
     'Write at least one Doc entry today.',
-    makeTimely(marker),
+    makeTimely(marker, 'taskCount'),
     { taskTypes: ['LOG'] },
     taskInputSpecific(1),
     'xp-log',

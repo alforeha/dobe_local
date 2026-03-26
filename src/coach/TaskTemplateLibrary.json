@@ -993,7 +993,7 @@
       "charisma": 0,
       "wisdom": 0
     },
-    "cooldown": 1440,
+    "cooldown": null,
     "media": null,
     "items": []
   },

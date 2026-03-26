@@ -1,23 +1,8 @@
 import { useScheduleStore } from '../../../stores/useScheduleStore';
 import { completeTask } from '../../../engine/eventExecution';
 import { starterTaskTemplates } from '../../../coach/StarterQuestLibrary';
-import type { TaskType, InputFields, CheckInputFields, CounterInputFields, RatingInputFields, TextInputFields, ChoiceInputFields, ChecklistInputFields, LogInputFields, SetsRepsInputFields, CircuitInputFields, DurationInputFields, TimerInputFields, FormInputFields, ScanInputFields, LocationPointInputFields, LocationTrailInputFields, RollInputFields } from '../../../types/taskTemplate';
-import { CheckInput } from './inputs/CheckInput';
-import { CounterInput } from './inputs/CounterInput';
-import { RatingInput } from './inputs/RatingInput';
-import { TextInput } from './inputs/TextInput';
-import { ChoiceInput } from './inputs/ChoiceInput';
-import { ChecklistInput } from './inputs/ChecklistInput';
-import { LogInput } from './inputs/LogInput';
-import { SetsRepsInput } from './inputs/SetsRepsInput';
-import { CircuitInput } from './inputs/CircuitInput';
-import { DurationInput } from './inputs/DurationInput';
-import { TimerInput } from './inputs/TimerInput';
-import { FormInput } from './inputs/FormInput';
-import { ScanInput } from './inputs/ScanInput';
-import { LocationPointInput } from './inputs/LocationPointInput';
-import { LocationTrailInput } from './inputs/LocationTrailInput';
-import { RollInput } from './inputs/RollInput';
+import type { TaskType, InputFields } from '../../../types/taskTemplate';
+import { TaskTypeInputRenderer } from './TaskTypeInputRenderer';
 
 interface TaskBlockProps {
   taskId: string | null;
@@ -40,10 +25,6 @@ const SECONDARY_TAG_COLOURS: Record<string, string> = {
   work: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300',
 };
 
-/**
- * Live task representation in EventOverlay.
- * Renders the correct input shape per TaskType and fires completeTask() on completion.
- */
 export function TaskBlock({ taskId, eventId, playMode, onTaskComplete, className }: TaskBlockProps) {
   const tasks = useScheduleStore((s) => s.tasks);
   const taskTemplates = useScheduleStore((s) => s.taskTemplates);
@@ -77,7 +58,6 @@ export function TaskBlock({ taskId, eventId, playMode, onTaskComplete, className
 
   return (
     <div className={`flex flex-col rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-3 ${className ?? ''}`}>
-      {/* Header */}
       <div className="mb-2 shrink-0 flex items-start justify-between gap-2">
         <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
           {template?.name ?? 'Unknown task'}
@@ -94,9 +74,8 @@ export function TaskBlock({ taskId, eventId, playMode, onTaskComplete, className
         </div>
       </div>
 
-      {/* Input body — flex-1 so it fills remaining height */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <TaskTypeInput
+        <TaskTypeInputRenderer
           taskType={taskType}
           template={template}
           task={task ?? null}
@@ -106,160 +85,3 @@ export function TaskBlock({ taskId, eventId, playMode, onTaskComplete, className
     </div>
   );
 }
-
-// ── INPUT DISPATCHER ──────────────────────────────────────────────────────────
-
-interface TaskTypeInputProps {
-  taskType: TaskType;
-  template: ReturnType<typeof useScheduleStore.getState>['taskTemplates'][string] | null | undefined;
-  task: ReturnType<typeof useScheduleStore.getState>['tasks'][string] | null;
-  onComplete: (result: Partial<InputFields>) => void;
-}
-
-function TaskTypeInput({ taskType, template, task, onComplete }: TaskTypeInputProps) {
-  if (!task || !template) {
-    return (
-      <div className="rounded bg-gray-50 dark:bg-gray-700 px-3 py-2">
-        <p className="text-xs text-gray-400 italic">Task data not available</p>
-      </div>
-    );
-  }
-
-  switch (taskType) {
-    case 'CHECK':
-      return (
-        <CheckInput
-          inputFields={template.inputFields as CheckInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<CheckInputFields>) => void}
-        />
-      );
-    case 'COUNTER':
-      return (
-        <CounterInput
-          inputFields={template.inputFields as CounterInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<CounterInputFields>) => void}
-        />
-      );
-    case 'RATING':
-      return (
-        <RatingInput
-          inputFields={template.inputFields as RatingInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<RatingInputFields>) => void}
-        />
-      );
-    case 'TEXT':
-      return (
-        <TextInput
-          inputFields={template.inputFields as TextInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<TextInputFields>) => void}
-        />
-      );
-    case 'CHOICE':
-      return (
-        <ChoiceInput
-          inputFields={template.inputFields as ChoiceInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<ChoiceInputFields>) => void}
-        />
-      );
-    case 'CHECKLIST':
-      return (
-        <ChecklistInput
-          inputFields={template.inputFields as ChecklistInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<ChecklistInputFields>) => void}
-        />
-      );
-    case 'LOG':
-      return (
-        <LogInput
-          inputFields={template.inputFields as LogInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<LogInputFields>) => void}
-        />
-      );
-    case 'SETS_REPS':
-      return (
-        <SetsRepsInput
-          inputFields={template.inputFields as SetsRepsInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<SetsRepsInputFields>) => void}
-        />
-      );
-    case 'CIRCUIT':
-      return (
-        <CircuitInput
-          inputFields={template.inputFields as CircuitInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<CircuitInputFields>) => void}
-        />
-      );
-    case 'DURATION':
-      return (
-        <DurationInput
-          inputFields={template.inputFields as DurationInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<DurationInputFields>) => void}
-        />
-      );
-    case 'TIMER':
-      return (
-        <TimerInput
-          inputFields={template.inputFields as TimerInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<TimerInputFields>) => void}
-        />
-      );
-    case 'FORM':
-      return (
-        <FormInput
-          inputFields={template.inputFields as FormInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<FormInputFields>) => void}
-        />
-      );
-    case 'SCAN':
-      return (
-        <ScanInput
-          inputFields={template.inputFields as ScanInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<ScanInputFields>) => void}
-        />
-      );
-    case 'LOCATION_POINT':
-      return (
-        <LocationPointInput
-          inputFields={template.inputFields as LocationPointInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<LocationPointInputFields>) => void}
-        />
-      );
-    case 'LOCATION_TRAIL':
-      return (
-        <LocationTrailInput
-          inputFields={template.inputFields as LocationTrailInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<LocationTrailInputFields>) => void}
-        />
-      );
-    case 'ROLL':
-      return (
-        <RollInput
-          inputFields={template.inputFields as RollInputFields}
-          task={task}
-          onComplete={onComplete as (r: Partial<RollInputFields>) => void}
-        />
-      );
-    default:
-      return (
-        <div className="rounded bg-gray-50 dark:bg-gray-700 px-3 py-2">
-          <p className="text-xs text-gray-400 italic">{taskType} — input shape not yet implemented</p>
-        </div>
-      );
-  }
-}
-

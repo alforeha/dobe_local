@@ -17,10 +17,6 @@ import { isEarlyBirdActive } from '../../../../../../engine/xpBoosts';
 const DIE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 const SIDES = 6;
 
-function todayISO(): string {
-  return getAppDate();
-}
-
 function getTodayRoll(
   tasks: Record<string, Task>,
   qaCompletions: { taskRef: string; completedAt: string }[],
@@ -48,7 +44,7 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
   const user = useUserStore((s) => s.user);
   const luckyDiceGlows = useGlows(ONBOARDING_GLOW.LUCKY_DICE);
 
-  const today = todayISO();
+  const today = getAppDate();
   const qaId = `qa-${today}`;
   const qa = activeEvents[qaId] as QuickActionsEvent | undefined;
   const completions = qa?.completions ?? [];
@@ -59,7 +55,12 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
   const [animFace, setAnimFace] = useState<string>(DIE_FACES[0]);
 
   const handleRoll = useCallback(() => {
-    if (rolling || todayRoll || !user) return;
+    const currentDate = getAppDate();
+    const currentQaId = `qa-${currentDate}`;
+    const currentStore = scheduleStore();
+    const currentQa = currentStore.activeEvents[currentQaId] as QuickActionsEvent | undefined;
+    const currentRoll = getTodayRoll(currentStore.tasks, currentQa?.completions ?? []);
+    if (rolling || currentRoll || !user) return;
 
     setRolling(true);
     const earlyBirdBonus = isEarlyBirdActive() ? 1 : 0;
@@ -78,6 +79,8 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
         const store = scheduleStore();
         const now = getAppNowISO();
         const taskId = uuidv4();
+        const freshDate = getAppDate();
+        const freshQaId = `qa-${freshDate}`;
 
         const rollTask: Task = {
           id: taskId,
@@ -96,11 +99,11 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
 
         store.setTask(rollTask);
 
-        const freshQa = store.activeEvents[qaId] as QuickActionsEvent | undefined;
+        const freshQa = store.activeEvents[freshQaId] as QuickActionsEvent | undefined;
         const baseQa: QuickActionsEvent = freshQa ?? {
-          id: qaId,
+          id: freshQaId,
           eventType: 'quickActions',
-          date: today,
+          date: freshDate,
           completions: [],
           xpAwarded: 0,
           sharedCompletions: null,
@@ -117,7 +120,7 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
         autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'complete_roll');
       }
     }, 80);
-  }, [rolling, todayRoll, user, today, qaId, scheduleStore]);
+  }, [rolling, user, scheduleStore]);
 
   if (compact) {
     if (todayRoll) {

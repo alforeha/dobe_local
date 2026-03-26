@@ -18,6 +18,7 @@ import type { Resource, ContactMeta, AccountMeta, InventoryMeta, VehicleMeta, Do
 import type { PlannedEvent } from '../types/plannedEvent';
 import type { Task } from '../types/task';
 import type { TaskTemplate } from '../types/taskTemplate';
+import type { InputFields } from '../types/taskTemplate';
 import type { User } from '../types/user';
 import { getAppDate, getAppNowISO } from '../utils/dateUtils';
 import type { QuickActionsEvent } from '../types/event';
@@ -505,7 +506,22 @@ export function computeGTDList(user: User): Task[] {
  * @param itemId  Task id to complete
  * @param user    Current User — for QuickActionsEvent routing
  */
-export function completeGTDItem(itemId: string, user: User): void {
+export function dismissGTDItem(itemId: string, user: User): void {
+  const latestUser = useUserStore.getState().user ?? user;
+  useUserStore.getState().setUser({
+    ...latestUser,
+    lists: {
+      ...latestUser.lists,
+      gtdList: latestUser.lists.gtdList.filter((id) => id !== itemId),
+    },
+  });
+}
+
+export function completeGTDItem(
+  itemId: string,
+  user: User,
+  resultFields: Partial<InputFields> = {},
+): void {
   const scheduleStore = useScheduleStore.getState();
   const userStore = useUserStore.getState();
 
@@ -517,7 +533,12 @@ export function completeGTDItem(itemId: string, user: User): void {
   if (task.completionState !== 'pending') return;
 
   const now = getAppNowISO();
-  const updatedTask: Task = { ...task, completionState: 'complete', completedAt: now };
+  const updatedTask: Task = {
+    ...task,
+    completionState: 'complete',
+    completedAt: now,
+    resultFields,
+  };
 
   scheduleStore.setTask(updatedTask);
 

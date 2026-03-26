@@ -18,6 +18,7 @@ import type { Task } from '../types/task';
 import type { GTDItem } from '../types/task';
 import type { QuickActionsEvent } from '../types/event';
 import type { Resource } from '../types/resource';
+import type { InputFields } from '../types/taskTemplate';
 import { getAppDate, getAppNowISO } from '../utils/dateUtils';
 import type { AccountMeta, PendingTransaction } from '../types/resource';
 import { useScheduleStore } from '../stores/useScheduleStore';
@@ -29,8 +30,9 @@ import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
 import { autoCheckQuestItem } from './resourceEngine';
-import { STARTER_TEMPLATE_IDS } from '../coach/StarterQuestLibrary';
+import { STARTER_TEMPLATE_IDS, starterTaskTemplates } from '../coach/StarterQuestLibrary';
 import { isWisdomTemplate } from './xpBoosts';
+import { completeTask } from './eventExecution';
 
 // ── HELPERS ────────────────────────────────────────────────────────────────────────────────
 
@@ -84,7 +86,11 @@ export function removeFavourite(taskTemplateRef: string, user: User): void {
  * @param taskTemplateRef  TaskTemplate key to complete
  * @param user             Current User
  */
-export function completeFavourite(taskTemplateRef: string, user: User): void {
+export function completeFavourite(
+  taskTemplateRef: string,
+  user: User,
+  resultFields: Partial<InputFields> = {},
+): void {
   const scheduleStore = useScheduleStore.getState();
   const now = getAppNowISO();
   const today = todayISO();
@@ -97,7 +103,7 @@ export function completeFavourite(taskTemplateRef: string, user: User): void {
     templateRef: taskTemplateRef,
     completionState: 'complete',
     completedAt: now,
-    resultFields: {},
+    resultFields,
     attachmentRef: null,
     resourceRef: null,
     location: null,
@@ -108,7 +114,6 @@ export function completeFavourite(taskTemplateRef: string, user: User): void {
   };
 
   scheduleStore.setTask(task);
-  storageSet(storageKey.task(task.id), task);
 
   // Write completion to today's QuickActionsEvent (D10)
   const qaId = `qa-${today}`;
@@ -119,7 +124,6 @@ export function completeFavourite(taskTemplateRef: string, user: User): void {
       completions: [...qa.completions, { taskRef: task.id, completedAt: now }],
     };
     scheduleStore.setActiveEvent(updatedQa);
-    storageSet(storageKey.quickActions(today), updatedQa);
   }
 
   // XP award — +2 agility for QuickActions context (D39)
@@ -384,13 +388,20 @@ export function deleteShoppingList(listId: string, user: User): void {
  * @returns The created GTDItem
  */
 export function addManualGTDItem(
-  fields: { title: string; note: string | null; resourceRef: string | null; dueDate: string | null },
+  fields: {
+    title: string;
+    note: string | null;
+    templateRef?: string | null;
+    resourceRef: string | null;
+    dueDate: string | null;
+  },
   user: User,
 ): GTDItem {
   const item: GTDItem = {
     id: uuidv4(),
     title: fields.title,
     note: fields.note,
+    templateRef: fields.templateRef ?? null,
     resourceRef: fields.resourceRef,
     dueDate: fields.dueDate,
     isManual: true,
@@ -435,33 +446,57 @@ export function removeManualGTDItem(itemId: string, user: User): void {
  * @param itemId  GTDItem.id to complete
  * @param user    Current User
  */
-export function completeManualGTDItem(itemId: string, user: User): void {
+export function completeManualGTDItem(
+  itemId: string,
+  user: User,
+  resultFields: Partial<InputFields> = {},
+): void {
   const latestUser = useUserStore.getState().user ?? user;
   const item = latestUser.lists.manualGtdList.find((i) => i.id === itemId);
   if (!item || item.completionState !== 'pending') return;
 
   const now = getAppNowISO();
   const today = todayISO();
+  const qaId = `qa-${today}`;
+  const scheduleStore = useScheduleStore.getState();
 
-  // Create a stub Task representing this completion for the QA event record
+  // Ensure a QA event exists so manual GTD completions can use the same
+  // execution path and context bonuses as Quick Actions tasks.
+  const existingQa = scheduleStore.activeEvents[qaId] as QuickActionsEvent | undefined;
+  if (!existingQa) {
+    scheduleStore.setActiveEvent({
+      id: qaId,
+      eventType: 'quickActions',
+      date: today,
+      completions: [],
+      xpAwarded: 0,
+      sharedCompletions: null,
+    });
+  }
+
+  const selectedTemplate =
+    item.templateRef
+      ? (scheduleStore.taskTemplates[item.templateRef] ??
+         starterTaskTemplates.find((template) => template.id === item.templateRef) ??
+         null)
+      : null;
+
   const task: Task = {
     id: uuidv4(),
-    templateRef: `manual-gtd:${itemId}`,
-    completionState: 'complete',
-    completedAt: now,
-    resultFields: {},
+    templateRef: item.templateRef ?? `manual-gtd:${itemId}`,
+    completionState: selectedTemplate ? 'pending' : 'complete',
+    completedAt: selectedTemplate ? null : now,
+    resultFields,
     attachmentRef: null,
     resourceRef: item.resourceRef,
     location: null,
     sharedWith: null,
     questRef: null,
     actRef: null,
-    secondaryTag: null,
+    secondaryTag: selectedTemplate?.secondaryTag ?? null,
   };
 
-  const scheduleStore = useScheduleStore.getState();
   scheduleStore.setTask(task);
-  storageSet(storageKey.task(task.id), task);
 
   // Remove from manualGtdList
   const updated: User = {
@@ -473,18 +508,31 @@ export function completeManualGTDItem(itemId: string, user: User): void {
   };
   persistUser(updated);
 
+  if (selectedTemplate) {
+    completeTask(task.id, qaId, { resultFields, resourceRef: item.resourceRef });
+  }
+
+  const completedTask = useScheduleStore.getState().tasks[task.id] ?? task;
+
   // Write to today's QuickActionsEvent — skip for system-seeded GTD items (D99)
   if (!item.skipQAWrite) {
-    const qaId = `qa-${today}`;
-    const qa = scheduleStore.activeEvents[qaId] as QuickActionsEvent | undefined;
+    const qa = useScheduleStore.getState().activeEvents[qaId] as QuickActionsEvent | undefined;
     if (qa) {
       const updatedQa: QuickActionsEvent = {
         ...qa,
-        completions: [...qa.completions, { taskRef: task.id, completedAt: now }],
+        completions: [
+          ...qa.completions,
+          { taskRef: completedTask.id, completedAt: completedTask.completedAt ?? now },
+        ],
       };
       scheduleStore.setActiveEvent(updatedQa);
       storageSet(storageKey.quickActions(today), updatedQa);
     }
+  }
+
+  if (selectedTemplate) {
+    pushRibbet('gtd.complete');
+    return;
   }
 
   // XP award — +5 wisdom for manual GTD completion

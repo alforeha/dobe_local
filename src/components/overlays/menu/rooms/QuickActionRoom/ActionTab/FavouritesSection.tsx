@@ -1,15 +1,52 @@
+import { useState } from 'react';
 import { useScheduleStore } from '../../../../../../stores/useScheduleStore';
 import { useUserStore } from '../../../../../../stores/useUserStore';
 import { FavouriteTaskBlock } from './FavouriteTaskBlock';
+import type { TaskTemplate, XpAward } from '../../../../../../types/taskTemplate';
+import type { StatGroupKey } from '../../../../../../types/user';
+import { resolveIcon } from '../../../../../../constants/iconMap';
+
+const STAT_KEYS: StatGroupKey[] = [
+  'health',
+  'strength',
+  'agility',
+  'defense',
+  'charisma',
+  'wisdom',
+];
+
+function getPrimaryStatKey(xpAward: XpAward): StatGroupKey | null {
+  let best: StatGroupKey | null = null;
+  let bestVal = 0;
+  for (const key of STAT_KEYS) {
+    const value = xpAward[key];
+    if (value > bestVal) {
+      bestVal = value;
+      best = key;
+    }
+  }
+  return best;
+}
+
+const FAVOURITE_FILTERS: Array<{ key: 'all' | StatGroupKey; label: string }> = [
+  { key: 'all', label: 'All' },
+  ...STAT_KEYS.map((key) => ({ key, label: resolveIcon(key) })),
+];
 
 export function FavouritesSection() {
   const user = useUserStore((s) => s.user);
   const taskTemplates = useScheduleStore((s) => s.taskTemplates);
+  const [filter, setFilter] = useState<'all' | StatGroupKey>('all');
 
   const favouritesList = user?.lists.favouritesList ?? [];
   const entries = favouritesList
-    .map((key) => ({ key, template: taskTemplates[key] }))
+    .map((key) => ({ key, template: taskTemplates[key] as TaskTemplate | undefined }))
     .filter((entry) => Boolean(entry.template));
+  const filteredEntries = entries.filter(({ template }) => {
+    if (!template) return false;
+    if (filter === 'all') return true;
+    return getPrimaryStatKey(template.xpAward) === filter;
+  });
 
   return (
     <div>
@@ -18,11 +55,29 @@ export function FavouritesSection() {
           Favourites
         </h3>
       </div>
-      {entries.length === 0 ? (
-        <p className="text-xs text-gray-400 py-2 text-center">No favourites.</p>
+
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {FAVOURITE_FILTERS.map(({ key, label }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setFilter(key)}
+            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+              filter === key
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {filteredEntries.length === 0 ? (
+        <p className="text-xs text-gray-400 py-2 text-center">No favourites in this filter.</p>
       ) : (
         <div className="space-y-1.5">
-          {entries.map(({ key, template }) => (
+          {filteredEntries.map(({ key, template }) => (
             <FavouriteTaskBlock key={key} templateKey={key} template={template} />
           ))}
         </div>
