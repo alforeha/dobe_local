@@ -349,7 +349,12 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err: unknown) => {
-  console.error('testDataset threw:', err);
-  process.exit(1);
-});
+if (typeof window === 'undefined' && process.argv[1]) {
+  const entryUrl = new URL(`file://${process.argv[1].replace(/\\/g, '/')}`).href;
+  if (import.meta.url === entryUrl) {
+    main().catch((err: unknown) => {
+      console.error('testDataset threw:', err);
+      process.exit(1);
+    });
+  }
+}

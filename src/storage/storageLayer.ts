@@ -25,6 +25,7 @@ import {
   getStorageUsage,
   checkBudget,
   runEvictionHandler,
+  STORAGE_WARN_THRESHOLD_KB,
 } from './storageBudget';
 
 // ── GET ───────────────────────────────────────────────────────────────────────
@@ -52,10 +53,11 @@ export function storageGet<T>(key: string): T | null {
  */
 export function storageSet<T>(key: string, value: T): void {
   const serialised = JSON.stringify(value);
-  // Each UTF-16 character occupies 2 bytes
-  const requiredBytes = serialised.length * 2;
+  const requiredBytes = new Blob([serialised]).size;
+  const existingBytes = new Blob([localStorage.getItem(key) ?? '']).size;
+  const additionalBytes = Math.max(0, requiredBytes - existingBytes);
 
-  const usage = getStorageUsage();
+  let usage = getStorageUsage();
 
   if (usage.isAboveWarningThreshold) {
     console.warn(
@@ -63,13 +65,14 @@ export function storageSet<T>(key: string, value: T): void {
     );
   }
 
-  if (!checkBudget(requiredBytes)) {
+  if (usage.usedKB > STORAGE_WARN_THRESHOLD_KB || !checkBudget(additionalBytes)) {
     runEvictionHandler(usage);
-    const usageAfter = getStorageUsage();
-    const availableAfter = usageAfter.estimatedTotalBytes - usageAfter.usedBytes;
-    if (requiredBytes > availableAfter) {
-      throw new StorageQuotaError(key, requiredBytes, availableAfter);
-    }
+    usage = getStorageUsage();
+  }
+
+  const availableAfter = usage.estimatedTotalBytes - usage.usedBytes;
+  if (additionalBytes > availableAfter) {
+    throw new StorageQuotaError(key, additionalBytes, availableAfter);
   }
 
   localStorage.setItem(key, serialised);
