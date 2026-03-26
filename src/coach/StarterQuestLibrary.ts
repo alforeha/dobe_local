@@ -148,6 +148,10 @@ function xp(primary: keyof XpAward, amount: number): XpAward {
   return base;
 }
 
+function noStatXp(): XpAward {
+  return { health: 0, strength: 0, agility: 0, defense: 0, charisma: 0, wisdom: 0 };
+}
+
 // ── STARTER TASK TEMPLATES ────────────────────────────────────────────────────
 // Only templates NOT already present in TaskTemplateLibrary.json.
 // Prebuilt IDs (drinkWater, walkRoute, meditation, formTask) are referenced
@@ -191,7 +195,8 @@ export const starterTaskTemplates: TaskTemplate[] = [
     icon: 'check',
     taskType: 'CHECK',
     inputFields: { label: 'Open the Welcome Event' },
-    xpAward: xp('health', 25),
+    xpAward: noStatXp(),
+    xpBonus: 25,
     secondaryTag: null,
     cooldown: null,
     media: null,
@@ -211,7 +216,8 @@ export const starterTaskTemplates: TaskTemplate[] = [
         { key: 'month_view', label: 'Switch to Month view' },
       ],
     },
-    xpAward: xp('wisdom', 40),
+    xpAward: noStatXp(),
+    xpBonus: 40,
     secondaryTag: 'admin' as TaskSecondaryTag,
     cooldown: null,
     media: null,
@@ -221,19 +227,21 @@ export const starterTaskTemplates: TaskTemplate[] = [
     id: STARTER_TEMPLATE_IDS.learnGrounds,
     isSystem: true,
     name: 'Learn the Grounds',
-    description: 'Explore resources, add a favourite task, and complete the GTD task from Quest 1.',
+    description: 'Explore resources, add a favourite task, and complete one favourite from Quick Actions.',
     icon: 'checklist',
     taskType: 'CHECKLIST',
     inputFields: {
       items: [
-        { key: 'add_fav', label: 'Add Drink Water as a favourite task' },
-        { key: 'open_resources', label: 'Open each Resource room' },
+        { key: 'complete_roll', label: 'Roll the lucky dice' },
+        { key: 'complete_favourite', label: 'Complete a favourite action' },
+        { key: 'open_schedule', label: 'Open the Schedule room' },
         { key: 'open_task_room', label: 'Open the Task room' },
-        { key: 'open_schedule_room', label: 'Open the Schedule room' },
-        { key: 'complete_gtd', label: 'Complete the GTD task from Quest 1' },
+        { key: 'open_resources', label: 'Open the Resources room' },
+        { key: 'add_favourite', label: 'Add a favourite task' },
       ],
     },
-    xpAward: xp('defense', 40),
+    xpAward: noStatXp(),
+    xpBonus: 40,
     secondaryTag: 'admin' as TaskSecondaryTag,
     cooldown: null,
     media: null,
@@ -243,15 +251,20 @@ export const starterTaskTemplates: TaskTemplate[] = [
     id: STARTER_TEMPLATE_IDS.claimIdentity,
     isSystem: true,
     name: 'Claim Your Identity',
-    description: 'Set your display name and establish your presence in the pond.',
-    icon: 'form',
-    taskType: 'FORM',
+    description: 'Open your profile, set your display name, visit Badge and Equipment, and open the Goals room in the menu.',
+    icon: 'checklist',
+    taskType: 'CHECKLIST',
     inputFields: {
-      fields: [
-        { key: 'display_name', label: 'Display name', fieldType: 'text' },
+      items: [
+        { key: 'open_profile', label: 'Open your profile' },
+        { key: 'display_name', label: 'Set your display name' },
+        { key: 'open_badges', label: 'Open the Badge Room' },
+        { key: 'open_equipment', label: 'Open the Equipment Room' },
+        { key: 'open_adventures', label: 'Open the Goals room in the menu' },
       ],
     },
-    xpAward: xp('charisma', 40),
+    xpAward: noStatXp(),
+    xpBonus: 40,
     secondaryTag: 'social' as TaskSecondaryTag,
     cooldown: null,
     media: null,
@@ -538,13 +551,7 @@ const q1Marker: Marker = {
   nextFire: localISODate(new Date()),
   activeState: true,
   // D81 sideEffect: drop a GTD item after Q1 fires so user must complete it in Q3
-  sideEffects: [
-    {
-      type: 'gtdWrite',
-      taskTemplateRef: STARTER_TEMPLATE_IDS.learnGrounds,
-      note: 'Complete this in Quest 3 — Learn the Grounds',
-    },
-  ],
+  sideEffects: null,
 };
 
 const q1: Quest = makeQuest(
@@ -577,10 +584,10 @@ const q2: Quest = makeQuest(
 const q3Marker = makeIntervalMarker(`${OB_ACT_ID}|0|2`, STARTER_TEMPLATE_IDS.learnGrounds);
 const q3: Quest = makeQuest(
   'High Ground',
-  'Explore the app, add Drink Water as a favourite, visit each Resource room, and complete the GTD task from Quest 1.',
+  'Roll the lucky dice, complete a favourite action, explore core rooms, and add a favourite task.',
   makeTimely(q3Marker),
   { taskTypes: ['CHECKLIST'] },
-  taskInputSpecific(5),
+  taskInputSpecific(6),
   'xp-standard',
 );
 
@@ -588,10 +595,10 @@ const q3: Quest = makeQuest(
 const q4Marker = makeIntervalMarker(`${OB_ACT_ID}|0|3`, STARTER_TEMPLATE_IDS.claimIdentity);
 const q4: Quest = makeQuest(
   'Stake Your Claim',
-  'Set your display name, place your first badge, equip gear, and open the Adventures tab to complete onboarding.',
+  'Open your profile, set your display name, visit Badge and Equipment, and open the Goals room in the menu.',
   makeTimely(q4Marker),
-  { taskTypes: ['FORM'] },
-  taskInputSpecific(1),
+  { taskTypes: ['CHECKLIST'] },
+  taskInputSpecific(5),
   'xp-standard',
 );
 

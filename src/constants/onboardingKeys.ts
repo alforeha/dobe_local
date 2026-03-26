@@ -9,6 +9,7 @@ export const ONBOARDING_GLOW = {
   MENU_BUTTON: 'menu-button',
   TASK_ROOM_NAV: 'task-room-nav',
   TASK_FAVOURITE_STAR: 'task-favourite-star',
+  FAVOURITE_ACTION: 'favourite-action',
   SCHEDULE_ROOM_NAV: 'schedule-room-nav',
   RESOURCES_ROOM_NAV: 'resources-room-nav',
   LUCKY_DICE: 'lucky-dice',

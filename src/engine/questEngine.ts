@@ -321,7 +321,7 @@ export function computeProjectedFinish(quest: Quest): string | null {
       const sessionXP = pe.taskList.reduce((sum, templateRef) => {
         const template = scheduleStore.taskTemplates[templateRef];
         if (!template || !measurableTypes.has(template.taskType)) return sum;
-        return sum + Object.values(template.xpAward).reduce((s, v) => s + v, 0);
+        return sum + Object.values(template.xpAward).reduce((s, v) => s + v, 0) + (template.xpBonus ?? 0);
       }, 0);
 
       if (sessionXP === 0) continue;

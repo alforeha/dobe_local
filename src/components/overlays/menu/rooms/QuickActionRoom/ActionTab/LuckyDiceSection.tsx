@@ -11,6 +11,7 @@ import type { RollInputFields } from '../../../../../../types/taskTemplate';
 import { GlowRing } from '../../../../../shared/GlowRing';
 import { ONBOARDING_GLOW } from '../../../../../../constants/onboardingKeys';
 import { useGlows } from '../../../../../../hooks/useOnboardingGlow';
+import { autoCheckQuestItem } from '../../../../../../engine/resourceEngine';
 
 const DIE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 const SIDES = 6;
@@ -107,6 +108,7 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
         const xpAmount = result * 10;
         awardXP(user.system.id, xpAmount);
         awardStat(user.system.id, 'agility', result);
+        autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'complete_roll');
       }
     }, 80);
   }, [rolling, todayRoll, user, today, qaId, scheduleStore]);

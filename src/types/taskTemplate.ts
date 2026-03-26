@@ -273,6 +273,8 @@ export interface TaskTemplate {
   inputFields: InputFields;
   /** Partial StatGroup record — sum = total XP (D43) */
   xpAward: XpAward;
+  /** Optional base XP that should not grant any stat points. */
+  xpBonus?: number;
   /** Minutes. null = no cooldown (D41) */
   cooldown: number | null;
   /** Optional instructional content ref — video or image shown before completion */

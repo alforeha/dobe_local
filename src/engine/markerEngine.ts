@@ -19,7 +19,13 @@ import { useUserStore } from '../stores/useUserStore';
 import { evaluateQuestSpecific, updateQuestProgress, countTasksForScope } from './questEngine';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
 import { localISODate, getAppDate } from '../utils/dateUtils';
-import { unlockAct, makeDailyChain, STARTER_ACT_IDS, starterTaskTemplates } from '../coach/StarterQuestLibrary';
+import {
+  unlockAct,
+  makeDailyChain,
+  STARTER_ACT_IDS,
+  STARTER_TEMPLATE_IDS,
+  starterTaskTemplates,
+} from '../coach/StarterQuestLibrary';
 import { awardGold } from './awardPipeline';
 
 // ── QUESTREF ENCODING ─────────────────────────────────────────────────────────
@@ -85,6 +91,39 @@ function computeMarkerNextFire(marker: Marker): string {
   return localISODate(anchor);
 }
 
+function utcDateStringToLocalIso(utcDate: string): string {
+  const d = new Date(utcDate + 'T00:00:00Z');
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function findQuickActionCompletionForDate(templateRef: string, dateIso: string): { task: Task; completedAt: string } | null {
+  const scheduleStore = useScheduleStore.getState();
+  for (const source of [scheduleStore.activeEvents, scheduleStore.historyEvents]) {
+    for (const event of Object.values(source)) {
+      if (!('eventType' in event) || event.eventType !== 'quickActions') continue;
+      const quickActions = event as import('../types/event').QuickActionsEvent;
+      if (
+        quickActions.date !== dateIso &&
+        quickActions.id !== `qa-${dateIso}` &&
+        utcDateStringToLocalIso(quickActions.date) !== dateIso
+      ) {
+        continue;
+      }
+      for (const completion of quickActions.completions) {
+        const task = scheduleStore.tasks[completion.taskRef];
+        if (!task) continue;
+        if (task.completionState !== 'complete') continue;
+        if (task.templateRef !== templateRef) continue;
+        return { task, completedAt: completion.completedAt };
+      }
+    }
+  }
+  return null;
+}
+
 // ── FIRE MARKER ───────────────────────────────────────────────────────────────
 
 export interface FireMarkerParams {
@@ -93,6 +132,23 @@ export interface FireMarkerParams {
   questIndex: number;
   chainIndex: number;
   actId: string;
+}
+
+function fireInitialIntervalMarkers(actId: string, chainIndex: number): void {
+  const act = useProgressionStore.getState().acts[actId];
+  const chain = act?.chains[chainIndex];
+  if (!chain) return;
+
+  chain.quests.forEach((quest, questIndex) => {
+    if (quest.completionState !== 'active') return;
+    const markerIndex = quest.timely.markers.findIndex(
+      (m) => m.activeState && m.conditionType === 'interval' && m.nextFire === null,
+    );
+    if (markerIndex === -1) return;
+    const marker = quest.timely.markers[markerIndex];
+    if (!marker) return;
+    fireMarker({ marker, markerIndex, questIndex, chainIndex, actId });
+  });
 }
 
 /**
@@ -139,6 +195,56 @@ export function fireMarker(params: FireMarkerParams): void {
     actRef: actId,
     secondaryTag: null,
   };
+
+  const existingQuickActionCompletion =
+    marker.taskTemplateRef === STARTER_TEMPLATE_IDS.roll
+      ? findQuickActionCompletionForDate(STARTER_TEMPLATE_IDS.roll, now)
+      : null;
+
+  if (existingQuickActionCompletion) {
+    const currentXp = userStore.user?.progression.stats.xp ?? 0;
+    const currentTaskCount =
+      marker.conditionType === 'taskCount' ? countTasksForScope(marker) : null;
+    const updatedAct = act
+      ? {
+          ...act,
+          chains: act.chains.map((chain, ci) => {
+            if (ci !== chainIndex) return chain;
+            return {
+              ...chain,
+              quests: chain.quests.map((q, qi) => {
+                if (qi !== questIndex) return q;
+                const updatedMarkers = q.timely.markers.map((m, mi) => {
+                  if (mi !== markerIndex) return m;
+                  return {
+                    ...m,
+                    lastFired: now,
+                    xpAtLastFire: m.conditionType === 'xpThreshold' ? currentXp : null,
+                    taskCountAtLastFire: m.conditionType === 'taskCount' ? currentTaskCount : null,
+                    nextFire: m.conditionType === 'interval'
+                      ? computeMarkerNextFire({ ...m, lastFired: now })
+                      : null,
+                  };
+                });
+                return { ...q, timely: { ...q.timely, markers: updatedMarkers } };
+              }),
+            };
+          }),
+        }
+      : null;
+    if (updatedAct) {
+      progressionStore.setAct(updatedAct);
+    }
+    const completedTask: Task = {
+      ...task,
+      completionState: 'complete',
+      completedAt: existingQuickActionCompletion.completedAt,
+      resultFields: existingQuickActionCompletion.task.resultFields,
+    };
+    scheduleStore.setTask(completedTask);
+    completeMilestone(completedTask);
+    return;
+  }
 
   scheduleStore.setTask(task);
 
@@ -388,6 +494,11 @@ export function completeMilestone(completedTask: Task): void {
     return;
   }
 
+  const userForQuestGold = useUserStore.getState().user;
+  if (userForQuestGold) {
+    useUserStore.getState().setUser(awardGold(1, userForQuestGold));
+  }
+
   // Quest just completed — fire the next quest's interval marker immediately so
   // the user can act on Quest N+1 without waiting for the next rollover (FIX-13).
   // Only fires if the next quest exists, is active, and its first interval marker
@@ -460,6 +571,7 @@ export function completeMilestone(completedTask: Task): void {
       const chain1 = makeDailyChain(STARTER_ACT_IDS.daily, 1, today);
       const dailyWithChain = { ...unlockedDaily, chains: [chain1] };
       freshStore.setAct(dailyWithChain);
+      fireInitialIntervalMarkers(STARTER_ACT_IDS.daily, 0);
     }
   }
 }

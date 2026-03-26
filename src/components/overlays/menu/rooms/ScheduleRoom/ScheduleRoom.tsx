@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { ScheduleRoomHeader } from './ScheduleRoomHeader';
 import { ScheduleRoomSubHeader } from './ScheduleRoomSubHeader';
@@ -9,6 +9,8 @@ import { RoutinePopup } from './RoutinePopup';
 import { OneOffEventPopup } from './OneOffEventPopup';
 import { isOneOffEvent } from '../../../../../utils/isOneOffEvent';
 import type { PlannedEvent } from '../../../../../types';
+import { autoCheckQuestItem } from '../../../../../engine/resourceEngine';
+import { STARTER_TEMPLATE_IDS } from '../../../../../coach/StarterQuestLibrary';
 
 type ScheduleTab = 'routines' | 'events' | 'resources' | 'leagues';
 
@@ -25,6 +27,10 @@ export function ScheduleRoom() {
   const [eventFilter, setEventFilter] = useState('');
   const [popup, setPopup] = useState<PopupState>(null);
   const plannedEvents = useScheduleStore((s) => s.plannedEvents);
+
+  useEffect(() => {
+    autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'open_schedule');
+  }, []);
 
   const allRoutines = Object.values(plannedEvents).filter((e) => !isOneOffEvent(e));
   const filteredRoutines = routineFilter

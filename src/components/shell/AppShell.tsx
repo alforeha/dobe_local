@@ -33,12 +33,11 @@ export type ActiveOverlay = 'event' | 'coach' | 'profile' | 'menu' | null;
 
 function makeDefaultUser(): User {
   const id = uuidv4();
-  const today = localISODate(new Date());
   return {
     system: {
       id,
       displayName: 'Adventurer',
-      wrappedAnchor: today,
+      wrappedAnchor: '',
       auth: null,
     },
     personal: {

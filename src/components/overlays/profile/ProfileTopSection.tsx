@@ -6,6 +6,8 @@ import { StatIcon } from '../../shared/StatIcon';
 import { ProfileXPBar } from './ProfileXPBar';
 import { ONBOARDING_GLOW } from '../../../constants/onboardingKeys';
 import { useGlows } from '../../../hooks/useOnboardingGlow';
+import { autoCheckQuestItem } from '../../../engine/resourceEngine';
+import { STARTER_TEMPLATE_IDS } from '../../../coach/StarterQuestLibrary';
 import {
   GEAR_SLOT_LABELS,
   GEAR_SLOT_ORDER,
@@ -84,6 +86,16 @@ export function ProfileTopSection({ onNav }: ProfileTopSectionProps) {
     gear: getGearDefinition(equippedGear[slot]),
   }));
 
+  const handleBadgeNav = () => {
+    autoCheckQuestItem(STARTER_TEMPLATE_IDS.claimIdentity, 'open_badges');
+    onNav('badges');
+  };
+
+  const handleEquipmentNav = () => {
+    autoCheckQuestItem(STARTER_TEMPLATE_IDS.claimIdentity, 'open_equipment');
+    onNav('equipment');
+  };
+
   return (
     <div className="flex flex-1 flex-col border-b border-gray-100 dark:border-gray-700">
       <div className="relative flex items-center gap-2 px-3 pt-3 pr-24">
@@ -154,7 +166,7 @@ export function ProfileTopSection({ onNav }: ProfileTopSectionProps) {
         <button
           type="button"
           className="absolute bottom-3 left-3 z-10 flex h-20 w-20 items-center justify-center rounded-full bg-white text-3xl shadow-md transition-transform hover:scale-105 dark:bg-gray-700"
-          onClick={() => onNav('badges')}
+          onClick={handleBadgeNav}
           aria-label="Badge Room"
         >
           {'\ud83c\udfc6'}
@@ -166,7 +178,7 @@ export function ProfileTopSection({ onNav }: ProfileTopSectionProps) {
         <button
           type="button"
           className="absolute bottom-3 right-3 z-10 flex h-20 w-20 items-center justify-center rounded-full bg-white text-3xl shadow-md transition-transform hover:scale-105 dark:bg-gray-700"
-          onClick={() => onNav('equipment')}
+          onClick={handleEquipmentNav}
           aria-label="Equipment"
         >
           {'\ud83c\udf92'}

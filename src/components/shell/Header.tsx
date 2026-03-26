@@ -9,6 +9,8 @@ import { FloatingDelta } from './FloatingDelta';
 import { GlowRing } from '../shared/GlowRing';
 import { ONBOARDING_GLOW } from '../../constants/onboardingKeys';
 import { useGlows } from '../../hooks/useOnboardingGlow';
+import { autoCheckQuestItem } from '../../engine/resourceEngine';
+import { STARTER_TEMPLATE_IDS } from '../../coach/StarterQuestLibrary';
 
 interface HeaderProps {
   onProfileOpen: () => void;
@@ -42,10 +44,15 @@ export function Header({ onProfileOpen }: HeaderProps) {
     setDeltas((d) => d.filter((item) => item.id !== id));
   };
 
+  const handleProfileOpen = () => {
+    autoCheckQuestItem(STARTER_TEMPLATE_IDS.claimIdentity, 'open_profile');
+    onProfileOpen();
+  };
+
   return (
     <header className="relative flex shrink-0 items-stretch gap-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2">
       <GlowRing active={profileButtonGlows} rounded="lg" className="flex shrink-0 self-stretch">
-        <ProfileNavButton onOpen={onProfileOpen} />
+        <ProfileNavButton onOpen={handleProfileOpen} />
       </GlowRing>
 
       <div className="flex flex-1 flex-col gap-1 min-w-0">

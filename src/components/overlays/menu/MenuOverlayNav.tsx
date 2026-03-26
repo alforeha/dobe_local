@@ -28,6 +28,7 @@ export function MenuOverlayNav({
   collapsed,
   onToggleCollapse,
 }: MenuOverlayNavProps) {
+  const goalRoomGlows = useGlows(ONBOARDING_GLOW.ADVENTURES_TAB);
   const taskRoomGlows = useGlows(ONBOARDING_GLOW.TASK_ROOM_NAV);
   const scheduleRoomGlows = useGlows(ONBOARDING_GLOW.SCHEDULE_ROOM_NAV);
   const resourceRoomGlows = useGlows(ONBOARDING_GLOW.RESOURCES_ROOM_NAV);
@@ -52,6 +53,7 @@ export function MenuOverlayNav({
           <GlowRing
             key={room}
             active={
+              (room === 'goal' && goalRoomGlows) ||
               (room === 'task' && taskRoomGlows) ||
               (room === 'schedule' && scheduleRoomGlows) ||
               (room === 'resource' && resourceRoomGlows)

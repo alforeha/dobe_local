@@ -148,7 +148,7 @@ export function completeTask(
 
     if (template) {
       // Award XP — base from template + context multipliers
-      const baseXP = Object.values(template.xpAward).reduce((s, v) => s + v, 0);
+      const baseXP = Object.values(template.xpAward).reduce((s, v) => s + v, 0) + (template.xpBonus ?? 0);
       const contextBonuses: number[] = [];
       if (isQuickActions) contextBonuses.push(2); // +2 agility bonus handled in awardStat
       if (hasResourceRef) contextBonuses.push(2); // +2 defense bonus
@@ -283,7 +283,7 @@ export function completeEvent(eventId: string): void {
     if (!t || t.completionState !== 'complete') return sum;
     const template = scheduleStore.taskTemplates[t.templateRef];
     if (!template) return sum;
-    return sum + Object.values(template.xpAward).reduce((s, v) => s + v, 0);
+    return sum + Object.values(template.xpAward).reduce((s, v) => s + v, 0) + (template.xpBonus ?? 0);
   }, 0);
 
   const updatedEvent: Event = {

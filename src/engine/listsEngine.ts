@@ -28,6 +28,8 @@ import { awardXP, awardStat } from './awardPipeline';
 import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
+import { autoCheckQuestItem } from './resourceEngine';
+import { STARTER_TEMPLATE_IDS } from '../coach/StarterQuestLibrary';
 
 // ── HELPERS ────────────────────────────────────────────────────────────────────────────────
 
@@ -122,7 +124,7 @@ export function completeFavourite(taskTemplateRef: string, user: User): void {
   // XP award — +2 agility for QuickActions context (D39)
   const userId = user.system.id;
   if (template) {
-    const baseXP = Object.values(template.xpAward).reduce((s, v) => s + v, 0);
+    const baseXP = Object.values(template.xpAward).reduce((s, v) => s + v, 0) + (template.xpBonus ?? 0);
     awardXP(userId, baseXP + 2);
     awardStat(userId, 'agility', 2);
   } else {
@@ -130,11 +132,13 @@ export function completeFavourite(taskTemplateRef: string, user: User): void {
     awardStat(userId, 'wisdom', 25);
   }
 
+  autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'complete_favourite');
+
   // Achievement check + badge awards
-  const latestUser = useUserStore.getState().user;
-  if (latestUser) {
-    const newAchs = checkAchievements(latestUser);
-    let currentUser = latestUser;
+  const latestStoreUser = useUserStore.getState().user;
+  if (latestStoreUser) {
+    const newAchs = checkAchievements(latestStoreUser);
+    let currentUser = latestStoreUser;
     for (const ach of newAchs) {
       currentUser = awardBadge(ach, currentUser);
     }
@@ -431,7 +435,8 @@ export function removeManualGTDItem(itemId: string, user: User): void {
  * @param user    Current User
  */
 export function completeManualGTDItem(itemId: string, user: User): void {
-  const item = user.lists.manualGtdList.find((i) => i.id === itemId);
+  const latestUser = useUserStore.getState().user ?? user;
+  const item = latestUser.lists.manualGtdList.find((i) => i.id === itemId);
   if (!item || item.completionState !== 'pending') return;
 
   const now = new Date().toISOString();
@@ -459,10 +464,10 @@ export function completeManualGTDItem(itemId: string, user: User): void {
 
   // Remove from manualGtdList
   const updated: User = {
-    ...user,
+    ...latestUser,
     lists: {
-      ...user.lists,
-      manualGtdList: user.lists.manualGtdList.filter((i) => i.id !== itemId),
+      ...latestUser.lists,
+      manualGtdList: latestUser.lists.manualGtdList.filter((i) => i.id !== itemId),
     },
   };
   persistUser(updated);
@@ -482,14 +487,14 @@ export function completeManualGTDItem(itemId: string, user: User): void {
   }
 
   // XP award — +5 wisdom for manual GTD completion
-  awardXP(user.system.id, 5);
-  awardStat(user.system.id, 'wisdom', 5);
+  awardXP(latestUser.system.id, 5);
+  awardStat(latestUser.system.id, 'wisdom', 5);
 
   // Achievement check
-  const latestUser = useUserStore.getState().user;
-  if (latestUser) {
-    const newAchs = checkAchievements(latestUser);
-    let currentUser = latestUser;
+  const latestStoreUser = useUserStore.getState().user;
+  if (latestStoreUser) {
+    const newAchs = checkAchievements(latestStoreUser);
+    let currentUser = latestStoreUser;
     for (const ach of newAchs) {
       currentUser = awardBadge(ach, currentUser);
     }

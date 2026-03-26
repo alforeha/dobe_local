@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useResourceStore } from '../../../../../stores/useResourceStore';
 import type { Resource, ResourceType } from '../../../../../types/resource';
 import { ResourceRoomHeader } from './ResourceRoomHeader';
@@ -11,6 +11,8 @@ import { VehicleForm } from './vehicle/VehicleForm';
 import { AccountForm } from './account/AccountForm';
 import { InventoryForm } from './inventory/InventoryForm';
 import { DocForm } from './doc/DocForm';
+import { autoCheckQuestItem } from '../../../../../engine/resourceEngine';
+import { STARTER_TEMPLATE_IDS } from '../../../../../coach/StarterQuestLibrary';
 
 type AddStep =
   | 'closed'
@@ -38,6 +40,10 @@ export function ResourceRoom() {
 
   const resources = useResourceStore((s) => s.resources);
   const filtered = Object.values(resources).filter((r) => r.type === activeType);
+
+  useEffect(() => {
+    autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'open_resources');
+  }, []);
 
   // ── Edit overlay ──────────────────────────────────────────────────────────
   if (editingResource) {

@@ -1,9 +1,6 @@
 import { useMemo } from 'react';
 import { useUserStore } from '../../../../../stores/useUserStore';
 import { ribbet } from '../../../../../coach/ribbet';
-import { GlowRing } from '../../../../shared/GlowRing';
-import { ONBOARDING_GLOW } from '../../../../../constants/onboardingKeys';
-import { useGlows } from '../../../../../hooks/useOnboardingGlow';
 
 type HabitatFilter = 'habitats' | 'adventures';
 
@@ -16,7 +13,6 @@ interface GoalRoomHeaderProps {
 export function GoalRoomHeader({ habitatFilter, onToggleFilter, onAdd }: GoalRoomHeaderProps) {
   const user = useUserStore((s) => s.user);
   const coachComment = useMemo(() => (user ? ribbet(user) : ''), [user]);
-  const adventuresTabGlows = useGlows(ONBOARDING_GLOW.ADVENTURES_TAB);
 
   return (
     <div className="px-4 pt-4 pb-2 border-b border-gray-100 dark:border-gray-700">
@@ -36,19 +32,17 @@ export function GoalRoomHeader({ habitatFilter, onToggleFilter, onAdd }: GoalRoo
           >
             🏡 Habitat
           </button>
-          <GlowRing active={adventuresTabGlows} className="inline-flex">
-            <button
-              type="button"
-              onClick={() => onToggleFilter('adventures')}
-              className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                habitatFilter.has('adventures')
-                  ? 'bg-purple-100 border-purple-400 text-purple-700 dark:bg-purple-900/40 dark:border-purple-600 dark:text-purple-300'
-                  : 'border-gray-300 text-gray-400 dark:border-gray-600 dark:text-gray-500'
-              }`}
-            >
-              ⚔️ Adventure
-            </button>
-          </GlowRing>
+          <button
+            type="button"
+            onClick={() => onToggleFilter('adventures')}
+            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+              habitatFilter.has('adventures')
+                ? 'bg-purple-100 border-purple-400 text-purple-700 dark:bg-purple-900/40 dark:border-purple-600 dark:text-purple-300'
+                : 'border-gray-300 text-gray-400 dark:border-gray-600 dark:text-gray-500'
+            }`}
+          >
+            ⚔️ Adventure
+          </button>
         </div>
 
         {coachComment ? (

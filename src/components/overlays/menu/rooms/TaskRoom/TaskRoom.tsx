@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { TaskRoomHeader } from './TaskRoomHeader';
 import { TaskRoomBody } from './TaskRoomBody';
 import { ResourceTasksTab } from './ResourceTasksTab';
 import { TaskTemplatePopup } from './TaskTemplatePopup';
 import type { TaskTemplate } from '../../../../../types';
+import { autoCheckQuestItem } from '../../../../../engine/resourceEngine';
+import { STARTER_TEMPLATE_IDS } from '../../../../../coach/StarterQuestLibrary';
 
 type TaskTab = 'stat' | 'resource';
 
@@ -17,6 +19,10 @@ export function TaskRoom() {
   const [tab, setTab] = useState<TaskTab>('stat');
   const [popup, setPopup] = useState<PopupState>(null);
   const taskTemplates = useScheduleStore((s) => s.taskTemplates);
+
+  useEffect(() => {
+    autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'open_task_room');
+  }, []);
 
   // Filter out system/onboarding tasks and resource-derived templates.
   // Resource templates use the 'resource-task:' key prefix (written by ensureTemplate()

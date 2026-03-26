@@ -4,6 +4,8 @@ import { useUserStore } from '../../../../../stores/useUserStore';
 import { GlowRing } from '../../../../shared/GlowRing';
 import { ONBOARDING_GLOW } from '../../../../../constants/onboardingKeys';
 import { useGlows } from '../../../../../hooks/useOnboardingGlow';
+import { autoCheckQuestItem } from '../../../../../engine/resourceEngine';
+import { STARTER_TEMPLATE_IDS } from '../../../../../coach/StarterQuestLibrary';
 
 interface TaskBlockProps {
   templateKey: string;
@@ -39,6 +41,7 @@ export function TaskBlock({
       removeFavourite(templateKey);
     } else {
       addFavourite(templateKey);
+      autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'add_favourite');
     }
   }
 

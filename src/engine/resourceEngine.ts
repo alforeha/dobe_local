@@ -27,16 +27,41 @@ import { useResourceStore } from '../stores/useResourceStore';
 import { useProgressionStore } from '../stores/useProgressionStore';
 
 import { awardXP, awardStat } from './awardPipeline';
-import { completeMilestone, decodeQuestRef, fireMarker } from './markerEngine';
+import { completeMilestone, decodeQuestRef } from './markerEngine';
 import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
-import { starterTaskTemplates } from '../coach/StarterQuestLibrary';
+import { starterTaskTemplates, STARTER_TEMPLATE_IDS } from '../coach/StarterQuestLibrary';
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
 function todayISO(): string {
   return getAppDate();
+}
+
+function isOnboardingQuestTemplate(templateRef: string): boolean {
+  return (
+    templateRef === STARTER_TEMPLATE_IDS.openWelcomeEvent ||
+    templateRef === STARTER_TEMPLATE_IDS.setupSchedule ||
+    templateRef === STARTER_TEMPLATE_IDS.learnGrounds ||
+    templateRef === STARTER_TEMPLATE_IDS.claimIdentity
+  );
+}
+
+function hasCompletedQuickActionTask(templateRef: string): boolean {
+  const scheduleStore = useScheduleStore.getState();
+  for (const event of Object.values(scheduleStore.activeEvents)) {
+    if (!('eventType' in event) || event.eventType !== 'quickActions') continue;
+    const quickActions = event as QuickActionsEvent;
+    for (const completion of quickActions.completions) {
+      const task = scheduleStore.tasks[completion.taskRef];
+      if (!task) continue;
+      if (task.templateRef !== templateRef) continue;
+      if (task.completionState !== 'complete') continue;
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -525,12 +550,18 @@ export function completeGTDItem(itemId: string, user: User): void {
 
   // XP award — +2 agility (QuickActions context) + +2 defense (resource context)
   const userId = withoutItem.system.id;
-  const template = scheduleStore.taskTemplates[task.templateRef];
+  const template =
+    scheduleStore.taskTemplates[task.templateRef] ??
+    starterTaskTemplates.find((t) => t.id === task.templateRef) ??
+    null;
   if (template) {
-    const baseXP = Object.values(template.xpAward).reduce((s, v) => s + v, 0);
-    awardXP(userId, baseXP + 4); // +2 agility + +2 defense
-    awardStat(userId, 'agility', 2);
-    awardStat(userId, 'defense', 2);
+    const baseXP = Object.values(template.xpAward).reduce((s, v) => s + v, 0) + (template.xpBonus ?? 0);
+    const onboardingQuestTask = isOnboardingQuestTemplate(task.templateRef);
+    awardXP(userId, onboardingQuestTask ? baseXP : baseXP + 4);
+    if (!onboardingQuestTask) {
+      awardStat(userId, 'agility', 2);
+      awardStat(userId, 'defense', 2);
+    }
   } else {
     awardXP(userId, 9);
     awardStat(userId, 'wisdom', 25);
@@ -566,40 +597,43 @@ export function autoCheckQuestItem(templateRef: string, itemKey: string): void {
   const scheduleStore = useScheduleStore.getState();
   const user = useUserStore.getState().user;
   if (!user) return;
+  const acts = useProgressionStore.getState().acts;
 
-  const findPendingTaskId = () =>
-    user.lists.gtdList.find((id) => {
-      const t = scheduleStore.tasks[id];
-      return t?.completionState === 'pending' && t.templateRef === templateRef;
-    }) ??
-    Object.values(scheduleStore.tasks).find(
-      (t) => t.completionState === 'pending' && t.templateRef === templateRef,
-    )?.id;
-
-  let taskId = findPendingTaskId();
-
-  if (!taskId) {
-    const acts = useProgressionStore.getState().acts;
-    outer:
-    for (const act of Object.values(acts)) {
-      for (let chainIndex = 0; chainIndex < act.chains.length; chainIndex++) {
-        const chain = act.chains[chainIndex];
-        for (let questIndex = 0; questIndex < chain.quests.length; questIndex++) {
-          const quest = chain.quests[questIndex];
-          if (quest.completionState !== 'active') continue;
-          const markerIndex = quest.timely.markers.findIndex(
-            (marker) => marker.activeState && marker.taskTemplateRef === templateRef,
-          );
-          if (markerIndex === -1) continue;
-          const marker = quest.timely.markers[markerIndex];
-          if (!marker) continue;
-          fireMarker({ marker, markerIndex, questIndex, chainIndex, actId: act.id });
-          taskId = findPendingTaskId();
-          break outer;
-        }
+  let activeQuestRef: string | null = null;
+  outer:
+  for (const act of Object.values(acts)) {
+    for (let chainIndex = 0; chainIndex < act.chains.length; chainIndex++) {
+      const chain = act.chains[chainIndex];
+      for (let questIndex = 0; questIndex < chain.quests.length; questIndex++) {
+        const quest = chain.quests[questIndex];
+        if (quest.completionState !== 'active') continue;
+        const hasMatchingMarker = quest.timely.markers.some(
+          (marker) => marker.activeState && marker.taskTemplateRef === templateRef,
+        );
+        if (!hasMatchingMarker) continue;
+        activeQuestRef = `${act.id}|${chainIndex}|${questIndex}`;
+        break outer;
       }
     }
   }
+
+  if (!activeQuestRef) return;
+
+  const taskId =
+    user.lists.gtdList.find((id) => {
+      const t = scheduleStore.tasks[id];
+      return (
+        t?.completionState === 'pending' &&
+        t.templateRef === templateRef &&
+        t.questRef === activeQuestRef
+      );
+    }) ??
+    Object.values(scheduleStore.tasks).find(
+      (t) =>
+        t.completionState === 'pending' &&
+        t.templateRef === templateRef &&
+        t.questRef === activeQuestRef,
+    )?.id;
 
   if (!taskId) return;
 
@@ -614,10 +648,24 @@ export function autoCheckQuestItem(templateRef: string, itemKey: string): void {
   const templateItems =
     (template?.inputFields as { items?: Array<{ key: string; label: string }> } | undefined)?.items ?? [];
   const rawItems = (task.resultFields as Record<string, unknown>).items;
-  const existingItems: Array<{ key: string; label: string; checked: boolean }> =
+  const rawCheckedByKey = new Map<string, boolean>(
     Array.isArray(rawItems)
-      ? (rawItems as Array<{ key: string; label: string; checked: boolean }>)
-      : templateItems.map((i) => ({ ...i, checked: false }));
+      ? (rawItems as Array<{ key: string; checked?: boolean }>).map((item) => [
+          item.key,
+          item.checked === true,
+        ])
+      : [],
+  );
+  if (
+    templateRef === STARTER_TEMPLATE_IDS.learnGrounds &&
+    hasCompletedQuickActionTask(STARTER_TEMPLATE_IDS.roll)
+  ) {
+    rawCheckedByKey.set('complete_roll', true);
+  }
+  const existingItems: Array<{ key: string; label: string; checked: boolean }> = templateItems.map((item) => ({
+    ...item,
+    checked: rawCheckedByKey.get(item.key) === true,
+  }));
 
   if (existingItems.length === 0) return;
   if (!existingItems.some((item) => item.key === itemKey)) return;
