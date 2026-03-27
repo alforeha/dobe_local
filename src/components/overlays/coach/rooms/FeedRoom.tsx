@@ -1,6 +1,28 @@
 import { useState } from 'react';
 import { useUserStore } from '../../../../stores/useUserStore';
 import { FeedMessage } from './FeedMessage';
+import { resolveIcon } from '../../../../constants/iconMap';
+
+const TYPE_OPTIONS = [
+  'All',
+  'badge.awarded',
+  'quest.progress',
+  'quest.completed',
+  'level.up',
+  'streak.milestone',
+  'event.completed',
+  'marker.fire',
+] as const;
+
+const STAT_FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'health', label: resolveIcon('health') },
+  { key: 'strength', label: resolveIcon('strength') },
+  { key: 'agility', label: resolveIcon('agility') },
+  { key: 'defense', label: resolveIcon('defense') },
+  { key: 'charisma', label: resolveIcon('charisma') },
+  { key: 'wisdom', label: resolveIcon('wisdom') },
+] as const;
 
 export function FeedRoom() {
   const feed = useUserStore((s) => s.user?.feed);
@@ -13,62 +35,114 @@ export function FeedRoom() {
 
   const [hideRead, setHideRead] = useState(false);
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<(typeof TYPE_OPTIONS)[number]>('All');
+  const [statFilter, setStatFilter] = useState<(typeof STAT_FILTERS)[number]['key']>('all');
 
   const indexedEntries = entries.map((entry, idx) => ({ entry, idx }));
   const filtered = indexedEntries.filter(({ entry }) => {
     if (hideRead && entry.read) return false;
-    if (search && !entry.commentBlock.toLowerCase().includes(search.toLowerCase())) return false;
+
+    const searchValue = search.trim().toLowerCase();
+    const haystack = [entry.commentBlock, entry.sourceType, entry.triggerRef ?? '']
+      .join(' ')
+      .toLowerCase();
+
+    if (searchValue && !haystack.includes(searchValue)) return false;
+    if (typeFilter !== 'All' && entry.sourceType !== typeFilter) return false;
+
+    if (statFilter !== 'all') {
+      const statHaystack = `${entry.sourceType} ${entry.triggerRef ?? ''}`.toLowerCase();
+      if (!statHaystack.includes(statFilter)) return false;
+    }
+
     return true;
   });
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Header */}
-      <div className="shrink-0 border-b border-gray-200 dark:border-gray-700 px-4 py-3 space-y-2">
+      <div className="shrink-0 space-y-2 border-b border-gray-200 px-4 py-3 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Feed</h3>
           {unreadCount > 0 && (
             <button
               type="button"
               onClick={markAllFeedRead}
-              className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
+              className="text-xs text-emerald-600 hover:underline dark:text-emerald-400"
             >
               Mark all read
             </button>
           )}
         </div>
+
         <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search feed..."
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                aria-label="Clear search"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value as (typeof TYPE_OPTIONS)[number])}
+            className="w-40 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+          >
+            {TYPE_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {STAT_FILTERS.map(({ key, label }) => {
+              const selected = statFilter === key;
+
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setStatFilter(key)}
+                  className={[
+                    'rounded-full border px-3 py-1 text-xs transition-colors',
+                    selected
+                      ? 'border-purple-500 bg-purple-600 text-white dark:border-purple-400 dark:bg-purple-500'
+                      : 'border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800',
+                  ].join(' ')}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
           <button
             type="button"
             onClick={() => setHideRead((v) => !v)}
             className={[
-              'text-xs rounded-full px-3 py-1 transition-colors border',
+              'shrink-0 rounded-full border px-3 py-1 text-xs transition-colors',
               hideRead
-                ? 'bg-purple-100 dark:bg-purple-900/40 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300'
-                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800',
+                ? 'border-purple-500 bg-purple-100 text-purple-700 dark:border-purple-500 dark:bg-purple-900/40 dark:text-purple-200'
+                : 'border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800',
             ].join(' ')}
           >
             Hide read
           </button>
-        </div>
-        <div className="relative">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search feed…"
-            className="w-full text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-1.5 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-400"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch('')}
-              aria-label="Clear search"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-            >
-              ×
-            </button>
-          )}
         </div>
       </div>
 

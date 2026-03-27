@@ -3,10 +3,10 @@ import { getFeedSourceIcon } from './feedConstants';
 import { localISODate } from '../../../../utils/dateUtils';
 
 const REACTIONS: { emoji: string; key: string }[] = [
-  { emoji: '\uD83D\uDC4D', key: 'agree' },
-  { emoji: '\uD83D\uDCAA', key: 'motivated' },
-  { emoji: '\uD83D\uDC38', key: 'ribbit' },
-  { emoji: '\u2B50', key: 'save' },
+  { emoji: '👍', key: 'agree' },
+  { emoji: '💪', key: 'motivated' },
+  { emoji: '🐸', key: 'ribbit' },
+  { emoji: '⭐', key: 'save' },
 ];
 
 function formatTimestamp(iso: string): string {
@@ -26,15 +26,20 @@ interface FeedMessageProps {
   onSetReaction: (index: number, reaction: string) => void;
 }
 
-export function FeedMessage({ entry, entryIndex, onMarkRead, onSetReaction }: FeedMessageProps) {
+export function FeedMessage({
+  entry,
+  entryIndex,
+  onMarkRead,
+  onSetReaction,
+}: FeedMessageProps) {
   const isRead = entry.read === true;
   const activeReaction = entry.reaction;
 
   return (
     <div
       className={[
-        'rounded-xl border mx-3 my-2 overflow-hidden',
-        'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700',
+        'mx-3 my-2 overflow-hidden rounded-xl border bg-white dark:bg-gray-800',
+        'border-gray-200 dark:border-gray-700',
         !isRead ? 'border-l-4 border-l-emerald-500' : '',
         isRead ? 'opacity-60' : '',
       ]
@@ -42,22 +47,20 @@ export function FeedMessage({ entry, entryIndex, onMarkRead, onSetReaction }: Fe
         .join(' ')}
     >
       <div className="flex gap-2 px-3 py-3">
-        {/* LEFT: source icon + message */}
-        <div className="flex flex-col gap-1 flex-1 min-w-0">
-          <span className="text-base leading-none select-none" aria-hidden="true">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="select-none text-base leading-none" aria-hidden="true">
             {getFeedSourceIcon(entry.sourceType)}
           </span>
-          <p className="text-sm text-gray-900 dark:text-gray-100 leading-snug">
+          <p className="text-sm leading-snug text-gray-900 dark:text-gray-100">
             {entry.commentBlock}
           </p>
         </div>
 
-        {/* RIGHT: timestamp / reactions / read — tight stack */}
-        <div className="flex flex-col items-end shrink-0">
-          <span className="text-xs text-gray-500 dark:text-gray-400 leading-none mb-1">
+        <div className="flex shrink-0 flex-col items-end">
+          <span className="mb-1 text-xs leading-none text-gray-500 dark:text-gray-400">
             {formatTimestamp(entry.timestamp)}
           </span>
-          <div className="flex gap-0.5">
+          <div className="flex gap-1">
             {REACTIONS.map(({ emoji, key }) => (
               <button
                 key={key}
@@ -65,10 +68,10 @@ export function FeedMessage({ entry, entryIndex, onMarkRead, onSetReaction }: Fe
                 aria-label={key}
                 onClick={() => onSetReaction(entryIndex, key)}
                 className={[
-                  'text-base leading-none rounded-full w-7 h-7 flex items-center justify-center transition-colors',
+                  'flex h-7 w-7 items-center justify-center rounded-full border text-base leading-none transition-colors',
                   activeReaction === key
-                    ? 'bg-emerald-100 dark:bg-emerald-900/40'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-700',
+                    ? 'border-purple-500 bg-purple-600 text-white shadow-sm dark:border-purple-400 dark:bg-purple-500'
+                    : 'border-gray-200 bg-transparent text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700',
                 ].join(' ')}
               >
                 {emoji}
@@ -77,15 +80,17 @@ export function FeedMessage({ entry, entryIndex, onMarkRead, onSetReaction }: Fe
           </div>
           <button
             type="button"
-            onClick={() => { if (!isRead) onMarkRead(entryIndex); }}
+            onClick={() => {
+              if (!isRead) onMarkRead(entryIndex);
+            }}
             className={[
-              'text-xs rounded-lg px-2 py-0.5 mt-1 transition-colors',
+              'mt-1 rounded-lg px-2 py-0.5 text-xs transition-colors',
               isRead
-                ? 'text-gray-400 dark:text-gray-500 cursor-default'
-                : 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50',
+                ? 'cursor-default text-gray-400 dark:text-gray-500'
+                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50',
             ].join(' ')}
           >
-            {isRead ? '\u2713 Read' : 'Read'}
+            {isRead ? '✓ Read' : 'Read'}
           </button>
         </div>
       </div>

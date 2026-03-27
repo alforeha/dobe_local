@@ -96,6 +96,7 @@ export const ICON_MAP: Record<string, string> = {
   delete: '\ud83d\uddd1\ufe0f',
   lock: '\ud83d\udd12',
   unlock: '\ud83d\udd13',
+  splash: '\ud83d\udc38\ud83d\udca6',
   // resources & roles
   contact: '\ud83d\udc64',
   account: '\ud83d\udcb3',

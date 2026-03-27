@@ -19,18 +19,12 @@ interface CoachOverlayProps {
 }
 
 export function CoachOverlay({ onClose, onOpenEvent, onNavigateToDayView }: CoachOverlayProps) {
-  // Select stable primitives to avoid new-reference churn from array selectors
   const unreadCount = useUserStore(
     (s) => s.user?.feed.entries.filter((e) => !e.read).length ?? 0,
   );
-  const hasFeedContent = useUserStore(
-    (s) => (s.user?.feed.entries.length ?? 0) > 0,
-  );
   const userLevel = useUserStore((s) => s.user?.progression.stats.level ?? 0);
 
-  const [activeRoom, setActiveRoom] = useState<CoachRoom>(
-    hasFeedContent ? 'feed' : 'recommendations'
-  );
+  const [activeRoom, setActiveRoom] = useState<CoachRoom>('recommendations');
   const [aboutOpen, setAboutOpen] = useState(false);
 
   useEffect(() => {
@@ -48,15 +42,13 @@ export function CoachOverlay({ onClose, onOpenEvent, onNavigateToDayView }: Coac
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+    <div className="flex h-full flex-col bg-white dark:bg-gray-900">
       <CoachOverlayHeader
-        onClose={onClose}
+        onAbout={() => setAboutOpen(true)}
         onFeedNav={() => setActiveRoom('feed')}
-        onInfo={() => setAboutOpen(true)}
         unreadCount={unreadCount}
       />
 
-      {/* Room content */}
       <div className="flex-1 overflow-hidden">
         {activeRoom === 'feed' && <FeedRoom />}
         {activeRoom === 'recommendations' && <RecommendationsRoom />}
@@ -74,6 +66,7 @@ export function CoachOverlay({ onClose, onOpenEvent, onNavigateToDayView }: Coac
         activeRoom={activeRoom}
         onNav={setActiveRoom}
         userLevel={userLevel}
+        onClose={onClose}
       />
 
       {aboutOpen && <AboutPopup onClose={() => setAboutOpen(false)} />}
