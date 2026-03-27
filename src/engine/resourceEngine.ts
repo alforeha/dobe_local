@@ -30,7 +30,7 @@ import { useProgressionStore } from '../stores/useProgressionStore';
 import { awardXP, awardStat } from './awardPipeline';
 import { completeMilestone, decodeQuestRef, encodeQuestRef } from './markerEngine';
 import { checkAchievements } from '../coach/checkAchievements';
-import { awardBadge, checkQuestReward } from '../coach/rewardPipeline';
+import { awardBadge, awardGear, checkQuestReward } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
 import { starterTaskTemplates, STARTER_TEMPLATE_IDS } from '../coach/StarterQuestLibrary';
 import { isWisdomTemplate } from './xpBoosts';
@@ -269,6 +269,7 @@ export function seedResourceTemplateForResource(resource: Resource): void {
 function isOnboardingQuestTemplate(templateRef: string): boolean {
   return (
     templateRef === STARTER_TEMPLATE_IDS.openWelcomeEvent ||
+    templateRef === STARTER_TEMPLATE_IDS.completeOnboardingAdventure ||
     templateRef === STARTER_TEMPLATE_IDS.setupSchedule ||
     templateRef === STARTER_TEMPLATE_IDS.learnGrounds ||
     templateRef === STARTER_TEMPLATE_IDS.claimIdentity
@@ -813,6 +814,18 @@ export function completeGTDItem(
   } else {
     awardXP(userId, 9, { isWisdomTask: true, source: `gtd.complete.fallback:${task.templateRef}` });
     awardStat(userId, 'wisdom', 25, `gtd.complete.fallback:${task.templateRef}`);
+  }
+
+  if (task.templateRef === STARTER_TEMPLATE_IDS.completeOnboardingAdventure) {
+    const rewardUser = useUserStore.getState().user;
+    if (rewardUser) {
+      awardGear('gear-coach-drop-ribbon', 'act.complete.claim', rewardUser);
+      console.info('[act-complete.claim]', {
+        templateRef: task.templateRef,
+        rewardRef: 'gear-coach-drop-ribbon',
+        userId: rewardUser.system.id,
+      });
+    }
   }
 
   // Achievement check + badge awards

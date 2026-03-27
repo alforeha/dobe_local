@@ -65,6 +65,8 @@ export const STARTER_TEMPLATE_IDS = {
   placeBadge:       'task-sys-place-badge',
   equipGear:        'task-sys-equip-gear',
   openAdventures:   'task-sys-open-adventures',
+  clearTheDeck:     'task-sys-clear-the-deck',
+  completeOnboardingAdventure: 'task-sys-complete-onboarding-adventure',
   setupSchedule:    'tmpl-setup-schedule-000-0000-0000-01',
   learnGrounds:     'tmpl-learn-grounds-000-0000-0000-0001',
   claimIdentity:    'tmpl-claim-identity-00-0000-0000-0001',
@@ -432,6 +434,38 @@ export const starterTaskTemplates: TaskTemplate[] = [
     items: [],
   },
   {
+    id: STARTER_TEMPLATE_IDS.clearTheDeck,
+    isSystem: true,
+    isCustom: false,
+    name: 'Clear the Deck',
+    description: 'System daily quest check-in for completing all scheduled events.',
+    icon: 'check',
+    taskType: 'CHECK',
+    inputFields: { label: 'Clear the Deck' },
+    xpAward: noStatXp(),
+    xpBonus: 0,
+    secondaryTag: null,
+    cooldown: null,
+    media: null,
+    items: [],
+  },
+  {
+    id: STARTER_TEMPLATE_IDS.completeOnboardingAdventure,
+    isSystem: true,
+    isCustom: false,
+    name: 'Completed Onboarding Adventure!',
+    description: 'Claim your onboarding completion rewards.',
+    icon: 'act-onboarding',
+    taskType: 'CHECK',
+    inputFields: { label: 'Completed Onboarding Adventure!' },
+    xpAward: noStatXp(),
+    xpBonus: 25,
+    secondaryTag: null,
+    cooldown: null,
+    media: null,
+    items: [],
+  },
+  {
     id: STARTER_TEMPLATE_IDS.setupSchedule,
     isSystem: true,
     name: 'Set Up Your Schedule',
@@ -712,7 +746,7 @@ function makeDailyLogQuest(actId: string, chainIdx: number): Quest {
 }
 
 function makeDailyClearDeckQuest(actId: string, chainIdx: number): Quest {
-  const marker = makeIntervalMarker(`${actId}|${chainIdx}|3`, STARTER_TEMPLATE_IDS.openWelcomeEvent);
+  const marker = makeIntervalMarker(`${actId}|${chainIdx}|3`, STARTER_TEMPLATE_IDS.clearTheDeck);
   return makeQuest(
     'Clear the Deck',
     'Complete all scheduled events by the end of the day.',

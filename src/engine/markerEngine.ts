@@ -155,6 +155,41 @@ export function fireInitialIntervalMarkers(actId: string, chainIndex: number): v
   });
 }
 
+function enqueueOneOffSystemTask(templateRef: string): void {
+  const scheduleStore = useScheduleStore.getState();
+  const existingTask = Object.values(scheduleStore.tasks).find(
+    (task) => task.templateRef === templateRef,
+  );
+  if (existingTask) return;
+
+  const user = useUserStore.getState().user;
+  if (!user) return;
+
+  const task: Task = {
+    id: uuidv4(),
+    templateRef,
+    completionState: 'pending',
+    completedAt: null,
+    resultFields: {},
+    attachmentRef: null,
+    resourceRef: null,
+    location: null,
+    sharedWith: null,
+    questRef: null,
+    actRef: null,
+    secondaryTag: null,
+  };
+
+  scheduleStore.setTask(task);
+  useUserStore.getState().setUser({
+    ...user,
+    lists: {
+      ...user.lists,
+      gtdList: [...user.lists.gtdList, task.id],
+    },
+  });
+}
+
 /**
  * Fire a Marker: create a check-in Task and enqueue it in User.lists.gtdList.
  *
@@ -571,6 +606,7 @@ export function completeMilestone(completedTask: Task): void {
       });
       useUserStore.getState().setUser(awardGold(10, userForGold, 'act.complete:onboarding'));
     }
+    enqueueOneOffSystemTask(STARTER_TEMPLATE_IDS.completeOnboardingAdventure);
   }
 
   // D79 — Unlock Daily Adventure when Onboarding Act completes
