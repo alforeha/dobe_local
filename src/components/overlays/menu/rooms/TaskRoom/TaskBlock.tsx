@@ -9,8 +9,7 @@ import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { GlowRing } from '../../../../shared/GlowRing';
 import { ONBOARDING_GLOW } from '../../../../../constants/onboardingKeys';
 import { useGlows } from '../../../../../hooks/useOnboardingGlow';
-import { autoCheckQuestItem } from '../../../../../engine/resourceEngine';
-import { STARTER_TEMPLATE_IDS } from '../../../../../coach/StarterQuestLibrary';
+import { autoCompleteSystemTask } from '../../../../../engine/resourceEngine';
 import { getAppDate, getOffsetNow } from '../../../../../utils/dateUtils';
 import { getTaskCooldownState } from '../../../../../utils/taskCooldown';
 import { completeTask } from '../../../../../engine/eventExecution';
@@ -167,7 +166,7 @@ export function TaskBlock({ templateKey, template, isCustom, isSystem, onEdit }:
       removeFavourite(templateKey);
     } else {
       addFavourite(templateKey);
-      autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'add_favourite');
+      autoCompleteSystemTask('task-sys-add-favourite');
     }
   }
 

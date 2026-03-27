@@ -9,8 +9,6 @@ import { FloatingDelta } from './FloatingDelta';
 import { GlowRing } from '../shared/GlowRing';
 import { ONBOARDING_GLOW } from '../../constants/onboardingKeys';
 import { useGlows } from '../../hooks/useOnboardingGlow';
-import { autoCheckQuestItem } from '../../engine/resourceEngine';
-import { STARTER_TEMPLATE_IDS } from '../../coach/StarterQuestLibrary';
 
 interface HeaderProps {
   onProfileOpen: () => void;
@@ -45,7 +43,6 @@ export function Header({ onProfileOpen }: HeaderProps) {
   };
 
   const handleProfileOpen = () => {
-    autoCheckQuestItem(STARTER_TEMPLATE_IDS.claimIdentity, 'open_profile');
     onProfileOpen();
   };
 

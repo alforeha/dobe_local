@@ -9,8 +9,7 @@ import { RoutinePopup } from './RoutinePopup';
 import { OneOffEventPopup } from './OneOffEventPopup';
 import { isOneOffEvent } from '../../../../../utils/isOneOffEvent';
 import type { PlannedEvent } from '../../../../../types';
-import { autoCheckQuestItem } from '../../../../../engine/resourceEngine';
-import { STARTER_TEMPLATE_IDS } from '../../../../../coach/StarterQuestLibrary';
+import { autoCompleteSystemTask } from '../../../../../engine/resourceEngine';
 
 type ScheduleTab = 'routines' | 'events' | 'resources' | 'leagues';
 
@@ -29,7 +28,7 @@ export function ScheduleRoom() {
   const plannedEvents = useScheduleStore((s) => s.plannedEvents);
 
   useEffect(() => {
-    autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'open_schedule');
+    autoCompleteSystemTask('task-sys-explore-schedule-room');
   }, []);
 
   const allRoutines = Object.values(plannedEvents).filter((e) => !isOneOffEvent(e));

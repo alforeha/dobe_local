@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useUserStore } from '../../../stores/useUserStore';
+import { autoCompleteSystemTask } from '../../../engine/resourceEngine';
 import { CoachOverlayHeader } from './CoachOverlayHeader';
 import { CoachOverlayFooter } from './CoachOverlayFooter';
 import { FeedRoom } from './rooms/FeedRoom';
@@ -31,6 +32,10 @@ export function CoachOverlay({ onClose, onOpenEvent, onNavigateToDayView }: Coac
     hasFeedContent ? 'feed' : 'recommendations'
   );
   const [aboutOpen, setAboutOpen] = useState(false);
+
+  useEffect(() => {
+    autoCompleteSystemTask('task-sys-explore-coach');
+  }, []);
 
   const handleOpenEvent = (eventId: string) => {
     onClose();

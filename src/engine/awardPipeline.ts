@@ -20,7 +20,7 @@ import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge, checkCoachDrops } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
-import { calculateAwardedXP, type XPAwardContext } from './xpBoosts';
+import { calculateAwardedXP, getXPBoostSnapshot, type XPAwardContext } from './xpBoosts';
 
 // ── XP CURVE PARAMETERS (D49) ────────────────────────────────────────────────
 
@@ -92,12 +92,38 @@ export function xpProgress(totalXP: number): {
 export interface XPMultipliers {
   /** True when the award came from a wisdom-tagged task. */
   isWisdomTask?: boolean;
+  /** Debug label for reward source tracing. */
+  source?: string;
+  /** Suppress default pipeline logging when a caller emits a consolidated summary log. */
+  suppressLog?: boolean;
 }
 
-/** Apply additive multipliers to a base XP value (D43 — additive by default) */
-function applyMultipliers(base: number, multipliers?: XPMultipliers): number {
-  const user = useUserStore.getState().user;
-  return calculateAwardedXP(base, user, multipliers as XPAwardContext | undefined);
+export interface XPAwardResult {
+  source: string;
+  rawAmount: number;
+  awardedAmount: number;
+  userId: string;
+  oldXP: number;
+  newXP: number;
+  oldLevel: number;
+  newLevel: number;
+  wisdomTask: boolean;
+  activeMultipliers: string[];
+  multiplierSnapshot: ReturnType<typeof getXPBoostSnapshot>;
+}
+
+export interface GoldAwardOptions {
+  source?: string;
+  suppressLog?: boolean;
+}
+
+function getActiveMultiplierLabels(snapshot: ReturnType<typeof getXPBoostSnapshot>): string[] {
+  const labels: string[] = [];
+  if (snapshot.earlyBirdActive) labels.push(`earlyBird:${snapshot.timeMultiplier}x`);
+  if (snapshot.lateNightActive) labels.push(`lateNight:${snapshot.timeMultiplier}x`);
+  if (snapshot.streak > 0) labels.push(`streak:${snapshot.streakMultiplier}x`);
+  if (snapshot.roll) labels.push(`roll:+${snapshot.roll.additiveBonus.toFixed(2)}`);
+  return labels;
 }
 
 // ── AWARD XP ──────────────────────────────────────────────────────────────────
@@ -116,15 +142,17 @@ export function awardXP(
   userId: string,
   amount: number,
   multipliers?: XPMultipliers,
-): void {
+): XPAwardResult | null {
   const userStore = useUserStore.getState();
   const user = userStore.user;
-  if (!user || user.system.id !== userId) return;
+  if (!user || user.system.id !== userId) return null;
 
-  const effectiveAmount = applyMultipliers(amount, multipliers);
-  if (effectiveAmount <= 0) return;
+  const boostSnapshot = getXPBoostSnapshot(user, multipliers as XPAwardContext | undefined);
+  const effectiveAmount = calculateAwardedXP(amount, user, multipliers as XPAwardContext | undefined);
+  if (effectiveAmount <= 0) return null;
 
   const oldLevel = user.progression.stats.level;
+  const oldXP = user.progression.stats.xp;
   const newXP = user.progression.stats.xp + effectiveAmount;
   const newLevel = deriveLevelFromXP(newXP);
 
@@ -140,6 +168,24 @@ export function awardXP(
   };
 
   userStore.setUser(updatedUser);
+
+  const result: XPAwardResult = {
+    source: multipliers?.source ?? 'unspecified',
+    rawAmount: amount,
+    awardedAmount: effectiveAmount,
+    userId,
+    oldXP,
+    newXP,
+    oldLevel,
+    newLevel,
+    wisdomTask: multipliers?.isWisdomTask ?? false,
+    activeMultipliers: getActiveMultiplierLabels(boostSnapshot),
+    multiplierSnapshot: boostSnapshot,
+  };
+
+  if (!multipliers?.suppressLog) {
+    console.info('[reward.xp]', result);
+  }
 
   if (newLevel > oldLevel) {
     console.info(`[awardPipeline] Level up! ${oldLevel} → ${newLevel} (XP: ${newXP})`);
@@ -167,6 +213,8 @@ export function awardXP(
       }, levelFeedUser);
     }
   }
+
+  return result;
 }
 
 // ── AWARD GOLD (D98) ──────────────────────────────────────────────────────────
@@ -177,14 +225,26 @@ export function awardXP(
  * @param amount  Gold to add (positive integer)
  * @param user    Current User
  */
-export function awardGold(amount: number, user: User): User {
-  return {
+export function awardGold(amount: number, user: User, options?: string | GoldAwardOptions): User {
+  const source = typeof options === 'string' ? options : (options?.source ?? 'unspecified');
+  const suppressLog = typeof options === 'string' ? false : (options?.suppressLog ?? false);
+  const updatedUser = {
     ...user,
     progression: {
       ...user.progression,
       gold: (user.progression.gold ?? 0) + amount,
     },
   };
+  if (!suppressLog) {
+    console.info('[reward.gold]', {
+      source,
+      amount,
+      oldGold: user.progression.gold ?? 0,
+      newGold: updatedUser.progression.gold ?? 0,
+      userId: user.system.id,
+    });
+  }
+  return updatedUser;
 }
 
 // ── AWARD STAT ────────────────────────────────────────────────────────────────
@@ -206,6 +266,7 @@ export function awardStat(
   userId: string,
   statGroup: StatGroupKey | null | undefined,
   points: number,
+  source = 'unspecified',
 ): void {
   const userStore = useUserStore.getState();
   const user = userStore.user;
@@ -245,4 +306,16 @@ export function awardStat(
   };
 
   userStore.setUser(updatedUser);
+
+  console.info('[reward.stat]', {
+    source,
+    requestedGroup: statGroup ?? 'wisdom-fallback',
+    awardedGroup: targetGroup,
+    requestedPoints: points,
+    awardedPoints: effectivePoints,
+    oldStatPoints: oldGroup.statPoints,
+    newStatPoints,
+    talentPointsEarned,
+    userId,
+  });
 }

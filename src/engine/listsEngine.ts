@@ -29,8 +29,8 @@ import { awardXP, awardStat } from './awardPipeline';
 import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
-import { autoCheckQuestItem } from './resourceEngine';
-import { STARTER_TEMPLATE_IDS, starterTaskTemplates } from '../coach/StarterQuestLibrary';
+import { autoCompleteSystemTask } from './resourceEngine';
+import { starterTaskTemplates } from '../coach/StarterQuestLibrary';
 import { isWisdomTemplate } from './xpBoosts';
 import { completeTask } from './eventExecution';
 import { getTaskCooldownState } from '../utils/taskCooldown';
@@ -137,14 +137,15 @@ export function completeFavourite(
   const userId = user.system.id;
   if (template) {
     const baseXP = Object.values(template.xpAward).reduce((s, v) => s + v, 0) + (template.xpBonus ?? 0);
-    awardXP(userId, baseXP + 2, { isWisdomTask: isWisdomTemplate(template) });
-    awardStat(userId, 'agility', 2);
+    awardXP(userId, baseXP + 2, {
+      isWisdomTask: isWisdomTemplate(template),
+      source: `favourite.complete:${taskTemplateRef}`,
+    });
+    awardStat(userId, 'agility', 2, `favourite.complete:${taskTemplateRef}`);
   } else {
-    awardXP(userId, 7, { isWisdomTask: true });
-    awardStat(userId, 'wisdom', 25);
+    awardXP(userId, 7, { isWisdomTask: true, source: `favourite.complete.fallback:${taskTemplateRef}` });
+    awardStat(userId, 'wisdom', 25, `favourite.complete.fallback:${taskTemplateRef}`);
   }
-
-  autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'complete_favourite');
 
   // Achievement check + badge awards
   const latestStoreUser = useUserStore.getState().user;
@@ -520,6 +521,7 @@ export function completeManualGTDItem(
   }
 
   const completedTask = useScheduleStore.getState().tasks[task.id] ?? task;
+  autoCompleteSystemTask('task-sys-complete-gtd');
 
   // Write to today's QuickActionsEvent — skip for system-seeded GTD items (D99)
   if (!item.skipQAWrite) {
@@ -542,8 +544,8 @@ export function completeManualGTDItem(
   }
 
   // XP award — +5 wisdom for manual GTD completion
-  awardXP(latestUser.system.id, 5, { isWisdomTask: true });
-  awardStat(latestUser.system.id, 'wisdom', 5);
+  awardXP(latestUser.system.id, 5, { isWisdomTask: true, source: `manual-gtd.complete:${itemId}` });
+  awardStat(latestUser.system.id, 'wisdom', 5, `manual-gtd.complete:${itemId}`);
 
   // Achievement check
   const latestStoreUser = useUserStore.getState().user;

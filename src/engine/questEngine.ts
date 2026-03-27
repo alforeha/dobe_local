@@ -25,6 +25,16 @@ function todayISO(): string {
   return getAppDate();
 }
 
+function countCompletedTaskTemplateRefs(taskTemplateRefs: string[]): number {
+  if (taskTemplateRefs.length === 0) return 0;
+  const { tasks } = useScheduleStore.getState();
+  return taskTemplateRefs.filter((templateRef) =>
+    Object.values(tasks).some(
+      (task) => task.completionState === 'complete' && task.templateRef === templateRef,
+    ),
+  ).length;
+}
+
 /**
  * Walk task.resultFields and return the first numeric value found.
  *
@@ -164,6 +174,12 @@ export function evaluateTaskCountMarker(marker: Marker, systemEventCount = 0): b
  */
 export function evaluateQuestSpecific(quest: Quest, completedTask: Task): boolean {
   const { specific } = quest;
+  void completedTask;
+
+  if (quest.timely.conditionType === 'none') {
+    const completedCount = countCompletedTaskTemplateRefs(quest.measurable.taskTemplateRefs ?? []);
+    return completedCount >= specific.targetValue;
+  }
 
   if (specific.sourceType === 'taskInput') {
     const value = extractNumericFromResult(completedTask);
@@ -243,6 +259,11 @@ export function evaluateMarkerCondition(marker: Marker, currentUserXp: number): 
 export function deriveQuestProgress(quest: Quest): number {
   const { specific, milestones } = quest;
   if (specific.targetValue <= 0) return 0;
+
+  if (quest.timely.conditionType === 'none') {
+    const completedCount = countCompletedTaskTemplateRefs(quest.measurable.taskTemplateRefs ?? []);
+    return Math.min(100, Math.round((completedCount / specific.targetValue) * 100));
+  }
 
   if (specific.sourceType === 'taskInput') {
     if (milestones.length === 0) return 0;

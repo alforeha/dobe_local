@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useUserStore } from '../../../../../stores/useUserStore';
-import { autoCheckQuestItem } from '../../../../../engine/resourceEngine';
-import { STARTER_TEMPLATE_IDS } from '../../../../../coach/StarterQuestLibrary';
+import { autoCompleteSystemTask } from '../../../../../engine/resourceEngine';
 import { PopupShell } from '../../../../shared/popups/PopupShell';
 
 const DAY_MS = 86_400_000;
@@ -58,7 +57,7 @@ export function DisplayNameChange() {
         wrappedAnchor: new Date().toISOString(),
       },
     });
-    autoCheckQuestItem(STARTER_TEMPLATE_IDS.claimIdentity, 'display_name');
+    autoCompleteSystemTask('task-sys-set-display-name');
     setConfirmOpen(false);
     setEditing(false);
   }

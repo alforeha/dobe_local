@@ -11,8 +11,7 @@ import { VehicleForm } from './vehicle/VehicleForm';
 import { AccountForm } from './account/AccountForm';
 import { InventoryForm } from './inventory/InventoryForm';
 import { DocForm } from './doc/DocForm';
-import { autoCheckQuestItem } from '../../../../../engine/resourceEngine';
-import { STARTER_TEMPLATE_IDS } from '../../../../../coach/StarterQuestLibrary';
+import { autoCompleteSystemTask } from '../../../../../engine/resourceEngine';
 
 type AddStep =
   | 'closed'
@@ -42,7 +41,7 @@ export function ResourceRoom() {
   const filtered = Object.values(resources).filter((r) => r.type === activeType);
 
   useEffect(() => {
-    autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'open_resources');
+    autoCompleteSystemTask('task-sys-explore-resources');
   }, []);
 
   // ── Edit overlay ──────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { achievementLibrary } from '../../../../../coach';
 import { resolveIcon } from '../../../../../constants/iconMap';
+import { autoCompleteSystemTask } from '../../../../../engine/resourceEngine';
 import { useUserStore } from '../../../../../stores/useUserStore';
 import type { BadgeBoard, Badge } from '../../../../../types';
 import { AchievementBook } from './AchievementBook';
@@ -159,6 +160,7 @@ export function BadgeRoom() {
     setPlacingBadgeId(null);
     setPreviewPosition(null);
     setSelectedBadgeId(placingBadge.id);
+    autoCompleteSystemTask('task-sys-place-badge');
   }
 
   function requestRemoveBadge(badgeId: string) {

@@ -28,17 +28,142 @@ import { useResourceStore } from '../stores/useResourceStore';
 import { useProgressionStore } from '../stores/useProgressionStore';
 
 import { awardXP, awardStat } from './awardPipeline';
-import { completeMilestone, decodeQuestRef } from './markerEngine';
+import { completeMilestone, decodeQuestRef, encodeQuestRef } from './markerEngine';
 import { checkAchievements } from '../coach/checkAchievements';
-import { awardBadge } from '../coach/rewardPipeline';
+import { awardBadge, checkQuestReward } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
 import { starterTaskTemplates, STARTER_TEMPLATE_IDS } from '../coach/StarterQuestLibrary';
 import { isWisdomTemplate } from './xpBoosts';
+import { evaluateQuestSpecific, updateQuestProgress } from './questEngine';
+
+const DEFAULT_QUEST_COMPLETION_XP = 25;
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
 function todayISO(): string {
   return getAppDate();
+}
+
+export function autoCompleteSystemTask(templateRef: string): void {
+  const scheduleStore = useScheduleStore.getState();
+  const existingTask = Object.values(scheduleStore.tasks).find(
+    (task) => task.templateRef === templateRef && task.completionState === 'complete',
+  );
+
+  const completedTask: Task = existingTask ?? {
+    id: uuidv4(),
+    templateRef,
+    completionState: 'complete',
+    completedAt: new Date().toISOString(),
+    resultFields: {},
+    attachmentRef: null,
+    resourceRef: null,
+    location: null,
+    sharedWith: null,
+    questRef: null,
+    actRef: null,
+    secondaryTag: null,
+  };
+
+  if (!existingTask) {
+    scheduleStore.setTask(completedTask);
+  }
+
+  const acts = useProgressionStore.getState().acts;
+  for (const act of Object.values(acts)) {
+    for (let chainIndex = 0; chainIndex < act.chains.length; chainIndex++) {
+      const chain = act.chains[chainIndex];
+      for (let questIndex = 0; questIndex < chain.quests.length; questIndex++) {
+        const quest = chain.quests[questIndex];
+        if (quest.completionState !== 'active') continue;
+        if (!(quest.measurable.taskTemplateRefs ?? []).includes(templateRef)) continue;
+
+        updateQuestProgress(act.id, chainIndex, questIndex);
+
+        const freshQuest = useProgressionStore.getState().acts[act.id]?.chains[chainIndex]?.quests[questIndex];
+        if (!freshQuest || freshQuest.completionState !== 'active') continue;
+        if (!evaluateQuestSpecific(freshQuest, completedTask)) continue;
+
+        completeMilestone({
+          ...completedTask,
+          questRef: encodeQuestRef(act.id, chainIndex, questIndex),
+          actRef: act.id,
+        });
+
+        const completedQuest = useProgressionStore.getState().acts[act.id]?.chains[chainIndex]?.quests[questIndex];
+        if (!completedQuest || completedQuest.completionState !== 'complete') continue;
+        if (completedQuest.result.completionRewardsGranted === true) continue;
+
+        const progressionStore = useProgressionStore.getState();
+        const rewardAct = progressionStore.acts[act.id];
+        if (!rewardAct) continue;
+
+        const updatedRewardAct = {
+          ...rewardAct,
+          chains: rewardAct.chains.map((rewardChain, rewardChainIndex) =>
+            rewardChainIndex !== chainIndex
+              ? rewardChain
+              : {
+                  ...rewardChain,
+                  quests: rewardChain.quests.map((rewardQuest, rewardQuestIndex) =>
+                    rewardQuestIndex !== questIndex
+                      ? rewardQuest
+                      : {
+                          ...rewardQuest,
+                          result: { ...rewardQuest.result, completionRewardsGranted: true },
+                        },
+                  ),
+                },
+          ),
+        };
+        progressionStore.setAct(updatedRewardAct);
+
+        const rewardQuest = updatedRewardAct.chains[chainIndex]?.quests[questIndex];
+        if (!rewardQuest) continue;
+
+        pushRibbet('quest.completed');
+
+        const userStore = useUserStore.getState();
+        const userForQuest = userStore.user;
+        if (!userForQuest) continue;
+
+        const withQuestCount = {
+          ...userForQuest,
+          progression: {
+            ...userForQuest.progression,
+            stats: {
+              ...userForQuest.progression.stats,
+              milestones: {
+                ...userForQuest.progression.stats.milestones,
+                questsCompleted: userForQuest.progression.stats.milestones.questsCompleted + 1,
+              },
+            },
+          },
+        };
+        userStore.setUser(withQuestCount);
+
+        const questXpResult = awardXP(withQuestCount.system.id, DEFAULT_QUEST_COMPLETION_XP, {
+          source: `quest.complete:${rewardQuest.name}`,
+          suppressLog: true,
+        });
+
+        const questRewardUser = useUserStore.getState().user ?? withQuestCount;
+        checkQuestReward(rewardQuest, questRewardUser);
+
+        if (questXpResult) {
+          console.info('[quest-complete]', {
+            questName: rewardQuest.name,
+            rawXP: questXpResult.rawAmount,
+            awardedXP: questXpResult.awardedAmount,
+            goldAward: 1,
+            rewardRef: rewardQuest.questReward ?? null,
+            activeMultipliers: questXpResult.activeMultipliers,
+            multiplierSnapshot: questXpResult.multiplierSnapshot,
+          });
+        }
+      }
+    }
+  }
 }
 
 const RESOURCE_TEMPLATE_LIBRARY: Partial<Record<Resource['type'], TaskTemplate>> = {
@@ -679,14 +804,15 @@ export function completeGTDItem(
     const onboardingQuestTask = isOnboardingQuestTemplate(task.templateRef);
     awardXP(userId, onboardingQuestTask ? baseXP : baseXP + 4, {
       isWisdomTask: isWisdomTemplate(template),
+      source: `gtd.complete:${task.templateRef}`,
     });
     if (!onboardingQuestTask) {
-      awardStat(userId, 'agility', 2);
-      awardStat(userId, 'defense', 2);
+      awardStat(userId, 'agility', 2, `gtd.complete.quickActions:${task.templateRef}`);
+      awardStat(userId, 'defense', 2, `gtd.complete.resource:${task.templateRef}`);
     }
   } else {
-    awardXP(userId, 9, { isWisdomTask: true });
-    awardStat(userId, 'wisdom', 25);
+    awardXP(userId, 9, { isWisdomTask: true, source: `gtd.complete.fallback:${task.templateRef}` });
+    awardStat(userId, 'wisdom', 25, `gtd.complete.fallback:${task.templateRef}`);
   }
 
   // Achievement check + badge awards

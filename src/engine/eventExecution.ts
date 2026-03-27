@@ -22,13 +22,17 @@ import { EVENT_MAX_ATTACHMENTS } from '../storage/storageBudget';
 
 import { awardXP, awardStat, awardGold } from './awardPipeline';
 import { completeMilestone, decodeQuestRef } from './markerEngine';
-import { starterTaskTemplates } from '../coach/StarterQuestLibrary';
+import { starterTaskTemplates, STARTER_TEMPLATE_IDS } from '../coach/StarterQuestLibrary';
 import { checkAchievements } from '../coach/checkAchievements';
 import { awardBadge, checkQuestReward } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
 import { getAppNowISO } from '../utils/dateUtils';
 import { isWisdomTemplate } from './xpBoosts';
+import { autoCompleteSystemTask } from './resourceEngine';
+
+const DEFAULT_TASK_XP = 5;
+const DEFAULT_QUEST_COMPLETION_XP = 25;
 
 // ── TASK RESULT SHAPE ─────────────────────────────────────────────────────────
 
@@ -103,6 +107,9 @@ export function completeTask(
   };
 
   scheduleStore.setTask(updatedTask);
+  if (updatedTask.templateRef === STARTER_TEMPLATE_IDS.openWelcomeEvent) {
+    autoCompleteSystemTask(STARTER_TEMPLATE_IDS.openWelcomeEvent);
+  }
 
   // Quest check-in hook: if this task was fired by a Marker, record the Milestone
   // and evaluate the Quest finish condition (D04).
@@ -156,27 +163,70 @@ export function completeTask(
       if (hasResourceRef) contextBonuses.push(2); // +2 defense bonus
 
       const bonusTotal = contextBonuses.reduce((s, v) => s + v, 0);
-      awardXP(userId, baseXP + bonusTotal, { isWisdomTask: isWisdomTemplate(template) });
+      const xpResult = awardXP(userId, baseXP + bonusTotal, {
+        isWisdomTask: isWisdomTemplate(template),
+        source: `task-completed:${task.templateRef}`,
+        suppressLog: true,
+      });
 
       // Award stat points per xpAward distribution
       const statGroups = template.xpAward;
+      const statAwards: Array<{ group: StatGroupKey; points: number }> = [];
       for (const [group, points] of Object.entries(statGroups) as [StatGroupKey, number][]) {
         if (points > 0) {
-          awardStat(userId, group, points);
+          awardStat(userId, group, points, `task.complete:${task.templateRef}`);
+          statAwards.push({ group, points });
         }
       }
 
       // Context-specific stat bonuses
       if (isQuickActions) {
-        awardStat(userId, 'agility', 2);
+        awardStat(userId, 'agility', 2, `task.complete.quickActions:${task.templateRef}`);
+        statAwards.push({ group: 'agility', points: 2 });
       }
       if (hasResourceRef) {
-        awardStat(userId, 'defense', 2);
+        awardStat(userId, 'defense', 2, `task.complete.resource:${task.templateRef}`);
+        statAwards.push({ group: 'defense', points: 2 });
+      }
+
+      if (xpResult) {
+        console.info('[task-completed]', {
+          taskId: updatedTask.id,
+          templateRef: task.templateRef,
+          rawXP: xpResult.rawAmount,
+          awardedXP: xpResult.awardedAmount,
+          activeMultipliers: xpResult.activeMultipliers,
+          multiplierSnapshot: xpResult.multiplierSnapshot,
+          statAwards,
+          contextBonuses: {
+            quickActions: isQuickActions ? 2 : 0,
+            resourceRef: hasResourceRef ? 2 : 0,
+          },
+        });
       }
     } else {
       // No template found — apply wisdom fallback (D48)
-      awardXP(userId, 5, { isWisdomTask: true });
-      awardStat(userId, 'wisdom', 25);
+      const xpResult = awardXP(userId, 5, {
+        isWisdomTask: true,
+        source: `task-completed:fallback:${task.templateRef}`,
+        suppressLog: true,
+      });
+      awardStat(userId, 'wisdom', 25, `task.complete.fallback:${task.templateRef}`);
+      if (xpResult) {
+        console.info('[task-completed]', {
+          taskId: updatedTask.id,
+          templateRef: task.templateRef,
+          rawXP: xpResult.rawAmount,
+          awardedXP: xpResult.awardedAmount,
+          activeMultipliers: xpResult.activeMultipliers,
+          multiplierSnapshot: xpResult.multiplierSnapshot,
+          statAwards: [{ group: 'wisdom', points: 25 }],
+          contextBonuses: {
+            quickActions: 0,
+            resourceRef: 0,
+          },
+        });
+      }
     }
 
     // Update task completion milestone counter
@@ -201,6 +251,42 @@ export function completeTask(
 
     // Quest completion processing — increment questsCompleted + deliver quest reward
     if (_questComplete && _completedQuest) {
+      if (_completedQuest.result.completionRewardsGranted === true) {
+        // Reward grant is idempotent across completion paths.
+        _completedQuest = {
+          ..._completedQuest,
+          result: { ..._completedQuest.result, completionRewardsGranted: true },
+        };
+      } else {
+        const parsedRef = updatedTask.questRef ? decodeQuestRef(updatedTask.questRef) : null;
+        if (parsedRef) {
+          const progressionStore = useProgressionStore.getState();
+          const rewardAct = progressionStore.acts[parsedRef.actId];
+          if (rewardAct) {
+            const updatedAct = {
+              ...rewardAct,
+              chains: rewardAct.chains.map((chain, ci) =>
+                ci !== parsedRef.chainIndex
+                  ? chain
+                  : {
+                      ...chain,
+                      quests: chain.quests.map((quest, qi) =>
+                        qi !== parsedRef.questIndex
+                          ? quest
+                          : {
+                              ...quest,
+                              result: { ...quest.result, completionRewardsGranted: true },
+                            },
+                      ),
+                    },
+              ),
+            };
+            progressionStore.setAct(updatedAct);
+            _completedQuest =
+              updatedAct.chains[parsedRef.chainIndex]?.quests[parsedRef.questIndex] ?? _completedQuest;
+          }
+        }
+
       const userForQuest = useUserStore.getState().user;
       if (userForQuest) {
         const withQuestCount = {
@@ -217,7 +303,25 @@ export function completeTask(
           },
         };
         userStore.setUser(withQuestCount);
-        checkQuestReward(_completedQuest, withQuestCount);
+        const userId = withQuestCount.system.id;
+        const questXpResult = awardXP(userId, DEFAULT_QUEST_COMPLETION_XP, {
+          source: `quest.complete:${_completedQuest.name}`,
+          suppressLog: true,
+        });
+        const questRewardUser = useUserStore.getState().user ?? withQuestCount;
+        checkQuestReward(_completedQuest, questRewardUser);
+        if (questXpResult) {
+          console.info('[quest-complete]', {
+            questName: _completedQuest.name,
+            rawXP: questXpResult.rawAmount,
+            awardedXP: questXpResult.awardedAmount,
+            goldAward: 1,
+            rewardRef: _completedQuest.questReward ?? null,
+            activeMultipliers: questXpResult.activeMultipliers,
+            multiplierSnapshot: questXpResult.multiplierSnapshot,
+          });
+        }
+      }
       }
     }
 
@@ -280,13 +384,7 @@ export function completeEvent(eventId: string): void {
 
   if (!allDone) return;
 
-  const totalXP = typedEvent.tasks.reduce((sum, taskId) => {
-    const t = scheduleStore.tasks[taskId];
-    if (!t || t.completionState !== 'complete') return sum;
-    const template = scheduleStore.taskTemplates[t.templateRef];
-    if (!template) return sum;
-    return sum + Object.values(template.xpAward).reduce((s, v) => s + v, 0) + (template.xpBonus ?? 0);
-  }, 0);
+  const totalXP = typedEvent.tasks.length * DEFAULT_TASK_XP;
 
   const updatedEvent: Event = {
     ...typedEvent,
@@ -315,10 +413,28 @@ export function completeEvent(eventId: string): void {
     };
     userStoreRef.setUser(withEventCount);
 
+    const eventXpResult = awardXP(withEventCount.system.id, totalXP, {
+      source: `event.complete:${updatedEvent.name}`,
+      suppressLog: true,
+    });
+
     // +1 gold per event completion (D98)
     const userForGold = useUserStore.getState().user;
     if (userForGold) {
-      userStoreRef.setUser(awardGold(1, userForGold));
+      userStoreRef.setUser(awardGold(1, userForGold, {
+        source: `event.complete:${updatedEvent.name}`,
+        suppressLog: true,
+      }));
+      console.info('[event-complete]', {
+        eventId,
+        eventName: updatedEvent.name,
+        taskCount: typedEvent.tasks.length,
+        rawXP: eventXpResult?.rawAmount ?? totalXP,
+        awardedXP: eventXpResult?.awardedAmount ?? totalXP,
+        goldAward: 1,
+        activeMultipliers: eventXpResult?.activeMultipliers ?? [],
+        multiplierSnapshot: eventXpResult?.multiplierSnapshot ?? null,
+      });
     }
 
     pushRibbet('event.completed');

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { autoCompleteSystemTask } from '../../../../../engine/resourceEngine';
 import { useUserStore } from '../../../../../stores/useUserStore';
 import type { GearSlot } from '../../../../../types';
 import type { GearDefinition } from '../../../../../types/coach';
@@ -66,6 +67,7 @@ export function EquipmentRoom() {
 
     if (selectedGear.mode === 'equip') {
       equipGear(selectedGear.gear.slot, selectedGear.gear.id);
+      autoCompleteSystemTask('task-sys-equip-gear');
     } else if (selectedEquippedSlot) {
       unequipGear(selectedEquippedSlot);
     }

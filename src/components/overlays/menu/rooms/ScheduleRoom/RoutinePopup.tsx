@@ -8,8 +8,7 @@ import { resolveIcon } from '../../../../../constants/iconMap';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { useUserStore } from '../../../../../stores/useUserStore';
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
-import { autoCheckQuestItem } from '../../../../../engine/resourceEngine';
-import { STARTER_TEMPLATE_IDS } from '../../../../../coach/StarterQuestLibrary';
+import { autoCompleteSystemTask } from '../../../../../engine/resourceEngine';
 import { taskTemplateLibrary } from '../../../../../coach';
 import { storageDelete, storageKey } from '../../../../../storage';
 import { localISODate } from '../../../../../utils/dateUtils';
@@ -448,7 +447,7 @@ export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false
 
       setPlannedEvent(newRoutine);
       addRoutineRef(id);
-      autoCheckQuestItem(STARTER_TEMPLATE_IDS.setupSchedule, 'add_routine');
+      autoCompleteSystemTask('task-sys-add-routine');
 
       if (seedDate <= today && isTodayARecurrenceDay(recurrenceInterval)) {
         const currentTemplates = useScheduleStore.getState().taskTemplates;

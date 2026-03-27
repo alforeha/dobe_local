@@ -11,7 +11,7 @@ import type { RollInputFields } from '../../../../../../types/taskTemplate';
 import { GlowRing } from '../../../../../shared/GlowRing';
 import { ONBOARDING_GLOW } from '../../../../../../constants/onboardingKeys';
 import { useGlows } from '../../../../../../hooks/useOnboardingGlow';
-import { autoCheckQuestItem } from '../../../../../../engine/resourceEngine';
+import { autoCompleteSystemTask } from '../../../../../../engine/resourceEngine';
 import { isEarlyBirdActive } from '../../../../../../engine/xpBoosts';
 
 const DIE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
@@ -115,9 +115,9 @@ export function LuckyDiceSection({ compact = false }: { compact?: boolean }) {
         store.setActiveEvent(updatedQa);
 
         const xpAmount = result * 10;
-        awardXP(user.system.id, xpAmount);
-        awardStat(user.system.id, 'agility', result);
-        autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'complete_roll');
+        awardXP(user.system.id, xpAmount, { source: 'lucky-roll.complete' });
+        awardStat(user.system.id, 'agility', result, 'lucky-roll.complete');
+        autoCompleteSystemTask('task-sys-complete-lucky-roll');
       }
     }, 80);
   }, [rolling, user, scheduleStore]);

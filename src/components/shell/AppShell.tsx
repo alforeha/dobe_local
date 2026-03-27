@@ -22,7 +22,7 @@ import {
   STARTER_ACT_IDS,
 } from '../../coach/StarterQuestLibrary';
 import { evaluatePlannedEventCreatedMarkers } from '../../engine/markerEngine';
-import { autoCheckQuestItem } from '../../engine/resourceEngine';
+import { autoCompleteSystemTask } from '../../engine/resourceEngine';
 import type { User } from '../../types/user';
 import type { Event, Task } from '../../types';
 import type { TimeView } from '../timeViews/TimeViewContainer';
@@ -122,6 +122,7 @@ export function AppShell() {
   const [todaySignals, setTodaySignals] = useState({ day: 0, week: 0, explorer: 0 });
   const [isBooted, setIsBooted] = useState(!showWelcome);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timeViewVisitRef = useRef({ week: false, explorer: false, completed: false });
 
   const mode = useSystemStore((s) => s.settings?.displayPreferences?.mode ?? 'dark');
   const plannedEvents = useScheduleStore((s) => s.plannedEvents);
@@ -236,17 +237,25 @@ export function AppShell() {
       return;
     }
     setActiveView(newView);
-    if (newView === 'week') {
-      autoCheckQuestItem(STARTER_TEMPLATE_IDS.setupSchedule, 'week_view');
-    } else if (newView === 'explorer') {
-      autoCheckQuestItem(STARTER_TEMPLATE_IDS.setupSchedule, 'month_view');
+    if (newView === 'week' || newView === 'explorer') {
+      const nextVisits = timeViewVisitRef.current;
+      nextVisits[newView] = true;
+      if (nextVisits.week && nextVisits.explorer && !nextVisits.completed) {
+        nextVisits.completed = true;
+        autoCompleteSystemTask('task-sys-explore-time-views');
+      }
     }
   };
 
   const handleWeekSelect = (weekStart: Date) => {
     setWeekViewSeed(weekStart);
     setActiveView('week');
-    autoCheckQuestItem(STARTER_TEMPLATE_IDS.setupSchedule, 'week_view');
+    const nextVisits = timeViewVisitRef.current;
+    nextVisits.week = true;
+    if (nextVisits.week && nextVisits.explorer && !nextVisits.completed) {
+      nextVisits.completed = true;
+      autoCompleteSystemTask('task-sys-explore-time-views');
+    }
   };
 
   const handleDaySelect = (date: Date) => {

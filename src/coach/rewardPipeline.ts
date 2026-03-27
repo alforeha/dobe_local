@@ -66,6 +66,15 @@ export function awardBadge(achievementDef: AchievementDefinition, user: User): U
 
   useUserStore.getState().setUser(updatedUser);
 
+  console.info('[reward.badge]', {
+    source: 'badge.reward',
+    achievementId: achievementDef.id,
+    badgeName: achievementDef.name,
+    badgeId,
+    rewardRef: achievementDef.rewardRef ?? null,
+    userId: user.system.id,
+  });
+
   pushRibbet('badge.awarded', { itemName: achievementDef.name });
 
   // Feed entry for badge award
@@ -96,18 +105,20 @@ export function awardBadge(achievementDef: AchievementDefinition, user: User): U
  * @param source     ItemSource string — e.g. 'badge.reward', 'quest.reward', 'coach.drop'
  * @returns Updated User.
  */
-export function awardGear(gearDefId: string, _source: string, user: User): User {
+export function awardGear(gearDefId: string, source: string, user: User): User {
   const gearDef = characterLibrary.gearDefinitions.find((g) => g.id === gearDefId);
   if (!gearDef) {
     console.warn(`[rewardPipeline] awardGear: gearDefinition "${gearDefId}" not found`);
     return user;
   }
 
-  const gearId = uuidv4();
+  const alreadyOwned = user.progression.equipment.equipment.includes(gearDefId);
 
   const updatedEquipment = {
     ...user.progression.equipment,
-    equipment: [...user.progression.equipment.equipment, gearId],
+    equipment: alreadyOwned
+      ? user.progression.equipment.equipment
+      : [...user.progression.equipment.equipment, gearDefId],
   };
 
   const updatedUser: User = {
@@ -117,6 +128,16 @@ export function awardGear(gearDefId: string, _source: string, user: User): User 
 
   useUserStore.getState().setUser(updatedUser);
 
+  console.info('[reward.gear]', {
+    source,
+    gearDefinitionId: gearDefId,
+    gearName: gearDef.name,
+    slot: gearDef.slot,
+    rarity: gearDef.rarity,
+    alreadyOwned,
+    userId: user.system.id,
+  });
+
   pushRibbet('gear.awarded', { itemName: gearDef.name });
 
   // Feed entry for gear award
@@ -124,7 +145,7 @@ export function awardGear(gearDefId: string, _source: string, user: User): User 
     commentBlock: `Gear awarded: ${gearDef.name}`,
     sourceType: FEED_SOURCE.GEAR_AWARDED,
     timestamp: new Date().toISOString(),
-    triggerRef: gearId,
+    triggerRef: gearDefId,
   }, updatedUser);
 
   return updatedUser;
@@ -140,6 +161,12 @@ export function awardGear(gearDefId: string, _source: string, user: User): User 
  */
 export function checkQuestReward(quest: Quest, user: User): User {
   if (!quest.questReward) return user;
+  console.info('[reward.quest]', {
+    source: 'quest.reward',
+    questName: quest.name,
+    rewardRef: quest.questReward,
+    userId: user.system.id,
+  });
   return awardGear(quest.questReward, 'quest.reward', user);
 }
 

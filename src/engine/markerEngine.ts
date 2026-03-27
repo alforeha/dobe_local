@@ -27,8 +27,6 @@ import {
   starterTaskTemplates,
 } from '../coach/StarterQuestLibrary';
 import { awardGold } from './awardPipeline';
-import { autoCheckQuestItem } from './resourceEngine';
-import { isOneOffEvent } from '../utils/isOneOffEvent';
 
 // ── QUESTREF ENCODING ─────────────────────────────────────────────────────────
 
@@ -128,29 +126,6 @@ function findQuickActionCompletionForDate(templateRef: string, dateIso: string):
     }
   }
   return null;
-}
-
-function backfillQuestActivation(templateRef: string): void {
-  if (templateRef !== STARTER_TEMPLATE_IDS.learnGrounds) return;
-
-  const today = getAppDate();
-  const user = useUserStore.getState().user;
-  const scheduleStore = useScheduleStore.getState();
-
-  if (findQuickActionCompletionForDate(STARTER_TEMPLATE_IDS.roll, today)) {
-    autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'complete_roll');
-  }
-
-  if ((user?.lists.favouritesList.length ?? 0) > 0) {
-    autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'add_favourite');
-  }
-
-  const hasRoutine = Object.values(scheduleStore.plannedEvents).some(
-    (plannedEvent) => plannedEvent.activeState === 'active' && !isOneOffEvent(plannedEvent),
-  );
-  if (hasRoutine) {
-    autoCheckQuestItem(STARTER_TEMPLATE_IDS.learnGrounds, 'open_schedule');
-  }
 }
 
 // ── FIRE MARKER ───────────────────────────────────────────────────────────────
@@ -427,9 +402,6 @@ export function evaluatePlannedEventCreatedMarkers(): void {
 export function completeMilestone(completedTask: Task): void {
   if (!completedTask.questRef) return;
 
-  // FIX-13 trace — confirm questRef format and parsing at the entry point
-  console.log(`[completeMilestone] questRef=${completedTask.questRef}`);
-
   const parsed = decodeQuestRef(completedTask.questRef);
   if (!parsed) {
     console.warn(
@@ -438,7 +410,6 @@ export function completeMilestone(completedTask: Task): void {
     return;
   }
   const { actId, chainIndex, questIndex } = parsed;
-  console.log(`[completeMilestone] decoded → actId=${actId} chainIdx=${chainIndex} questIdx=${questIndex}`);
 
   const progressionStore = useProgressionStore.getState();
   const scheduleStore = useScheduleStore.getState();
@@ -525,7 +496,10 @@ export function completeMilestone(completedTask: Task): void {
 
   const userForQuestGold = useUserStore.getState().user;
   if (userForQuestGold) {
-    useUserStore.getState().setUser(awardGold(1, userForQuestGold));
+    useUserStore.getState().setUser(awardGold(1, userForQuestGold, {
+      source: `quest.complete:${quest.name}`,
+      suppressLog: true,
+    }));
   }
 
   // Quest just completed — fire the next quest's interval marker immediately so
@@ -552,7 +526,6 @@ export function completeMilestone(completedTask: Task): void {
         chainIndex,
         actId,
       });
-      backfillQuestActivation(nextMarker.taskTemplateRef);
     }
   }
 
@@ -587,7 +560,16 @@ export function completeMilestone(completedTask: Task): void {
   if (actNowComplete && actId === STARTER_ACT_IDS.onboarding) {
     const userForGold = useUserStore.getState().user;
     if (userForGold) {
-      useUserStore.getState().setUser(awardGold(10, userForGold));
+      console.log('[reward.act-complete]', {
+        actId,
+        actName: propagatedAct.name,
+        goldAward: 10,
+        source: 'act.complete:onboarding',
+        oldGold: userForGold.progression.gold ?? 0,
+        newGold: (userForGold.progression.gold ?? 0) + 10,
+        userId: userForGold.system.id,
+      });
+      useUserStore.getState().setUser(awardGold(10, userForGold, 'act.complete:onboarding'));
     }
   }
 

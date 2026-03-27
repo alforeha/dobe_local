@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useProgressionStore } from '../../../../../stores/useProgressionStore';
 import { useUserStore } from '../../../../../stores/useUserStore';
+import { autoCompleteSystemTask } from '../../../../../engine/resourceEngine';
 import { GoalRoomHeader } from './GoalRoomHeader';
 import { ChooseYourPath } from './ChooseYourPath';
 import { GoalActPage } from './GoalActPage';
@@ -136,6 +137,10 @@ export function GoalRoom() {
   const setAct = useProgressionStore((s) => s.setAct);
   const user = useUserStore((s) => s.user);
   const currentPage = pageStack[pageStack.length - 1] ?? { type: 'list' as const };
+
+  useEffect(() => {
+    autoCompleteSystemTask('task-sys-open-adventures');
+  }, []);
 
   const habitatActs = useMemo(
     () => Object.values(acts).filter((act) => act.owner !== 'coach' && (act.habitat ?? 'habitats') === 'habitats'),

@@ -7,8 +7,7 @@ import { StatIcon } from '../../shared/StatIcon';
 import { ProfileXPBar } from './ProfileXPBar';
 import { ONBOARDING_GLOW } from '../../../constants/onboardingKeys';
 import { useGlows } from '../../../hooks/useOnboardingGlow';
-import { autoCheckQuestItem } from '../../../engine/resourceEngine';
-import { STARTER_TEMPLATE_IDS } from '../../../coach/StarterQuestLibrary';
+import { autoCompleteSystemTask } from '../../../engine/resourceEngine';
 import {
   GEAR_SLOT_LABELS,
   GEAR_SLOT_ORDER,
@@ -88,12 +87,12 @@ export function ProfileTopSection({ onNav }: ProfileTopSectionProps) {
   }));
 
   const handleBadgeNav = () => {
-    autoCheckQuestItem(STARTER_TEMPLATE_IDS.claimIdentity, 'open_badges');
+    autoCompleteSystemTask('task-sys-open-badge-room');
     onNav('badges');
   };
 
   const handleEquipmentNav = () => {
-    autoCheckQuestItem(STARTER_TEMPLATE_IDS.claimIdentity, 'open_equipment');
+    autoCompleteSystemTask('task-sys-open-equipment-room');
     onNav('equipment');
   };
 
