@@ -17,7 +17,8 @@ import type { StatGroupKey, User } from '../types/user';
 import { useUserStore } from '../stores/useUserStore';
 
 import { checkAchievements } from '../coach/checkAchievements';
-import { awardBadge, checkCoachDrops } from '../coach/rewardPipeline';
+import { characterLibrary } from '../coach';
+import { awardBadge, awardGear, checkCoachDrops } from '../coach/rewardPipeline';
 import { pushRibbet } from '../coach/ribbet';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
 import { calculateAwardedXP, getXPBoostSnapshot, type XPAwardContext } from './xpBoosts';
@@ -245,6 +246,21 @@ export function awardGold(amount: number, user: User, options?: string | GoldAwa
     });
   }
   return updatedUser;
+}
+
+export function awardRandomCommonGear(user: User): User {
+  const commonGear = characterLibrary.gearDefinitions.filter((gear) => gear.rarity === 'common');
+  const owned = new Set(user.progression.equipment.equipment);
+  const unowned = commonGear.filter((gear) => !owned.has(gear.id));
+
+  if (unowned.length === 0) {
+    return awardGold(5, user, 'dailyQuest.complete.common-gear-bonus');
+  }
+
+  const selected = unowned[Math.floor(Math.random() * unowned.length)];
+  if (!selected) return user;
+
+  return awardGear(selected.id, 'dailyQuest.complete.common-drop', user);
 }
 
 // ── AWARD STAT ────────────────────────────────────────────────────────────────

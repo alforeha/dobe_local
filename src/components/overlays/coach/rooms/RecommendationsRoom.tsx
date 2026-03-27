@@ -52,7 +52,7 @@ export function RecommendationsRoom() {
           )}
 
           {/* Icon-only tab nav */}
-          <div className="ml-auto flex items-center gap-0.5 shrink-0">
+          <div className="ml-auto flex items-center gap-1 shrink-0">
             {TAB_CONFIG.map(({ tab, icon, label }) => (
               <GlowRing
                 key={tab}
@@ -67,13 +67,14 @@ export function RecommendationsRoom() {
                   type="button"
                   aria-label={label}
                   onClick={() => handleTabClick(tab)}
-                  className={`w-10 h-10 flex items-center justify-center rounded-md text-xl transition-colors ${
+                  className={`flex min-h-10 items-center justify-center rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                     activeTab === tab
                       ? 'bg-purple-600 text-white'
-                      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                   }`}
                 >
-                  {icon}
+                  <span className="text-base" aria-hidden="true">{icon}</span>
+                  <span className="ml-2 hidden sm:inline">{label}</span>
                 </button>
               </GlowRing>
             ))}

@@ -196,6 +196,46 @@
       "assetRef": "gear:gear-work-shirt"
     },
     {
+      "id": "gear-cap",
+      "name": "Runner Cap",
+      "description": "A lightweight cap that keeps the sun off your face during early starts.",
+      "slot": "head",
+      "rarity": "common",
+      "xpBoost": 0,
+      "statBonus": { "agility": 1 },
+      "assetRef": "gear:gear-cap"
+    },
+    {
+      "id": "gear-bandana",
+      "name": "Focus Bandana",
+      "description": "A simple bandana for days when grit matters more than glamour.",
+      "slot": "head",
+      "rarity": "common",
+      "xpBoost": 0,
+      "statBonus": { "defense": 1 },
+      "assetRef": "gear:gear-bandana"
+    },
+    {
+      "id": "gear-tshirt",
+      "name": "Training Tee",
+      "description": "A breathable tee ready for chores, reps, and quick wins.",
+      "slot": "body",
+      "rarity": "common",
+      "xpBoost": 0,
+      "statBonus": { "health": 1 },
+      "assetRef": "gear:gear-tshirt"
+    },
+    {
+      "id": "gear-hoodie",
+      "name": "Recovery Hoodie",
+      "description": "Soft, warm, and ideal for cool-down walks or reflective evenings.",
+      "slot": "body",
+      "rarity": "common",
+      "xpBoost": 0,
+      "statBonus": { "wisdom": 1 },
+      "assetRef": "gear:gear-hoodie"
+    },
+    {
       "id": "gear-adventurer-jacket",
       "name": "Adventurer's Jacket",
       "description": "A well-worn jacket for those who have proven their resolve at level 25.",
@@ -216,6 +256,26 @@
       "assetRef": "gear:gear-work-gloves"
     },
     {
+      "id": "gear-gloves",
+      "name": "Grip Gloves",
+      "description": "Extra grip for cold mornings, garden work, and gym setups.",
+      "slot": "hand",
+      "rarity": "common",
+      "xpBoost": 0,
+      "statBonus": { "strength": 1 },
+      "assetRef": "gear:gear-gloves"
+    },
+    {
+      "id": "gear-wristband",
+      "name": "Pulse Wristband",
+      "description": "A sweat-ready band that keeps your focus anchored.",
+      "slot": "hand",
+      "rarity": "common",
+      "xpBoost": 0,
+      "statBonus": { "health": 1 },
+      "assetRef": "gear:gear-wristband"
+    },
+    {
       "id": "gear-streak-gloves",
       "name": "Streak Gloves",
       "description": "Gloves that crackle with the energy of a 30-day streak.",
@@ -234,6 +294,26 @@
       "xpBoost": 0.1,
       "statBonus": { "health": 8 },
       "assetRef": "gear:gear-veteran-boots"
+    },
+    {
+      "id": "gear-sneakers",
+      "name": "Daily Sneakers",
+      "description": "Comfortable shoes that reward showing up again tomorrow.",
+      "slot": "feet",
+      "rarity": "common",
+      "xpBoost": 0,
+      "statBonus": { "agility": 1 },
+      "assetRef": "gear:gear-sneakers"
+    },
+    {
+      "id": "gear-boots",
+      "name": "Trail Boots",
+      "description": "Reliable boots for muddy yards, windy days, and long walks.",
+      "slot": "feet",
+      "rarity": "common",
+      "xpBoost": 0,
+      "statBonus": { "defense": 1 },
+      "assetRef": "gear:gear-boots"
     },
     {
       "id": "gear-endurance-boots",
@@ -264,6 +344,36 @@
       "xpBoost": 0.05,
       "statBonus": { "wisdom": 5 },
       "assetRef": "gear:gear-task-master-ring"
+    },
+    {
+      "id": "gear-watch",
+      "name": "Routine Watch",
+      "description": "A simple watch that keeps your day moving on time.",
+      "slot": "accessory",
+      "rarity": "common",
+      "xpBoost": 0,
+      "statBonus": { "wisdom": 1 },
+      "assetRef": "gear:gear-watch"
+    },
+    {
+      "id": "gear-ring",
+      "name": "Steady Ring",
+      "description": "A small reminder that consistency counts.",
+      "slot": "accessory",
+      "rarity": "common",
+      "xpBoost": 0,
+      "statBonus": { "charisma": 1 },
+      "assetRef": "gear:gear-ring"
+    },
+    {
+      "id": "gear-chain",
+      "name": "Focus Chain",
+      "description": "A plain chain worn close as a reminder to keep going.",
+      "slot": "accessory",
+      "rarity": "common",
+      "xpBoost": 0,
+      "statBonus": { "strength": 1 },
+      "assetRef": "gear:gear-chain"
     },
     {
       "id": "gear-all-rounder-amulet",

@@ -26,6 +26,7 @@ import { fireInitialIntervalMarkers, fireMarker } from './markerEngine';
 import { evaluateMarkerCondition, evaluateTaskCountMarker } from './questEngine';
 import { ribbet } from '../coach/ribbet';
 import { appendFeedEntry, FEED_SOURCE } from './feedEngine';
+import { awardRandomCommonGear } from './awardPipeline';
 import { localISODate, addDays, getAppDate } from '../utils/dateUtils';
 
 // ── DATE HELPERS ────────────────────────────────────────────────────────────────────────────────
@@ -303,6 +304,12 @@ function step8_rolloverDailyAdventureChain(rolloverDate: string): void {
       const allQuestsComplete = lastChain.quests.every(
         (quest) => quest.completionState === 'complete',
       );
+      if (allQuestsComplete) {
+        const rewardUser = useUserStore.getState().user;
+        if (rewardUser) {
+          useUserStore.getState().setUser(awardRandomCommonGear(rewardUser));
+        }
+      }
       updatedChains[lastChainIndex] = {
         ...lastChain,
         completionState: allQuestsComplete ? 'complete' : 'failed',

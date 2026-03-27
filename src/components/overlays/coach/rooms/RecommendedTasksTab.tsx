@@ -1,275 +1,326 @@
-// ─────────────────────────────────────────
-// RecommendedTasksTab — Tasks sub-view for RecommendationsRoom
-// Shows all prebuilt TaskTemplates (library JSON + starter templates).
-// Filter by TaskType and search by name.
-// Activating copies a template to scheduleStore.taskTemplates (D88).
-// Quest-locked templates cannot be deactivated (D89).
-// ─────────────────────────────────────────
-
-import { useState, useMemo, useRef, useEffect } from 'react';
-import { taskTemplateLibrary } from '../../../../coach';
+import { useMemo, useState } from 'react';
 import { starterTaskTemplates } from '../../../../coach/StarterQuestLibrary';
-import { useScheduleStore } from '../../../../stores/useScheduleStore';
-import { useProgressionStore } from '../../../../stores/useProgressionStore';
+import { taskTemplateLibrary } from '../../../../coach';
 import { resolveIcon } from '../../../../constants/iconMap';
-import type { TaskTemplate, TaskType, XpAward } from '../../../../types/taskTemplate';
+import { useProgressionStore } from '../../../../stores/useProgressionStore';
+import { useScheduleStore } from '../../../../stores/useScheduleStore';
+import type { InputFields, TaskSecondaryTag, TaskTemplate, TaskType, XpAward } from '../../../../types/taskTemplate';
 import type { StatGroupKey } from '../../../../types/user';
 
-// ── STAT ICONS (mirrors StatIcon.tsx) ────────────────────────────────────────
+const STAT_KEYS: StatGroupKey[] = ['health', 'strength', 'agility', 'defense', 'charisma', 'wisdom'];
 
-const STAT_KEYS: StatGroupKey[] = [
-  'health', 'strength', 'agility', 'defense', 'charisma', 'wisdom',
+const TYPE_OPTIONS: Array<TaskType | 'ALL'> = [
+  'ALL',
+  'CHECK',
+  'COUNTER',
+  'SETS_REPS',
+  'CIRCUIT',
+  'DURATION',
+  'TIMER',
+  'RATING',
+  'TEXT',
+  'FORM',
+  'CHOICE',
+  'CHECKLIST',
+  'SCAN',
+  'LOG',
+  'LOCATION_POINT',
+  'LOCATION_TRAIL',
+  'ROLL',
 ];
 
-function getPrimaryStatIcon(xpAward: XpAward): string {
-  let best: StatGroupKey | null = null;
-  let bestVal = 0;
-  for (const key of STAT_KEYS) {
-    const val = xpAward[key];
-    if (val > bestVal) {
-      bestVal = val;
-      best = key;
-    }
-  }
-  if (best === null || bestVal === 0) return resolveIcon('agility'); // ⚡ for zero-XP (e.g. ROLL)
-  return resolveIcon(best);
+const TYPE_ICON_KEYS: Record<TaskType, string> = {
+  CHECK: 'check',
+  COUNTER: 'counter',
+  SETS_REPS: 'sets_reps',
+  CIRCUIT: 'circuit',
+  DURATION: 'duration',
+  TIMER: 'timer',
+  RATING: 'rating',
+  TEXT: 'text',
+  FORM: 'form',
+  CHOICE: 'choice',
+  CHECKLIST: 'checklist',
+  SCAN: 'scan',
+  LOG: 'log',
+  LOCATION_POINT: 'location_point',
+  LOCATION_TRAIL: 'location_trail',
+  ROLL: 'roll',
+};
+
+type TemplateState = 'active' | 'used' | 'quest' | 'inactive';
+
+interface TemplateUsage {
+  state: TemplateState;
+  usedByName: string | null;
+  questName: string | null;
 }
 
-function getPrimaryStatKey(xpAward: XpAward): StatGroupKey | null {
-  let best: StatGroupKey | null = null;
-  let bestVal = 0;
+function getPrimaryStatKey(xpAward: XpAward): StatGroupKey {
+  let best: StatGroupKey = 'agility';
+  let bestValue = -1;
+
   for (const key of STAT_KEYS) {
-    const val = xpAward[key];
-    if (val > bestVal) {
-      bestVal = val;
+    const value = xpAward[key] ?? 0;
+    if (value > bestValue) {
       best = key;
+      bestValue = value;
     }
   }
+
   return best;
 }
 
-// ── TASK TYPE PILLS ───────────────────────────────────────────────────────────
-
-const ALL_TASK_TYPES: TaskType[] = [
-  'CHECK', 'COUNTER', 'SETS_REPS', 'CIRCUIT', 'DURATION',
-  'TIMER', 'RATING', 'TEXT', 'FORM', 'CHOICE', 'CHECKLIST',
-  'SCAN', 'LOG', 'LOCATION_POINT', 'LOCATION_TRAIL', 'ROLL',
-];
-
-const TYPE_LABELS: Record<TaskType, string> = {
-  CHECK: 'CHECK',
-  COUNTER: 'COUNT',
-  SETS_REPS: 'SETS',
-  CIRCUIT: 'CIRC',
-  DURATION: 'DUR',
-  TIMER: 'TIMER',
-  RATING: 'RATE',
-  TEXT: 'TEXT',
-  FORM: 'FORM',
-  CHOICE: 'CHOICE',
-  CHECKLIST: 'LIST',
-  SCAN: 'SCAN',
-  LOG: 'LOG',
-  LOCATION_POINT: 'LOC',
-  LOCATION_TRAIL: 'TRAIL',
-  ROLL: 'ROLL',
-};
-
-// ── MERGED TEMPLATE LIST ──────────────────────────────────────────────────────
+function getTemplateTypeIcon(taskType: TaskType): string {
+  return resolveIcon(TYPE_ICON_KEYS[taskType] ?? 'default');
+}
 
 function getMergedTemplates(): TaskTemplate[] {
   const map = new Map<string, TaskTemplate>();
-  for (const t of taskTemplateLibrary) {
-    if (t.id) map.set(t.id, t);
+
+  for (const template of taskTemplateLibrary) {
+    if (template.id) map.set(template.id, template);
   }
-  for (const t of starterTaskTemplates) {
-    if (t.id && !map.has(t.id) && t.isSystem !== true) map.set(t.id, t);
+
+  for (const template of starterTaskTemplates) {
+    if (template.id && !map.has(template.id)) {
+      map.set(template.id, template);
+    }
   }
-  return Array.from(map.values()).filter((t) => t.isSystem !== true);
+
+  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-// ── COMPONENT ─────────────────────────────────────────────────────────────────
+function formatTaskType(taskType: TaskType): string {
+  return taskType.replaceAll('_', ' ');
+}
+
+function formatCooldown(cooldown: number | null): string {
+  if (cooldown === null) return 'No cooldown';
+  if (cooldown < 60) return `${cooldown} min`;
+  const hours = Math.floor(cooldown / 60);
+  const minutes = cooldown % 60;
+  return minutes === 0 ? `${hours} hr` : `${hours} hr ${minutes} min`;
+}
+
+function summariseInputFields(inputFields: InputFields): string[] {
+  if ('label' in inputFields && typeof inputFields.label === 'string') {
+    const fields = [inputFields.label];
+    if ('note' in inputFields && inputFields.note) fields.push(`Note: ${inputFields.note}`);
+    return fields;
+  }
+  if ('target' in inputFields) return [`Target ${inputFields.target} ${inputFields.unit}`];
+  if ('sets' in inputFields) {
+    return [
+      `${inputFields.sets} sets x ${inputFields.reps} reps`,
+      inputFields.weight ? `Weight ${inputFields.weight}${inputFields.weightUnit ?? ''}` : 'Bodyweight',
+    ];
+  }
+  if ('exercises' in inputFields) return [`${inputFields.rounds} rounds`, `${inputFields.exercises.join(', ')}`];
+  if ('targetDuration' in inputFields) return [`${inputFields.targetDuration} ${inputFields.unit}`];
+  if ('countdownFrom' in inputFields) return [`Countdown ${inputFields.countdownFrom}s`];
+  if ('scale' in inputFields && 'label' in inputFields) return [`${inputFields.label} · ${inputFields.scale}-point scale`];
+  if ('prompt' in inputFields && 'maxLength' in inputFields) return [`Prompt: ${inputFields.prompt}`, inputFields.maxLength ? `Max ${inputFields.maxLength} chars` : 'No max length'];
+  if ('fields' in inputFields) return inputFields.fields.map((field) => `${field.label} (${field.fieldType})`);
+  if ('options' in inputFields) return [`Options: ${inputFields.options.join(', ')}`, inputFields.multiSelect ? 'Multi-select' : 'Single choice'];
+  if ('items' in inputFields) return inputFields.items.map((item) => item.label);
+  if ('scanType' in inputFields) return [`Scan type: ${inputFields.scanType}`];
+  if ('prompt' in inputFields) return [inputFields.prompt ?? 'Open log entry'];
+  if ('captureAccuracy' in inputFields) return [inputFields.captureAccuracy ? 'Capture with accuracy' : 'Simple location point'];
+  if ('captureInterval' in inputFields) return [inputFields.captureInterval ? `Capture every ${inputFields.captureInterval}s` : 'Manual waypoint capture'];
+  if ('sides' in inputFields) return [`${inputFields.sides}-sided roll`];
+  return ['No input summary available'];
+}
+
+function buildUsageState(
+  templateId: string | undefined,
+  taskTemplates: Record<string, TaskTemplate>,
+  usageByTemplateId: Record<string, string>,
+  questUsageByTemplateId: Record<string, string>,
+): TemplateUsage {
+  if (!templateId) {
+    return { state: 'inactive', usedByName: null, questName: null };
+  }
+
+  const usedByName = usageByTemplateId[templateId] ?? null;
+  const questName = questUsageByTemplateId[templateId] ?? null;
+  const active = templateId in taskTemplates;
+
+  if (questName) return { state: 'quest', usedByName, questName };
+  if (usedByName) return { state: 'used', usedByName, questName: null };
+  if (active) return { state: 'active', usedByName: null, questName: null };
+  return { state: 'inactive', usedByName: null, questName: null };
+}
 
 export function RecommendedTasksTab() {
-  const taskTemplates = useScheduleStore((s) => s.taskTemplates);
-  const plannedEvents = useScheduleStore((s) => s.plannedEvents);
-  const setTaskTemplate = useScheduleStore((s) => s.setTaskTemplate);
-  const removeTaskTemplate = useScheduleStore((s) => s.removeTaskTemplate);
-  // Quest-locked: any active Marker referencing this template id (D89)
-  // Path: acts → chains[] → quests[] → timely.markers[] (activeState) → taskTemplateRef
-  const acts = useProgressionStore((s) => s.acts);
-  const lockedTemplateIds = useMemo(() => {
-    const ids = new Set<string>();
+  const taskTemplates = useScheduleStore((state) => state.taskTemplates);
+  const plannedEvents = useScheduleStore((state) => state.plannedEvents);
+  const setTaskTemplate = useScheduleStore((state) => state.setTaskTemplate);
+  const removeTaskTemplate = useScheduleStore((state) => state.removeTaskTemplate);
+  const acts = useProgressionStore((state) => state.acts);
+
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<TaskType | 'ALL'>('ALL');
+  const [statFilter, setStatFilter] = useState<StatGroupKey | 'ALL'>('ALL');
+  const [showInactive, setShowInactive] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const allTemplates = useMemo(() => getMergedTemplates(), []);
+
+  const usageByTemplateId = useMemo(() => {
+    const usage: Record<string, string> = {};
+    for (const plannedEvent of Object.values(plannedEvents)) {
+      for (const templateId of plannedEvent.taskPool) {
+        if (!usage[templateId]) usage[templateId] = plannedEvent.name;
+      }
+    }
+    return usage;
+  }, [plannedEvents]);
+
+  const questUsageByTemplateId = useMemo(() => {
+    const usage: Record<string, string> = {};
     for (const act of Object.values(acts)) {
       for (const chain of act.chains) {
         for (const quest of chain.quests) {
           for (const marker of quest.timely.markers) {
-            if (marker.activeState && marker.taskTemplateRef) ids.add(marker.taskTemplateRef);
+            if (marker.activeState && marker.taskTemplateRef && !usage[marker.taskTemplateRef]) {
+              usage[marker.taskTemplateRef] = quest.name;
+            }
           }
         }
       }
     }
-    return ids;
+    return usage;
   }, [acts]);
-  const usedTemplateIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const event of Object.values(plannedEvents)) {
-      for (const taskId of event.taskPool) {
-        ids.add(taskId);
-      }
-    }
-    return ids;
-  }, [plannedEvents]);
-
-  const [selectedTypes, setSelectedTypes] = useState<TaskType[]>([]);
-  const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
-  const [filterStat, setFilterStat] = useState<StatGroupKey | 'All'>('All');
-  const [showInactive, setShowInactive] = useState(false);
-  const [search, setSearch] = useState('');
-
-  const typeDropdownRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (typeDropdownRef.current && !typeDropdownRef.current.contains(e.target as Node)) {
-        setTypeDropdownOpen(false);
-      }
-    }
-    if (typeDropdownOpen) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [typeDropdownOpen]);
-
-  const allTemplates = useMemo(() => getMergedTemplates(), []);
 
   const visible = useMemo(() => {
-    let list = allTemplates;
-    if (!showInactive) {
-      list = list.filter((t) => t.id !== undefined && t.id !== '' && t.id in taskTemplates);
-    }
-    if (selectedTypes.length > 0) {
-      list = list.filter((t) => selectedTypes.includes(t.taskType as TaskType));
-    }
-    if (filterStat !== 'All') {
-      list = list.filter((t) => getPrimaryStatKey(t.xpAward) === filterStat);
-    }
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      list = list.filter((t) => t.name.toLowerCase().includes(q));
-    }
-    return list;
-  }, [allTemplates, showInactive, taskTemplates, selectedTypes, filterStat, search]);
+    return allTemplates.filter((template) => {
+      const usage = buildUsageState(template.id, taskTemplates, usageByTemplateId, questUsageByTemplateId);
+      if (!showInactive && usage.state === 'inactive') return false;
+      if (typeFilter !== 'ALL' && template.taskType !== typeFilter) return false;
+      if (statFilter !== 'ALL' && getPrimaryStatKey(template.xpAward) !== statFilter) return false;
+      if (search.trim()) {
+        const query = search.trim().toLowerCase();
+        if (!template.name.toLowerCase().includes(query)) return false;
+      }
+      return true;
+    });
+  }, [allTemplates, questUsageByTemplateId, search, showInactive, statFilter, taskTemplates, typeFilter, usageByTemplateId]);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* ── Controls ── */}
-      <div className="shrink-0 px-4 pt-3 pb-2 flex flex-col gap-2">
-        {/* Search */}
-        <div className="relative">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search templates…"
-            className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 pr-8 text-sm text-gray-800 dark:text-gray-200 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          />
-          {search && (
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="shrink-0 px-4 pt-3 pb-2">
+        <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_220px] gap-2">
+            <div className="relative">
+              <input
+                type="text"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search templates..."
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 pr-9 text-sm text-gray-800 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+              />
+              {search ? (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear task search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-lg leading-none text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  ×
+                </button>
+              ) : null}
+            </div>
+            <select
+              value={typeFilter}
+              onChange={(event) => setTypeFilter(event.target.value as TaskType | 'ALL')}
+              className="min-h-10 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+            >
+              {TYPE_OPTIONS.map((type) => (
+                <option key={type} value={type}>
+                  {type === 'ALL' ? 'All Types' : formatTaskType(type)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <FilterPill active={statFilter === 'ALL'} onClick={() => setStatFilter('ALL')} label="All Stats" />
+            {STAT_KEYS.map((key) => (
+              <FilterPill
+                key={key}
+                active={statFilter === key}
+                onClick={() => setStatFilter(key)}
+                label={resolveIcon(key)}
+                title={key}
+              />
+            ))}
             <button
               type="button"
-              aria-label="Clear search"
-              onClick={() => setSearch('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-base leading-none"
+              onClick={() => setShowInactive((current) => !current)}
+              className={`ml-auto min-h-10 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                showInactive
+                  ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+              }`}
             >
-              ×
+              {showInactive ? 'Showing Inactive' : 'Hide Inactive'}
             </button>
-          )}
-        </div>
-
-        {/* Type filter dropdown + Show inactive toggle */}
-        <div className="flex items-center gap-2" ref={typeDropdownRef}>
-          <TypeDropdown
-            open={typeDropdownOpen}
-            selectedTypes={selectedTypes}
-            onToggle={() => setTypeDropdownOpen((v) => !v)}
-            onChange={setSelectedTypes}
-            onClose={() => setTypeDropdownOpen(false)}
-          />
-          <label className="ml-auto flex items-center gap-1.5 cursor-pointer text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap select-none">
-            <input
-              type="checkbox"
-              checked={showInactive}
-              onChange={(e) => setShowInactive(e.target.checked)}
-              className="rounded border-gray-300 dark:border-gray-600 text-purple-600 focus:ring-purple-500"
-            />
-            Show inactive
-          </label>
-        </div>
-
-        {/* Stat group pills */}
-        <div className="flex flex-wrap gap-1">
-          <TypePill label="All" active={filterStat === 'All'} onClick={() => setFilterStat('All')} />
-          {STAT_KEYS.map((key) => (
-            <TypePill
-              key={key}
-              label={resolveIcon(key)}
-              active={filterStat === key}
-              onClick={() => setFilterStat(key)}
-            />
-          ))}
+          </div>
         </div>
       </div>
 
-      {/* ── Template list ── */}
-      <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
-        {visible.length === 0 && (
-          <p className="px-4 py-8 text-center text-sm text-gray-400 dark:text-gray-500">
-            No templates match your filter.
-          </p>
-        )}
-        {visible.map((template) => {
-          const id = template.id ?? '';
-          // Active: template has been copied into scheduleStore.taskTemplates (D88)
-          const active = id !== '' && id in taskTemplates;
-          const locked = active && lockedTemplateIds.has(id);
-          const used = active && id !== '' && usedTemplateIds.has(id);
-          return (
-            <TaskTemplateRow
-              key={template.id ?? template.name}
-              template={template}
-              active={active}
-              used={used}
-              locked={locked}
-              onToggle={() => {
-                if (!template.id) return;
-                if (active) {
-                  removeTaskTemplate(template.id);
-                } else {
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="flex flex-col gap-3">
+          {visible.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+              No task templates match the current filters.
+            </p>
+          ) : null}
+
+          {visible.map((template) => {
+            const usage = buildUsageState(template.id, taskTemplates, usageByTemplateId, questUsageByTemplateId);
+            return (
+              <TaskTemplateCard
+                key={template.id ?? template.name}
+                template={template}
+                usage={usage}
+                expanded={expandedId === (template.id ?? template.name)}
+                onToggleExpand={() => setExpandedId((current) => current === (template.id ?? template.name) ? null : (template.id ?? template.name))}
+                onAdd={() => {
+                  if (!template.id) return;
                   setTaskTemplate(template.id, template);
-                }
-              }}
-            />
-          );
-        })}
+                }}
+                onRemove={() => {
+                  if (!template.id) return;
+                  removeTaskTemplate(template.id);
+                }}
+              />
+            );
+          })}
+        </div>
       </div>
     </div>
   );
 }
 
-// ── TYPE PILL ─────────────────────────────────────────────────────────────────
-
-interface TypePillProps {
-  label: string;
+interface FilterPillProps {
   active: boolean;
+  label: string;
   onClick: () => void;
+  title?: string;
 }
 
-function TypePill({ label, active, onClick }: TypePillProps) {
+function FilterPill({ active, label, onClick, title }: FilterPillProps) {
   return (
     <button
       type="button"
+      title={title}
       onClick={onClick}
-      className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+      className={`min-h-10 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
         active
           ? 'bg-purple-600 text-white'
-          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
       }`}
     >
       {label}
@@ -277,145 +328,146 @@ function TypePill({ label, active, onClick }: TypePillProps) {
   );
 }
 
-// ── TASK TEMPLATE ROW ─────────────────────────────────────────────────────────
-
-interface TaskTemplateRowProps {
+interface TaskTemplateCardProps {
   template: TaskTemplate;
-  active: boolean;
-  used: boolean;
-  locked: boolean;
-  onToggle: () => void;
+  usage: TemplateUsage;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  onAdd: () => void;
+  onRemove: () => void;
 }
 
-function TaskTemplateRow({ template, active, used, locked, onToggle }: TaskTemplateRowProps) {
-  const statIcon = getPrimaryStatIcon(template.xpAward);
-  const typeLabel = TYPE_LABELS[template.taskType as TaskType] ?? template.taskType;
-  const blocked = locked || used;
+function TaskTemplateCard({ template, usage, expanded, onToggleExpand, onAdd, onRemove }: TaskTemplateCardProps) {
+  const primaryStat = getPrimaryStatKey(template.xpAward);
+  const stateBadge = getStateBadge(usage.state);
+  const inputSummaries = summariseInputFields(template.inputFields);
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5">
-      {/* Stat icon */}
-      <span className="text-base leading-none shrink-0" aria-hidden="true">
-        {statIcon}
-      </span>
-
-      {/* Name + type */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-          {template.name}
-        </p>
-        <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-          {typeLabel}
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <button
+        type="button"
+        onClick={onToggleExpand}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left"
+      >
+        <span className="text-xl leading-none" aria-hidden="true">{resolveIcon(primaryStat)}</span>
+        <span className="text-xl leading-none" aria-hidden="true">{getTemplateTypeIcon(template.taskType)}</span>
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{template.name}</span>
+        <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${stateBadge.className}`}>
+          {stateBadge.label}
         </span>
-      </div>
+        <span className="shrink-0 text-sm text-gray-400" aria-hidden="true">
+          {expanded ? resolveIcon('collapse') : resolveIcon('expand')}
+        </span>
+      </button>
 
-      {/* Toggle / Lock */}
-      {blocked ? (
-        <div
-          className="shrink-0 flex flex-col items-center gap-0.5"
-          title={locked ? 'Required by active quest' : 'Used by planned event'}
-        >
-          <span className="text-base leading-none" aria-hidden="true">
-            {resolveIcon(locked ? 'lock' : 'event')}
-          </span>
-          <span className="text-[9px] text-gray-400 dark:text-gray-500 leading-none">
-            {locked ? 'Quest' : 'Used'}
-          </span>
+      {expanded ? (
+        <div className="border-t border-gray-100 px-4 py-4 dark:border-gray-700">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-3xl dark:bg-purple-900/20">
+              {resolveIcon(template.icon)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100">{template.name}</h4>
+                {template.secondaryTag ? <SecondaryTag tag={template.secondaryTag} /> : null}
+                {template.isSystem ? (
+                  <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-300">
+                    System
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{template.description}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <DetailChip label="Stat group" value={primaryStat} icon={resolveIcon(primaryStat)} />
+            <DetailChip label="Task type" value={formatTaskType(template.taskType)} icon={getTemplateTypeIcon(template.taskType)} />
+            <DetailChip label="Cooldown" value={formatCooldown(template.cooldown)} />
+            <DetailChip label="Items" value={template.items.length > 0 ? template.items.join(', ') : 'None'} />
+          </div>
+
+          <div className="mt-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Input Fields</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {inputSummaries.map((summary) => (
+                <span
+                  key={summary}
+                  className="rounded-full bg-gray-100 px-3 py-1.5 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                >
+                  {summary}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4">
+            {template.isSystem ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">System templates stay coach-managed.</p>
+            ) : usage.state === 'inactive' ? (
+              <button
+                type="button"
+                onClick={onAdd}
+                className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+              >
+                + Add to Templates
+              </button>
+            ) : usage.state === 'active' ? (
+              <button
+                type="button"
+                onClick={onRemove}
+                className="rounded-full bg-red-100 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+              >
+                Remove
+              </button>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Used by {usage.state === 'quest' ? usage.questName : usage.usedByName}
+                {' '}— cannot remove
+              </p>
+            )}
+          </div>
         </div>
-      ) : (
-        <button
-          type="button"
-          onClick={onToggle}
-          className={`shrink-0 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
-            used
-              ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/60'
-              : active
-              ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/60'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-          }`}
-          aria-label={active ? `Remove ${template.name} from library` : `Add ${template.name} to library`}
-        >
-          {used ? 'Used' : active ? 'Active' : 'Inactive'}
-        </button>
-      )}
+      ) : null}
     </div>
   );
 }
 
-// ── TYPE DROPDOWN (multiselect) ───────────────────────────────────────────────
-
-interface TypeDropdownProps {
-  open: boolean;
-  selectedTypes: TaskType[];
-  onToggle: () => void;
-  onChange: (types: TaskType[]) => void;
-  onClose: () => void;
+function getStateBadge(state: TemplateState): { label: string; className: string } {
+  switch (state) {
+    case 'active':
+      return { label: 'Active', className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' };
+    case 'used':
+      return { label: 'Used', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' };
+    case 'quest':
+      return { label: `${resolveIcon('lock')} Quest`, className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' };
+    default:
+      return { label: 'Inactive', className: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' };
+  }
 }
 
-function TypeDropdown({ open, selectedTypes, onToggle, onChange, onClose }: TypeDropdownProps) {
-  const count = selectedTypes.length;
-  const label = count === 0 ? 'Filter by type' : `${count} type${count !== 1 ? 's' : ''} selected`;
-
-  function toggleType(type: TaskType) {
-    if (selectedTypes.includes(type)) {
-      onChange(selectedTypes.filter((t) => t !== type));
-    } else {
-      onChange([...selectedTypes, type]);
-    }
-  }
-
+function SecondaryTag({ tag }: { tag: TaskSecondaryTag }) {
   return (
-    <div className="relative flex-1 min-w-0">
-      <button
-        type="button"
-        onClick={onToggle}
-        className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${
-          count > 0
-            ? 'border-purple-400 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
-            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-        }`}
-      >
-        <span className="truncate">{label}</span>
-        <span className="shrink-0 text-[10px] text-gray-400" aria-hidden="true">
-          {open ? '▲' : '▼'}
-        </span>
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 z-20 mt-1 w-full min-w-[160px] rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg">
-          <div className="max-h-48 overflow-y-auto py-1">
-            {ALL_TASK_TYPES.map((type) => (
-              <label
-                key={type}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 select-none"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedTypes.includes(type)}
-                  onChange={() => toggleType(type)}
-                  className="rounded border-gray-300 dark:border-gray-600 text-purple-600 focus:ring-purple-500"
-                />
-                <span className="text-gray-700 dark:text-gray-200">{TYPE_LABELS[type]}</span>
-              </label>
-            ))}
-          </div>
-          <div className="border-t border-gray-100 dark:border-gray-700 px-3 py-1.5 flex justify-between items-center">
-            <button
-              type="button"
-              onClick={() => onChange([])}
-              className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            >
-              Clear
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      )}
+    <span className="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-medium capitalize text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+      {tag}
+    </span>
+  );
+}
+
+interface DetailChipProps {
+  label: string;
+  value: string;
+  icon?: string;
+}
+
+function DetailChip({ label, value, icon }: DetailChipProps) {
+  return (
+    <div className="rounded-2xl bg-gray-50 px-3 py-2 dark:bg-gray-900/40">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="mt-1 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+        {icon ? <span aria-hidden="true">{icon}</span> : null}
+        <span>{value}</span>
+      </p>
     </div>
   );
 }

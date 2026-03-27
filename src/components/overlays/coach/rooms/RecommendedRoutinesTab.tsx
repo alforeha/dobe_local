@@ -1,206 +1,363 @@
-// ─────────────────────────────────────────
-// RecommendedRoutinesTab — Routines sub-view for RecommendationsRoom
-// Shows all prebuilt routines from RoutineLibrary.
-// Filter by tag, search by name.
-// "Add to Schedule" opens RoutinePopup pre-filled.
-// ─────────────────────────────────────────
-
-import { useState, useMemo } from 'react';
-import { routineLibrary } from '../../../../coach/RoutineLibrary';
-import type { PrebuiltRoutine, RoutineTag } from '../../../../coach/RoutineLibrary';
-import { RoutinePopup } from '../../menu/rooms/ScheduleRoom/RoutinePopup';
-import type { RoutinePopupPrefill } from '../../menu/rooms/ScheduleRoom/RoutinePopup';
+import { useMemo, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { routineLibrary, type PrebuiltRoutine, type RoutineTag } from '../../../../coach/RoutineLibrary';
+import { taskTemplateLibrary } from '../../../../coach';
 import { resolveIcon } from '../../../../constants/iconMap';
-
-// ── TAG CONFIG ────────────────────────────────────────────────────────────────
+import { materialisePlannedEvent } from '../../../../engine/materialise';
+import { autoCompleteSystemTask } from '../../../../engine/resourceEngine';
+import { useScheduleStore } from '../../../../stores/useScheduleStore';
+import { useUserStore } from '../../../../stores/useUserStore';
+import { localISODate } from '../../../../utils/dateUtils';
+import { ColorPicker } from '../../../shared/ColorPicker';
+import { IconPicker } from '../../../shared/IconPicker';
+import type { PlannedEvent } from '../../../../types/plannedEvent';
+import type { RecurrenceRule, TaskTemplate } from '../../../../types/taskTemplate';
 
 const ALL_TAGS: RoutineTag[] = [
-  'health', 'morning', 'mindfulness', 'evening',
-  'work', 'fitness', 'nutrition', 'home', 'admin', 'wisdom',
+  'health',
+  'morning',
+  'mindfulness',
+  'evening',
+  'work',
+  'fitness',
+  'nutrition',
+  'home',
+  'admin',
+  'wisdom',
 ];
 
-// ── COMPONENT ─────────────────────────────────────────────────────────────────
+function todayISO(): string {
+  return localISODate(new Date());
+}
+
+function isTodayARecurrenceDay(rule: RecurrenceRule): boolean {
+  if (rule.frequency === 'daily' || rule.frequency === 'monthly') return true;
+  if (rule.frequency === 'weekly') {
+    if (rule.days.length === 0) return true;
+    const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+    const todayKey = dayKeys[new Date().getDay()];
+    return rule.days.includes(todayKey);
+  }
+  return true;
+}
+
+function formatRecurrence(rule: RecurrenceRule): string {
+  if (rule.frequency === 'daily') return rule.interval > 1 ? `Every ${rule.interval} days` : 'Daily';
+  if (rule.frequency === 'weekly') {
+    if (rule.days.length === 0) return rule.interval > 1 ? `Every ${rule.interval} weeks` : 'Weekly';
+    return rule.days.map((day) => day.slice(0, 1).toUpperCase() + day.slice(1, 3)).join(' ');
+  }
+  if (rule.frequency === 'monthly') {
+    return rule.monthlyDay ? `Monthly on day ${rule.monthlyDay}` : 'Monthly';
+  }
+  return rule.customCondition ?? 'Custom';
+}
+
+function ensureCoachTemplates(taskPool: string[], taskTemplates: Record<string, TaskTemplate>, setTaskTemplate: (key: string, template: TaskTemplate) => void) {
+  const bundledTemplateById = new Map(
+    taskTemplateLibrary
+      .filter((template): template is TaskTemplate & { id: string } => !!template.id)
+      .map((template) => [template.id, template]),
+  );
+
+  for (const templateRef of taskPool) {
+    if (taskTemplates[templateRef]) continue;
+    const bundled = bundledTemplateById.get(templateRef);
+    if (!bundled || bundled.isSystem === true) continue;
+    setTaskTemplate(templateRef, {
+      ...bundled,
+      isCustom: false,
+      isSystem: false,
+    });
+  }
+}
 
 export function RecommendedRoutinesTab() {
   const [filterTag, setFilterTag] = useState<RoutineTag | 'All'>('All');
   const [search, setSearch] = useState('');
-  const [prefill, setPrefill] = useState<RoutinePopupPrefill | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const visible = useMemo(() => {
-    let list = routineLibrary;
-    if (filterTag !== 'All') {
-      list = list.filter((r) => r.tags.includes(filterTag));
-    }
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      list = list.filter((r) => r.name.toLowerCase().includes(q));
-    }
-    return list;
+    return [...routineLibrary]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .filter((routine) => {
+        if (filterTag !== 'All' && !routine.tags.includes(filterTag)) return false;
+        if (search.trim()) {
+          const query = search.trim().toLowerCase();
+          if (!routine.name.toLowerCase().includes(query)) return false;
+        }
+        return true;
+      });
   }, [filterTag, search]);
 
-  function handleAddToSchedule(routine: PrebuiltRoutine) {
-    setPrefill({
-      name: routine.name,
-      icon: routine.icon,
-      color: routine.color,
-      startTime: routine.startTime,
-      endTime: routine.endTime,
-      isOvernight: routine.isOvernight,
-      taskPool: routine.taskPool,
-      recurrenceInterval: routine.recurrenceInterval,
-    });
-  }
-
   return (
-    <>
-      <div className="flex flex-col h-full overflow-hidden">
-        {/* ── Controls ── */}
-        <div className="shrink-0 px-4 pt-3 pb-2 flex flex-col gap-2">
-          {/* Search */}
-          <div className="relative">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search routines…"
-              className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 pr-8 text-sm text-gray-800 dark:text-gray-200 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-            {search && (
-              <button
-                type="button"
-                aria-label="Clear search"
-                onClick={() => setSearch('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-base leading-none"
-              >
-                ×
-              </button>
-            )}
-          </div>
-
-          {/* Tag filter pills */}
-          <div className="flex flex-wrap gap-1">
-            <TagPill
-              label="All"
-              active={filterTag === 'All'}
-              onClick={() => setFilterTag('All')}
-            />
-            {ALL_TAGS.map((tag) => (
-              <TagPill
-                key={tag}
-                label={tag}
-                active={filterTag === tag}
-                onClick={() => setFilterTag(tag)}
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="shrink-0 px-4 pt-3 pb-2">
+        <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_220px] gap-2">
+            <div className="relative">
+              <input
+                type="text"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search routines..."
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 pr-9 text-sm text-gray-800 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
               />
-            ))}
+              {search ? (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear routine search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-lg leading-none text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  ×
+                </button>
+              ) : null}
+            </div>
+            <select
+              value={filterTag}
+              onChange={(event) => setFilterTag(event.target.value as RoutineTag | 'All')}
+              className="min-h-10 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+            >
+              <option value="All">All Tags</option>
+              {ALL_TAGS.map((tag) => (
+                <option key={tag} value={tag}>
+                  {tag}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
+      </div>
 
-        {/* ── Routine list ── */}
-        <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
-          {visible.length === 0 && (
-            <p className="px-4 py-8 text-center text-sm text-gray-400 dark:text-gray-500">
-              No routines match your filter.
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="flex flex-col gap-3">
+          {visible.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+              No routines match the current filters.
             </p>
-          )}
+          ) : null}
+
           {visible.map((routine) => (
-            <RoutineRow
+            <RoutineCard
               key={routine.id}
               routine={routine}
-              onAdd={() => handleAddToSchedule(routine)}
+              expanded={expandedId === routine.id}
+              onToggleExpand={() => setExpandedId((current) => current === routine.id ? null : routine.id)}
             />
           ))}
         </div>
       </div>
-
-      {/* ── RoutinePopup portal (pre-filled from prebuilt) ── */}
-      {prefill !== null && (
-        <RoutinePopup
-          editRoutine={null}
-          prefill={prefill}
-          onClose={() => setPrefill(null)}
-          isPrebuilt={true}
-        />
-      )}
-    </>
+    </div>
   );
 }
 
-// ── TAG PILL ──────────────────────────────────────────────────────────────────
-
-interface TagPillProps {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}
-
-function TagPill({ label, active, onClick }: TagPillProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize transition-colors ${
-        active
-          ? 'bg-purple-600 text-white'
-          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
-// ── ROUTINE ROW ───────────────────────────────────────────────────────────────
-
-interface RoutineRowProps {
-  routine: PrebuiltRoutine;
-  onAdd: () => void;
-}
-
-function RoutineRow({ routine, onAdd }: RoutineRowProps) {
+function RoutineCard({ routine, expanded, onToggleExpand }: { routine: PrebuiltRoutine; expanded: boolean; onToggleExpand: () => void }) {
   const shownTags = routine.tags.slice(0, 2);
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      {/* Icon / color swatch */}
-      <div
-        className="w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0"
-        style={{ backgroundColor: routine.color + '33' }}
-        aria-hidden="true"
-      >
-        {resolveIcon(routine.icon)}
-      </div>
-
-      {/* Name + description + tags */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-          {routine.name}
-        </p>
-        <p className="text-xs text-gray-500 dark:text-gray-400 truncate leading-snug">
-          {routine.description}
-        </p>
-        {shownTags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1">
-            {shownTags.map((tag) => (
-              <span
-                key={tag}
-                className="px-1.5 py-0.5 rounded text-[10px] font-medium capitalize bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Add to Schedule */}
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
       <button
         type="button"
-        onClick={onAdd}
-        className="shrink-0 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-900/60"
-        aria-label={`Add ${routine.name} to schedule`}
+        onClick={onToggleExpand}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left"
       >
-        + Add
+        <span
+          className="h-12 w-1 shrink-0 rounded-full"
+          style={{ backgroundColor: routine.color }}
+          aria-hidden="true"
+        />
+        <div
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-2xl"
+          style={{ backgroundColor: `${routine.color}22` }}
+          aria-hidden="true"
+        >
+          {resolveIcon(routine.icon)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{routine.name}</p>
+          <p className="truncate text-xs text-gray-500 dark:text-gray-400">{routine.description}</p>
+        </div>
+        <div className="hidden items-center gap-2 sm:flex">
+          {shownTags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium capitalize text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+        <span className="shrink-0 text-sm text-gray-400" aria-hidden="true">
+          {expanded ? resolveIcon('collapse') : resolveIcon('expand')}
+        </span>
       </button>
+
+      {expanded ? <RoutineExpandedEditor routine={routine} /> : null}
+    </div>
+  );
+}
+
+function RoutineExpandedEditor({ routine }: { routine: PrebuiltRoutine }) {
+  const setPlannedEvent = useScheduleStore((state) => state.setPlannedEvent);
+  const setTaskTemplate = useScheduleStore((state) => state.setTaskTemplate);
+  const taskTemplates = useScheduleStore((state) => state.taskTemplates);
+  const addRoutineRef = useUserStore((state) => state.addRoutineRef);
+
+  const [iconKey, setIconKey] = useState(routine.icon);
+  const [name, setName] = useState(routine.name);
+  const [color, setColor] = useState(routine.color);
+  const [startTime, setStartTime] = useState(routine.startTime);
+  const [endTime, setEndTime] = useState(routine.endTime);
+  const [seedDate, setSeedDate] = useState(todayISO());
+  const [addedState, setAddedState] = useState<'idle' | 'added'>('idle');
+  const [error, setError] = useState('');
+
+  const routineTemplates = useMemo(() => {
+    const bundledById = new Map(
+      taskTemplateLibrary
+        .filter((template): template is TaskTemplate & { id: string } => !!template.id)
+        .map((template) => [template.id, template]),
+    );
+
+    return routine.taskPool
+      .map((templateId) => taskTemplates[templateId] ?? bundledById.get(templateId) ?? null)
+      .filter((template): template is TaskTemplate => template !== null);
+  }, [routine.taskPool, taskTemplates]);
+
+  function handleAddToSchedule() {
+    if (!name.trim()) {
+      setError('Name is required.');
+      return;
+    }
+
+    ensureCoachTemplates(routine.taskPool, taskTemplates, setTaskTemplate);
+
+    const plannedEvent: PlannedEvent = {
+      id: uuidv4(),
+      name: name.trim(),
+      description: routine.description,
+      icon: iconKey,
+      color,
+      seedDate,
+      dieDate: null,
+      recurrenceInterval: routine.recurrenceInterval,
+      activeState: 'active',
+      taskPool: routine.taskPool,
+      taskPoolCursor: 0,
+      taskList: [],
+      conflictMode: 'concurrent',
+      startTime,
+      endTime,
+      isOvernight: routine.isOvernight === true || endTime < startTime,
+      location: null,
+      sharedWith: null,
+      pushReminder: null,
+    };
+
+    setPlannedEvent(plannedEvent);
+    addRoutineRef(plannedEvent.id);
+    autoCompleteSystemTask('task-sys-add-routine');
+
+    if (seedDate <= todayISO() && isTodayARecurrenceDay(routine.recurrenceInterval)) {
+      const currentTemplates = useScheduleStore.getState().taskTemplates;
+      materialisePlannedEvent(plannedEvent, todayISO(), currentTemplates);
+    }
+
+    setError('');
+    setAddedState('added');
+    window.setTimeout(() => setAddedState('idle'), 1400);
+  }
+
+  return (
+    <div className="border-t border-gray-100 px-4 py-4 dark:border-gray-700">
+      <div className="grid gap-4 sm:grid-cols-[72px_minmax(0,1fr)_72px]">
+        <div>
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Icon</p>
+          <IconPicker value={iconKey} onChange={setIconKey} align="left" />
+        </div>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Name</span>
+          <input
+            type="text"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+          />
+        </label>
+        <div>
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Color</p>
+          <ColorPicker value={color} onChange={setColor} align="right" />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Start time</span>
+          <input
+            type="time"
+            value={startTime}
+            onChange={(event) => setStartTime(event.target.value)}
+            className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">End time</span>
+          <input
+            type="time"
+            value={endTime}
+            onChange={(event) => setEndTime(event.target.value)}
+            className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+          />
+        </label>
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Seed date</span>
+          <input
+            type="date"
+            value={seedDate}
+            onChange={(event) => setSeedDate(event.target.value)}
+            className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+          />
+        </label>
+        <div className="rounded-2xl bg-gray-50 px-3 py-3 dark:bg-gray-900/40">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Recurrence</p>
+          <p className="mt-1 text-sm text-gray-700 dark:text-gray-200">{formatRecurrence(routine.recurrenceInterval)}</p>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Task List</p>
+        <div className="mt-2 overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700">
+          {routineTemplates.map((template) => (
+            <div
+              key={template.id ?? template.name}
+              className="flex items-center gap-3 border-b border-gray-100 px-3 py-2 last:border-b-0 dark:border-gray-700"
+            >
+              <span className="text-lg leading-none" aria-hidden="true">{resolveIcon(template.icon)}</span>
+              <span className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-200">{template.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {error ? <p className="mt-3 text-sm text-red-500">{error}</p> : null}
+
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={handleAddToSchedule}
+          className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            addedState === 'added'
+              ? 'bg-emerald-600 text-white'
+              : 'bg-indigo-600 text-white hover:bg-indigo-700'
+          }`}
+        >
+          {addedState === 'added' ? '✓ Added' : '+ Add to Schedule'}
+        </button>
+      </div>
     </div>
   );
 }
