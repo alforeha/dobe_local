@@ -41,6 +41,106 @@ function todayISO(): string {
   return getAppDate();
 }
 
+const RESOURCE_TEMPLATE_LIBRARY: Partial<Record<Resource['type'], TaskTemplate>> = {
+  contact: {
+    id: 'task-res-contacts-birthday',
+    isCustom: false,
+    isSystem: true,
+    name: 'Wish Happy Birthday',
+    description: 'Wish someone a happy birthday.',
+    icon: 'check',
+    taskType: 'CHECK',
+    inputFields: { label: 'Wish happy birthday' },
+    xpAward: { health: 0, strength: 0, agility: 0, defense: 0, charisma: 5, wisdom: 0 },
+    cooldown: null,
+    media: null,
+    items: [],
+    secondaryTag: 'social',
+  },
+  home: {
+    id: 'task-res-homes-chore',
+    isCustom: false,
+    isSystem: true,
+    name: 'Complete Home Chore',
+    description: 'Complete a home chore.',
+    icon: 'check',
+    taskType: 'CHECK',
+    inputFields: { label: 'Complete home chore' },
+    xpAward: { health: 0, strength: 0, agility: 5, defense: 0, charisma: 0, wisdom: 0 },
+    cooldown: null,
+    media: null,
+    items: [],
+    secondaryTag: 'home',
+  },
+  vehicle: {
+    id: 'task-res-vehicles-maintenance',
+    isCustom: false,
+    isSystem: true,
+    name: 'Vehicle Maintenance',
+    description: 'Inspect, service, and log vehicle maintenance.',
+    icon: 'checklist',
+    taskType: 'CHECKLIST',
+    inputFields: {
+      items: [
+        { key: 'check', label: 'Inspect item' },
+        { key: 'service', label: 'Complete service' },
+        { key: 'log', label: 'Log in vehicle record' },
+      ],
+    },
+    xpAward: { health: 0, strength: 5, agility: 0, defense: 0, charisma: 0, wisdom: 0 },
+    cooldown: null,
+    media: null,
+    items: [],
+    secondaryTag: 'home',
+  },
+  account: {
+    id: 'task-res-accounts-transaction',
+    isCustom: false,
+    isSystem: true,
+    name: 'Account Transaction',
+    description: 'Log an account transaction.',
+    icon: 'log',
+    taskType: 'LOG',
+    inputFields: { prompt: 'Transaction details — amount, category, notes' },
+    xpAward: { health: 0, strength: 0, agility: 0, defense: 5, charisma: 0, wisdom: 0 },
+    cooldown: null,
+    media: null,
+    items: [],
+    secondaryTag: 'finance',
+  },
+  inventory: {
+    id: 'task-res-inventory-replenish',
+    isCustom: false,
+    isSystem: true,
+    name: 'Replenish Item',
+    description: 'Replenish an inventory item.',
+    icon: 'check',
+    taskType: 'CHECK',
+    inputFields: { label: 'Replenish item' },
+    xpAward: { health: 0, strength: 0, agility: 0, defense: 0, charisma: 0, wisdom: 5 },
+    cooldown: null,
+    media: null,
+    items: [],
+    secondaryTag: 'home',
+  },
+};
+
+function seedResourceTemplateForType(resourceType: Resource['type']): TaskTemplate | null {
+  const template = RESOURCE_TEMPLATE_LIBRARY[resourceType] ?? null;
+  if (!template?.id) return null;
+
+  const scheduleStore = useScheduleStore.getState();
+  const existing = scheduleStore.taskTemplates[template.id];
+  if (existing) return existing;
+
+  scheduleStore.setTaskTemplate(template.id, template);
+  return template;
+}
+
+export function seedResourceTemplateForResource(resource: Resource): void {
+  seedResourceTemplateForType(resource.type);
+}
+
 function isOnboardingQuestTemplate(templateRef: string): boolean {
   return (
     templateRef === STARTER_TEMPLATE_IDS.openWelcomeEvent ||
@@ -171,6 +271,7 @@ export function generateScheduledTasks(_resource: Resource): PlannedEvent[] {
  * @returns Array of Task objects created
  */
 export function generateGTDItems(resource: Resource): Task[] {
+  seedResourceTemplateForResource(resource);
   const created: Task[] = [];
 
   switch (resource.type) {
@@ -226,8 +327,7 @@ function _genContactGTD(resource: Resource): Task[] {
   const days = daysUntilAnnual(meta.info.birthday);
   if (days === null || days > lead) return [];
 
-  const templateKey = `resource-task:${resource.id}:birthday`;
-  ensureTemplate(templateKey, `${resource.name} — Birthday`, 'CHECK', { wisdom: 5 });
+  const templateKey = seedResourceTemplateForType('contact')?.id ?? 'task-res-contacts-birthday';
 
   const task: Task = {
     id: uuidv4(),
@@ -253,8 +353,7 @@ function _genAccountGTD(resource: Resource): Task[] {
   // Pending transactions
   const pendingOnes = meta.pendingTransactions.filter((t) => t.status === 'pending');
   if (pendingOnes.length > 0) {
-    const templateKey = `resource-task:${resource.id}:transaction`;
-    ensureTemplate(templateKey, `${resource.name} — Transaction`, 'LOG', { defense: 5 });
+    const templateKey = seedResourceTemplateForType('account')?.id ?? 'task-res-accounts-transaction';
     for (const _ of pendingOnes) {
       void _;
       tasks.push({
@@ -312,8 +411,7 @@ function _genInventoryGTD(resource: Resource): Task[] {
   );
   if (lowStock.length === 0) return [];
 
-  const templateKey = `resource-task:${resource.id}:replenish`;
-  ensureTemplate(templateKey, `${resource.name} — Replenish`, 'COUNTER', { defense: 5 });
+  const templateKey = seedResourceTemplateForType('inventory')?.id ?? 'task-res-inventory-replenish';
 
   return lowStock.map((item) => ({
     id: uuidv4(),

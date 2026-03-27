@@ -10,13 +10,13 @@ import { routineLibrary } from '../../../../coach/RoutineLibrary';
 import type { PrebuiltRoutine, RoutineTag } from '../../../../coach/RoutineLibrary';
 import { RoutinePopup } from '../../menu/rooms/ScheduleRoom/RoutinePopup';
 import type { RoutinePopupPrefill } from '../../menu/rooms/ScheduleRoom/RoutinePopup';
+import { resolveIcon } from '../../../../constants/iconMap';
 
 // ── TAG CONFIG ────────────────────────────────────────────────────────────────
 
 const ALL_TAGS: RoutineTag[] = [
   'health', 'morning', 'mindfulness', 'evening',
-  'work', 'productivity', 'fitness', 'strength',
-  'nutrition', 'home', 'admin', 'finance',
+  'work', 'fitness', 'nutrition', 'home', 'admin', 'wisdom',
 ];
 
 // ── COMPONENT ─────────────────────────────────────────────────────────────────
@@ -43,6 +43,9 @@ export function RecommendedRoutinesTab() {
       name: routine.name,
       icon: routine.icon,
       color: routine.color,
+      startTime: routine.startTime,
+      endTime: routine.endTime,
+      isOvernight: routine.isOvernight,
       taskPool: routine.taskPool,
       recurrenceInterval: routine.recurrenceInterval,
     });
@@ -164,7 +167,7 @@ function RoutineRow({ routine, onAdd }: RoutineRowProps) {
         style={{ backgroundColor: routine.color + '33' }}
         aria-hidden="true"
       >
-        {routine.icon}
+        {resolveIcon(routine.icon)}
       </div>
 
       {/* Name + description + tags */}
@@ -193,7 +196,7 @@ function RoutineRow({ routine, onAdd }: RoutineRowProps) {
       <button
         type="button"
         onClick={onAdd}
-        className="shrink-0 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-900/60 transition-colors"
+        className="shrink-0 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-900/60"
         aria-label={`Add ${routine.name} to schedule`}
       >
         + Add

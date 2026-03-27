@@ -183,11 +183,11 @@ export async function seedTestDataset(): Promise<TestDatasetResult> {
 
   // ── Seed 20 completed events across 30 days ───────────────────────────
   const templateIds = [
-    'tmpl-login-check-0000-0000-0000-0001',     // health: 10
-    'c0ffee01-dead-4bee-f00d-a1b2c3d4e5f6',     // drinkWater (prebuilt)
-    'tmpl-log-entry-0000-0000-0000-0001',        // wisdom: 15
-    'tmpl-body-log-000000-0000-0000-0000-01',    // health: 20
-    'tmpl-mood-log-000000-0000-0000-0000-01',    // wisdom: 20
+    'task-sys-daily-login',
+    'task-hlth-drink-water',
+    'task-wis-journal-entry',
+    'task-hlth-body-scan',
+    'task-wis-mood-entry',
   ] as const;
 
   let eventCount = 0;

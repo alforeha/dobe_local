@@ -92,6 +92,7 @@ function getMergedTemplates(): TaskTemplate[] {
 
 export function RecommendedTasksTab() {
   const taskTemplates = useScheduleStore((s) => s.taskTemplates);
+  const plannedEvents = useScheduleStore((s) => s.plannedEvents);
   const setTaskTemplate = useScheduleStore((s) => s.setTaskTemplate);
   const removeTaskTemplate = useScheduleStore((s) => s.removeTaskTemplate);
   // Quest-locked: any active Marker referencing this template id (D89)
@@ -110,6 +111,15 @@ export function RecommendedTasksTab() {
     }
     return ids;
   }, [acts]);
+  const usedTemplateIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const event of Object.values(plannedEvents)) {
+      for (const taskId of event.taskPool) {
+        ids.add(taskId);
+      }
+    }
+    return ids;
+  }, [plannedEvents]);
 
   const [selectedTypes, setSelectedTypes] = useState<TaskType[]>([]);
   const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
@@ -219,11 +229,13 @@ export function RecommendedTasksTab() {
           // Active: template has been copied into scheduleStore.taskTemplates (D88)
           const active = id !== '' && id in taskTemplates;
           const locked = active && lockedTemplateIds.has(id);
+          const used = active && id !== '' && usedTemplateIds.has(id);
           return (
             <TaskTemplateRow
               key={template.id ?? template.name}
               template={template}
               active={active}
+              used={used}
               locked={locked}
               onToggle={() => {
                 if (!template.id) return;
@@ -270,13 +282,15 @@ function TypePill({ label, active, onClick }: TypePillProps) {
 interface TaskTemplateRowProps {
   template: TaskTemplate;
   active: boolean;
+  used: boolean;
   locked: boolean;
   onToggle: () => void;
 }
 
-function TaskTemplateRow({ template, active, locked, onToggle }: TaskTemplateRowProps) {
+function TaskTemplateRow({ template, active, used, locked, onToggle }: TaskTemplateRowProps) {
   const statIcon = getPrimaryStatIcon(template.xpAward);
   const typeLabel = TYPE_LABELS[template.taskType as TaskType] ?? template.taskType;
+  const blocked = locked || used;
 
   return (
     <div className="flex items-center gap-3 px-4 py-2.5">
@@ -296,26 +310,32 @@ function TaskTemplateRow({ template, active, locked, onToggle }: TaskTemplateRow
       </div>
 
       {/* Toggle / Lock */}
-      {locked ? (
+      {blocked ? (
         <div
           className="shrink-0 flex flex-col items-center gap-0.5"
-          title="Required by active quest"
+          title={locked ? 'Required by active quest' : 'Used by planned event'}
         >
-          <span className="text-base leading-none" aria-hidden="true">{resolveIcon('lock')}</span>
-          <span className="text-[9px] text-gray-400 dark:text-gray-500 leading-none">Quest</span>
+          <span className="text-base leading-none" aria-hidden="true">
+            {resolveIcon(locked ? 'lock' : 'event')}
+          </span>
+          <span className="text-[9px] text-gray-400 dark:text-gray-500 leading-none">
+            {locked ? 'Quest' : 'Used'}
+          </span>
         </div>
       ) : (
         <button
           type="button"
           onClick={onToggle}
           className={`shrink-0 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
-            active
+            used
+              ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/60'
+              : active
               ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/60'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
           aria-label={active ? `Remove ${template.name} from library` : `Add ${template.name} to library`}
         >
-          {active ? 'Active' : 'Inactive'}
+          {used ? 'Used' : active ? 'Active' : 'Inactive'}
         </button>
       )}
     </div>

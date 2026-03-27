@@ -38,6 +38,9 @@ export const useResourceStore = create<ResourceState & ResourceActions>()(
 
       setResource: (resource) => {
         set((state) => ({ resources: { ...state.resources, [resource.id]: resource } }));
+        void import('../engine/resourceEngine').then(({ seedResourceTemplateForResource }) => {
+          seedResourceTemplateForResource(resource);
+        });
         // TODO: MVP06 — storageSet(storageKey.resource(resource.id), resource)
       },
 

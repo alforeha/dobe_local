@@ -137,7 +137,7 @@ function makeWelcomePlannedEvent(date: string): Record<string, unknown> {
   };
 }
 
-const LOGIN_TMPL_ID = 'tmpl-login-check-0000-0000-0000-0001'; // health: 10 XP
+const LOGIN_TMPL_ID = 'task-sys-daily-login';
 
 function makeTestTask(id: string, tmplRef: string): Record<string, unknown> {
   return {

@@ -172,7 +172,7 @@ export function TaskTemplatePopup({
     isEditMode && editTemplate ? (editTemplate.secondaryTag ?? '') : '',
   );
   const [statGroup, setStatGroup] = useState<StatGroupKey>(initialStatGroup);
-  const [xpValue, setXpValue] = useState<number | ''>(initialXpValue);
+  const [xpValue, _setXpValue] = useState<number | ''>(initialXpValue);
   const [cooldown, setCooldown] = useState<number | ''>(
     isEditMode && editTemplate && editTemplate.cooldown !== null ? editTemplate.cooldown : '',
   );

@@ -82,11 +82,24 @@ export interface SetsRepsInputFields {
   dropSet: boolean;
 }
 
+export type CircuitStepInputType = 'TEXT' | 'CHOICE' | 'RATING' | 'CHECK';
+
+export interface CircuitStep {
+  key: string;
+  label: string;
+  inputType?: CircuitStepInputType | null;
+  options?: string[] | null;
+  scale?: number | null;
+  optional?: boolean;
+}
+
 export interface CircuitInputFields {
   exercises: string[];
   rounds: number;
   /** Time to rest between rounds (seconds) */
   restBetweenRounds: number | null;
+  /** Optional structured step metadata for richer circuit flows */
+  steps?: CircuitStep[];
 }
 
 export interface DurationInputFields {

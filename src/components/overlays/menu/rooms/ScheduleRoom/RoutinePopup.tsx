@@ -10,6 +10,7 @@ import { useUserStore } from '../../../../../stores/useUserStore';
 import { materialisePlannedEvent } from '../../../../../engine/materialise';
 import { autoCheckQuestItem } from '../../../../../engine/resourceEngine';
 import { STARTER_TEMPLATE_IDS } from '../../../../../coach/StarterQuestLibrary';
+import { taskTemplateLibrary } from '../../../../../coach';
 import { storageDelete, storageKey } from '../../../../../storage';
 import { localISODate } from '../../../../../utils/dateUtils';
 import type { PlannedEvent, ConflictMode } from '../../../../../types/plannedEvent';
@@ -119,6 +120,9 @@ export interface RoutinePopupPrefill {
   name: string;
   icon: string;
   color: string;
+  startTime?: string;
+  endTime?: string;
+  isOvernight?: boolean;
   taskPool: string[];
   recurrenceInterval: RecurrenceRule;
 }
@@ -283,6 +287,7 @@ function ScheduleTaskPool({ templates, taskPool, setTaskPool, readOnly = false, 
 export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false }: RoutinePopupProps) {
   const setPlannedEvent = useScheduleStore((s) => s.setPlannedEvent);
   const removePlannedEvent = useScheduleStore((s) => s.removePlannedEvent);
+  const setTaskTemplate = useScheduleStore((s) => s.setTaskTemplate);
   const taskTemplates = useScheduleStore((s) => s.taskTemplates);
   const addRoutineRef = useUserStore((s) => s.addRoutineRef);
   const removeRoutineRef = useUserStore((s) => s.removeRoutineRef);
@@ -290,10 +295,27 @@ export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false
   const isEditMode = editRoutine !== null;
 
   const allTemplates = useMemo(() => {
-    return Object.entries(taskTemplates)
-      .filter(([, template]) => template.isSystem !== true)
-      .map(([id, template]) => ({ id, template }));
-  }, [taskTemplates]);
+    const map = new Map<string, TaskTemplate>();
+
+    for (const [id, template] of Object.entries(taskTemplates)) {
+      if (template.isSystem !== true) {
+        map.set(id, template);
+      }
+    }
+
+    if (isPrebuilt) {
+      const selectedIds = new Set(prefill?.taskPool ?? []);
+      for (const template of taskTemplateLibrary) {
+        if (!template.id || template.isSystem === true) continue;
+        if (!selectedIds.has(template.id)) continue;
+        if (!map.has(template.id)) {
+          map.set(template.id, template);
+        }
+      }
+    }
+
+    return Array.from(map.entries()).map(([id, template]) => ({ id, template }));
+  }, [isPrebuilt, prefill?.taskPool, taskTemplates]);
 
   const [name, setName] = useState(isEditMode ? editRoutine.name : (prefill?.name ?? ''));
   const [iconKey, setIconKey] = useState(isEditMode ? editRoutine.icon : (prefill?.icon ?? 'routine'));
@@ -320,13 +342,13 @@ export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false
       : (prefill?.recurrenceInterval.customCondition ?? ''),
   );
   const [conflictMode, setConflictMode] = useState<ConflictMode>(isEditMode ? editRoutine.conflictMode : 'concurrent');
-  const [startTime, setStartTime] = useState(isEditMode ? editRoutine.startTime : '09:00');
-  const [endTime, setEndTime] = useState(isEditMode ? editRoutine.endTime : '10:00');
+  const [startTime, setStartTime] = useState(isEditMode ? editRoutine.startTime : (prefill?.startTime ?? '09:00'));
+  const [endTime, setEndTime] = useState(isEditMode ? editRoutine.endTime : (prefill?.endTime ?? '10:00'));
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
   const [seedDate, setSeedDate] = useState(isEditMode ? editRoutine.seedDate : todayISO());
 
-  const isOvernight = startTime !== '' && endTime !== '' && endTime < startTime;
+  const isOvernight = prefill?.isOvernight === true || (startTime !== '' && endTime !== '' && endTime < startTime);
   const inputCls =
     'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200';
 
@@ -355,6 +377,26 @@ export function RoutinePopup({ editRoutine, prefill, onClose, isPrebuilt = false
     }
 
     const today = todayISO();
+    const bundledTemplateById = new Map(
+      taskTemplateLibrary
+        .filter((template): template is TaskTemplate & { id: string } => !!template.id)
+        .map((template) => [template.id, template]),
+    );
+
+    for (const templateRef of taskPool) {
+      const existing = useScheduleStore.getState().taskTemplates[templateRef];
+      if (existing) continue;
+
+      const bundled = bundledTemplateById.get(templateRef);
+      if (!bundled || bundled.isSystem === true) continue;
+
+      setTaskTemplate(templateRef, {
+        ...bundled,
+        isCustom: false,
+        isSystem: false,
+      });
+    }
+
     const recurrenceInterval: RecurrenceRule = {
       frequency,
       days: frequency === 'weekly' ? days : [],

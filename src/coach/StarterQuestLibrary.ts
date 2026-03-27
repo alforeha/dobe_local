@@ -40,32 +40,31 @@ export const STARTER_ACT_IDS = {
 // ── STABLE TASK TEMPLATE IDs ─────────────────────────────────────────────────
 
 export const STARTER_TEMPLATE_IDS = {
-  roll:             'tmpl-roll-00000000-0000-0000-0000',
-  drinkWater:       'c0ffee01-dead-4bee-f00d-a1b2c3d4e5f6', // existing prebuilt
-  logEntry:         'tmpl-log-entry-0000-0000-0000-0001',
+  roll:             'task-sys-lucky-roll',
+  drinkWater:       'task-hlth-drink-water',
+  logEntry:         'task-wis-journal-entry',
   openWelcomeEvent: 'tmpl-open-welcome-0000-0000-0000-0001',
   setupSchedule:    'tmpl-setup-schedule-000-0000-0000-01',
   learnGrounds:     'tmpl-learn-grounds-000-0000-0000-0001',
   claimIdentity:    'tmpl-claim-identity-00-0000-0000-0001',
-  bodyLog:          'tmpl-body-log-000000-0000-0000-0000-01',
-  mealLog:          'tmpl-meal-log-000000-0000-0000-0000-01',
-  loginCheck:       'tmpl-login-check-0000-0000-0000-0001',
-  sleepCircuit:     'tmpl-sleep-circuit-00-0000-0000-0000',
-  walkRoute:        'b4c5d6e7-f8a9-4012-9890-123456789012', // existing prebuilt
-  workoutCheck:     'tmpl-workout-check-00-0000-0000-0001',
-  workoutCounter:   'tmpl-workout-counter-0-0000-0000-0001',
-  chore:            'tmpl-chore-00000000-0000-0000-0000-01',
-  clearInbox:       'tmpl-clear-inbox-0000-0000-0000-0001',
-  logTransaction:   'tmpl-log-transaction-0-0000-0000-0001',
-  inventoryCounter: 'tmpl-inventory-count-0-0000-0000-0001',
-  selfCompliment:   'tmpl-self-compliment-0-0000-0000-0001',
-  gratitude:        'tmpl-gratitude-000000-0000-0000-0000-1',
-  kindness:         'tmpl-kindness-000000-0000-0000-0000-01',
-  sharedActivity:   'tmpl-shared-activity-0-0000-0000-0001',
-  meditation:       'e5f6a7b8-c9d0-4123-af01-234567890123', // existing prebuilt
-  moodLog:          'tmpl-mood-log-000000-0000-0000-0000-01',
-  formTask:         'b8c9d0e1-f2a3-4456-b234-567890123456', // existing weekly review
-  wisdomCheck:      'tmpl-wisdom-check-000-0000-0000-0001',
+  bodyLog:          'task-hlth-body-scan',
+  mealLog:          'task-hlth-log-meal',
+  loginCheck:       'task-sys-daily-login',
+  sleepCircuit:     'task-hlth-track-sleep',
+  walkRoute:        'task-str-go-for-walk',
+  workoutCheck:     'task-str-full-body-circuit',
+  chore:            'task-agi-put-dishes-away',
+  clearInbox:       'task-agi-clear-inbox',
+  logTransaction:   'task-res-accounts-transaction',
+  inventoryReplenish: 'task-res-inventory-replenish',
+  selfCompliment:   'task-chr-self-compliment',
+  gratitude:        'task-chr-give-gratitude',
+  kindness:         'task-chr-act-of-kindness',
+  reachOut:         'task-chr-reach-out',
+  meditation:       'task-wis-meditation-timer',
+  moodLog:          'task-wis-mood-entry',
+  studySession:     'task-wis-study-session',
+  dreamEntry:       'task-wis-dream-entry',
 } as const;
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -148,7 +147,7 @@ function noStatXp(): XpAward {
 
 // ── STARTER TASK TEMPLATES ────────────────────────────────────────────────────
 // Only templates NOT already present in TaskTemplateLibrary.json.
-// Prebuilt IDs (drinkWater, walkRoute, meditation, formTask) are referenced
+// Prebuilt IDs (drinkWater, walkRoute, meditation, studySession) are referenced
 // via STARTER_TEMPLATE_IDS but NOT re-declared here — they already exist.
 
 export const starterTaskTemplates: TaskTemplate[] = [
@@ -529,7 +528,7 @@ const healthAct = makeStatPathAct(
     makeQuest('H1 — Body Scan',
       'Log 3 body scans to tune into your physical state.',
       makeTimely(makeTaskCountMarker(`${HP_ID}|0|0`, STARTER_TEMPLATE_IDS.bodyLog, 3, 'taskTemplateRef', STARTER_TEMPLATE_IDS.bodyLog), 'taskCount'),
-      { taskTypes: ['LOG'] }, taskInputSpecific(1), 'xp-h1'),
+      { taskTypes: ['CIRCUIT'] }, taskInputSpecific(1), 'xp-h1'),
     makeQuest('H2 — Hydration',
       'Complete the Daily Water quest 6 times.',
       makeTimely(makeTaskCountMarker(`${HP_ID}|0|1`, STARTER_TEMPLATE_IDS.drinkWater, 6, 'taskTemplateRef', STARTER_TEMPLATE_IDS.drinkWater), 'taskCount'),
@@ -561,13 +560,13 @@ const strengthAct = makeStatPathAct(
       makeTimely(makeTaskCountMarker(`${SP_ID}|0|1`, STARTER_TEMPLATE_IDS.walkRoute, 6, 'taskTemplateRef', STARTER_TEMPLATE_IDS.walkRoute), 'taskCount'),
       { taskTypes: ['LOCATION_TRAIL'] }, taskInputSpecific(1), 'xp-s2'),
     makeQuest('S3 — Workout Events',
-      'Complete 12 workout events.',
+      'Complete 12 full body circuits.',
       makeTimely(makeTaskCountMarker(`${SP_ID}|0|2`, STARTER_TEMPLATE_IDS.workoutCheck, 12, 'taskTemplateRef', STARTER_TEMPLATE_IDS.workoutCheck), 'taskCount'),
-      { taskTypes: ['CHECK'] }, taskInputSpecific(1), 'xp-s3'),
-    makeQuest('S4 — Workout Log',
-      'Log 24 workout sessions cumulatively.',
-      makeTimely(makeTaskCountMarker(`${SP_ID}|0|3`, STARTER_TEMPLATE_IDS.workoutCounter, 24, 'taskTemplateRef', STARTER_TEMPLATE_IDS.workoutCounter), 'taskCount'),
-      { taskTypes: ['COUNTER'] }, taskInputSpecific(1), 'xp-s4'),
+      { taskTypes: ['CIRCUIT'] }, taskInputSpecific(1), 'xp-s3'),
+    makeQuest('S4 — Circuit Streak',
+      'Complete 24 full body circuits cumulatively.',
+      makeTimely(makeTaskCountMarker(`${SP_ID}|0|3`, STARTER_TEMPLATE_IDS.workoutCheck, 24, 'taskTemplateRef', STARTER_TEMPLATE_IDS.workoutCheck), 'taskCount'),
+      { taskTypes: ['CIRCUIT'] }, taskInputSpecific(1), 'xp-s4'),
   ],
 );
 
@@ -617,9 +616,9 @@ const defenseAct = makeStatPathAct(
       makeTimely(makeTaskCountMarker(`${DF_ID}|0|2`, STARTER_TEMPLATE_IDS.logTransaction, 12, 'taskTemplateRef', STARTER_TEMPLATE_IDS.logTransaction), 'taskCount'),
       { taskTypes: ['LOG'] }, taskInputSpecific(1), 'xp-df3'),
     makeQuest('DF4 — Inventory',
-      'Log 24 inventory items.',
-      makeTimely(makeTaskCountMarker(`${DF_ID}|0|3`, STARTER_TEMPLATE_IDS.inventoryCounter, 24, 'taskTemplateRef', STARTER_TEMPLATE_IDS.inventoryCounter), 'taskCount'),
-      { taskTypes: ['COUNTER'] }, taskInputSpecific(1), 'xp-df4'),
+      'Replenish 24 inventory items.',
+      makeTimely(makeTaskCountMarker(`${DF_ID}|0|3`, STARTER_TEMPLATE_IDS.inventoryReplenish, 24, 'taskTemplateRef', STARTER_TEMPLATE_IDS.inventoryReplenish), 'taskCount'),
+      { taskTypes: ['CHECK'] }, taskInputSpecific(1), 'xp-df4'),
   ],
 );
 
@@ -633,19 +632,19 @@ const charismaAct = makeStatPathAct(
     makeQuest('C1 — Self Compliment',
       'Log 3 self compliments.',
       makeTimely(makeTaskCountMarker(`${CH_ID}|0|0`, STARTER_TEMPLATE_IDS.selfCompliment, 3, 'taskTemplateRef', STARTER_TEMPLATE_IDS.selfCompliment), 'taskCount'),
-      { taskTypes: ['LOG'] }, taskInputSpecific(1), 'xp-c1'),
+      { taskTypes: ['TEXT'] }, taskInputSpecific(1), 'xp-c1'),
     makeQuest('C2 — Gratitude',
       'Log 6 pieces of gratitude.',
       makeTimely(makeTaskCountMarker(`${CH_ID}|0|1`, STARTER_TEMPLATE_IDS.gratitude, 6, 'taskTemplateRef', STARTER_TEMPLATE_IDS.gratitude), 'taskCount'),
-      { taskTypes: ['LOG'] }, taskInputSpecific(1), 'xp-c2'),
+      { taskTypes: ['TEXT'] }, taskInputSpecific(1), 'xp-c2'),
     makeQuest('C3 — Acts of Kindness',
       'Log 12 acts of kindness.',
       makeTimely(makeTaskCountMarker(`${CH_ID}|0|2`, STARTER_TEMPLATE_IDS.kindness, 12, 'taskTemplateRef', STARTER_TEMPLATE_IDS.kindness), 'taskCount'),
-      { taskTypes: ['LOG'] }, taskInputSpecific(1), 'xp-c3'),
-    makeQuest('C4 — Shared Activity',
-      'Complete 24 shared activities. [MULTI-USER stub]',
-      makeTimely(makeTaskCountMarker(`${CH_ID}|0|3`, STARTER_TEMPLATE_IDS.sharedActivity, 24, 'taskTemplateRef', STARTER_TEMPLATE_IDS.sharedActivity), 'taskCount'),
-      { taskTypes: ['CHECK'] }, taskInputSpecific(1), 'xp-c4'),
+      { taskTypes: ['TEXT'] }, taskInputSpecific(1), 'xp-c3'),
+    makeQuest('C4 — Reach Out',
+      'Reach out to people 24 times.',
+      makeTimely(makeTaskCountMarker(`${CH_ID}|0|3`, STARTER_TEMPLATE_IDS.reachOut, 24, 'taskTemplateRef', STARTER_TEMPLATE_IDS.reachOut), 'taskCount'),
+      { taskTypes: ['LOG'] }, taskInputSpecific(1), 'xp-c4'),
   ],
 );
 
@@ -663,15 +662,15 @@ const wisdomAct = makeStatPathAct(
     makeQuest('W2 — Mood Log',
       'Log your mood 6 times.',
       makeTimely(makeTaskCountMarker(`${WS_ID}|0|1`, STARTER_TEMPLATE_IDS.moodLog, 6, 'taskTemplateRef', STARTER_TEMPLATE_IDS.moodLog), 'taskCount'),
-      { taskTypes: ['RATING'] }, taskInputSpecific(1), 'xp-w2'),
-    makeQuest('W3 — Form Tasks',
-      'Complete 12 form-type tasks.',
-      makeTimely(makeTaskCountMarker(`${WS_ID}|0|2`, STARTER_TEMPLATE_IDS.formTask, 12, 'taskTemplateRef', STARTER_TEMPLATE_IDS.formTask), 'taskCount'),
-      { taskTypes: ['FORM'] }, taskInputSpecific(1), 'xp-w3'),
-    makeQuest('W4 — Wisdom Habits',
-      'Complete 24 wisdom-tagged tasks of any kind.',
-      makeTimely(makeTaskCountMarker(`${WS_ID}|0|3`, STARTER_TEMPLATE_IDS.wisdomCheck, 24, 'statGroup', 'wisdom'), 'taskCount'),
-      { taskTypes: ['CHECK', 'TIMER', 'FORM', 'RATING', 'LOG', 'TEXT'] }, taskInputSpecific(1), 'xp-w4'),
+      { taskTypes: ['CHOICE'] }, taskInputSpecific(1), 'xp-w2'),
+    makeQuest('W3 — Study Session',
+      'Complete 12 study sessions.',
+      makeTimely(makeTaskCountMarker(`${WS_ID}|0|2`, STARTER_TEMPLATE_IDS.studySession, 12, 'taskTemplateRef', STARTER_TEMPLATE_IDS.studySession), 'taskCount'),
+      { taskTypes: ['DURATION'] }, taskInputSpecific(1), 'xp-w3'),
+    makeQuest('W4 — Dream Journal',
+      'Complete 24 dream entries.',
+      makeTimely(makeTaskCountMarker(`${WS_ID}|0|3`, STARTER_TEMPLATE_IDS.dreamEntry, 24, 'taskTemplateRef', STARTER_TEMPLATE_IDS.dreamEntry), 'taskCount'),
+      { taskTypes: ['TEXT'] }, taskInputSpecific(1), 'xp-w4'),
   ],
 );
 
@@ -734,6 +733,7 @@ export const starterSeedTemplateIds: string[] = [
   STARTER_TEMPLATE_IDS.clearInbox,
   STARTER_TEMPLATE_IDS.bodyLog,
   STARTER_TEMPLATE_IDS.mealLog,
+  STARTER_TEMPLATE_IDS.studySession,
 ];
 
 /**
