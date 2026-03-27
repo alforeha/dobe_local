@@ -4,7 +4,7 @@
 // Renders inside the Menu overlay via PopupShell.
 // Fields: name, description, habitat, commitment (trackedTaskRefs + routineRefs),
 //         accountability stub.
-// toggle is not exposed in UI — initialised as {}.
+// toggle is not exposed in UI — initialised with the default ActToggle shape.
 // ─────────────────────────────────────────
 
 import { useState, useMemo } from 'react';
@@ -15,7 +15,7 @@ import { useUserStore } from '../../../../../stores/useUserStore';
 import { useScheduleStore } from '../../../../../stores/useScheduleStore';
 import { taskTemplateLibrary } from '../../../../../coach';
 import { storageDelete, storageKey } from '../../../../../storage';
-import type { Act, ActHabitat } from '../../../../../types';
+import { makeDefaultActToggle, type Act, type ActHabitat } from '../../../../../types';
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
 
@@ -134,7 +134,7 @@ export function ActPopup({ editAct, defaultHabitat, onClose }: ActPopupProps) {
         chains: [],
         accountability: null,
         commitment: { trackedTaskRefs, routineRefs },
-        toggle: {},
+        toggle: makeDefaultActToggle(),
         completionState: 'active',
         sharedContacts: null,
       };

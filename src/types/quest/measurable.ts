@@ -6,13 +6,7 @@
 // as meaningful progress events for this Quest.
 // ─────────────────────────────────────────
 
-import type { TaskType } from '../taskTemplate';
-
 export interface QuestMeasurable {
-  /**
-   * Task types whose completions count toward this Quest's progress.
-   * Only completions of these task types are recognised by progress evaluation.
-   * All listed types count equally — evaluation is a completion count filter.
-   */
-  taskTypes: TaskType[];
+  taskTemplateRefs?: string[];
+  resourceRef?: string;
 }

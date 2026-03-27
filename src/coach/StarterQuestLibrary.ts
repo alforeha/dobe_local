@@ -11,7 +11,14 @@
 // Seeding triggered by W30 first-run flow. Export is the handoff point.
 // ─────────────────────────────────────────
 
-import type { Act, Chain, Quest, ActCommitment } from '../types/act';
+import {
+  type Act,
+  type Chain,
+  type Quest,
+  type ActCommitment,
+  makeDefaultActToggle,
+  makeDefaultChainUnlockCondition,
+} from '../types/act';
 import type { Marker, MarkerConditionType, MarkerTriggerSource } from '../types/quest/Marker';
 import type { QuestTimely } from '../types/quest/timely';
 import type { QuestSpecific } from '../types/quest/specific';
@@ -140,6 +147,8 @@ const EMPTY_COMMITMENT: ActCommitment = {
   trackedTaskRefs: [],
   routineRefs: [],
 };
+
+const EMPTY_MEASURABLE: QuestMeasurable = {};
 
 function noStatXp(): XpAward {
   return { health: 0, strength: 0, agility: 0, defense: 0, charisma: 0, wisdom: 0 };
@@ -310,7 +319,7 @@ const q1: Quest = makeQuest(
     markers: [q1Marker],
     projectedFinish: null,
   },
-  { taskTypes: ['CHECK'] },
+  EMPTY_MEASURABLE,
   taskInputSpecific(1),
   'xp-light',
 );
@@ -321,7 +330,7 @@ const q2: Quest = makeQuest(
   'Splash',
   'Set up your schedule, explore prebuilt routines, and switch between time views.',
   makeTimely(q2Marker),
-  { taskTypes: ['CHECKLIST'] },
+  EMPTY_MEASURABLE,
   taskInputSpecific(3),
   'xp-standard',
 );
@@ -332,7 +341,7 @@ const q3: Quest = makeQuest(
   'High Ground',
   'Roll the lucky dice, complete a favourite action, explore core rooms, and add a favourite task.',
   makeTimely(q3Marker),
-  { taskTypes: ['CHECKLIST'] },
+  EMPTY_MEASURABLE,
   taskInputSpecific(6),
   'xp-standard',
 );
@@ -343,7 +352,7 @@ const q4: Quest = makeQuest(
   'Stake Your Claim',
   'Open your profile, set your display name, visit Badge and Equipment, and open the Goals room in the menu.',
   makeTimely(q4Marker),
-  { taskTypes: ['CHECKLIST'] },
+  EMPTY_MEASURABLE,
   taskInputSpecific(5),
   'xp-standard',
 );
@@ -357,6 +366,7 @@ const onboardingChain: Chain = {
   obstacle: 'Skipping setup means missing the loop',
   plan: {},
   chainReward: 'xp-chain-onboarding',
+  unlockCondition: makeDefaultChainUnlockCondition(0),
   quests: [q1, q2, q3, q4],
   completionState: 'active',
 };
@@ -371,7 +381,7 @@ export const onboardingAct: Act = {
   chains: [onboardingChain],
   accountability: null,
   commitment: EMPTY_COMMITMENT,
-  toggle: {},
+  toggle: makeDefaultActToggle(),
   completionState: 'active',
   sharedContacts: null,
 };
@@ -389,7 +399,7 @@ function makeDailyRollQuest(actId: string, chainIdx: number): Quest {
     'Daily Roll',
     'Roll the Lucky Dice in Quick Actions for today\'s XP boost.',
     makeTimely(marker),
-    { taskTypes: ['ROLL'] },
+    EMPTY_MEASURABLE,
     taskInputSpecific(1),
     'xp-roll',
   );
@@ -407,7 +417,7 @@ function makeDailyWaterQuest(actId: string, chainIdx: number): Quest {
     'Daily Water',
     'Complete 3 Drink Water tasks across the day.',
     makeTimely(marker, 'taskCount'),
-    { taskTypes: ['CHECK'] },
+    EMPTY_MEASURABLE,
     taskInputSpecific(1),
     'xp-water',
   );
@@ -425,7 +435,7 @@ function makeDailyLogQuest(actId: string, chainIdx: number): Quest {
     'Log Something',
     'Write at least one Doc entry today.',
     makeTimely(marker, 'taskCount'),
-    { taskTypes: ['LOG'] },
+    EMPTY_MEASURABLE,
     taskInputSpecific(1),
     'xp-log',
   );
@@ -437,7 +447,7 @@ function makeDailyClearDeckQuest(actId: string, chainIdx: number): Quest {
     'Clear the Deck',
     'Complete all scheduled events by the end of the day.',
     makeTimely(marker),
-    { taskTypes: ['CHECK'] },
+    EMPTY_MEASURABLE,
     taskInputSpecific(1),
     'xp-clear-deck',
   );
@@ -454,6 +464,7 @@ export function makeDailyChain(actId: string, chainIdx: number, date: string): C
     obstacle: 'Getting distracted or forgetting to check in',
     plan: {},
     chainReward: 'xp-daily-chain',
+    unlockCondition: makeDefaultChainUnlockCondition(chainIdx),
     quests: [
       makeDailyRollQuest(actId, chainIdx),
       makeDailyWaterQuest(actId, chainIdx),
@@ -475,7 +486,7 @@ export const dailyAct: Act = {
   chains: [], // populated at onboarding completion and daily rollover
   accountability: null,
   commitment: EMPTY_COMMITMENT,
-  toggle: {},
+  toggle: makeDefaultActToggle(),
   completionState: 'active',
   sharedContacts: null,
 };
@@ -498,6 +509,7 @@ function makeStatPathAct(
     obstacle: 'Inconsistency and skipping sessions',
     plan: {},
     chainReward: `xp-chain-${id.slice(4, 14)}`,
+    unlockCondition: makeDefaultChainUnlockCondition(0),
     quests,
     completionState: 'active',
   };
@@ -512,7 +524,7 @@ function makeStatPathAct(
     chains: [chain],
     accountability: null,
     commitment: EMPTY_COMMITMENT,
-    toggle: {},
+    toggle: makeDefaultActToggle(),
     completionState: 'active',
     sharedContacts: null,
   };
@@ -528,19 +540,19 @@ const healthAct = makeStatPathAct(
     makeQuest('H1 — Body Scan',
       'Log 3 body scans to tune into your physical state.',
       makeTimely(makeTaskCountMarker(`${HP_ID}|0|0`, STARTER_TEMPLATE_IDS.bodyLog, 3, 'taskTemplateRef', STARTER_TEMPLATE_IDS.bodyLog), 'taskCount'),
-      { taskTypes: ['CIRCUIT'] }, taskInputSpecific(1), 'xp-h1'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.bodyLog] }, taskInputSpecific(1), 'xp-h1'),
     makeQuest('H2 — Hydration',
       'Complete the Daily Water quest 6 times.',
       makeTimely(makeTaskCountMarker(`${HP_ID}|0|1`, STARTER_TEMPLATE_IDS.drinkWater, 6, 'taskTemplateRef', STARTER_TEMPLATE_IDS.drinkWater), 'taskCount'),
-      { taskTypes: ['CHECK'] }, taskInputSpecific(1), 'xp-h2'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.drinkWater] }, taskInputSpecific(1), 'xp-h2'),
     makeQuest('H3 — Meal Log',
       'Log 12 meals across your history.',
       makeTimely(makeTaskCountMarker(`${HP_ID}|0|2`, STARTER_TEMPLATE_IDS.mealLog, 12, 'taskTemplateRef', STARTER_TEMPLATE_IDS.mealLog), 'taskCount'),
-      { taskTypes: ['LOG'] }, taskInputSpecific(1), 'xp-h3'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.mealLog] }, taskInputSpecific(1), 'xp-h3'),
     makeQuest('H4 — Daily Presence',
       'Log in 24 times — one per day.',
       makeTimely(makeTaskCountMarker(`${HP_ID}|0|3`, STARTER_TEMPLATE_IDS.loginCheck, 24, 'systemEvent', 'login'), 'taskCount'),
-      { taskTypes: ['CHECK'] }, taskInputSpecific(1), 'xp-h4'),
+      EMPTY_MEASURABLE, taskInputSpecific(1), 'xp-h4'),
   ],
 );
 
@@ -554,19 +566,19 @@ const strengthAct = makeStatPathAct(
     makeQuest('S1 — Sleep',
       'Track your sleep 3 times.',
       makeTimely(makeTaskCountMarker(`${SP_ID}|0|0`, STARTER_TEMPLATE_IDS.sleepCircuit, 3, 'taskTemplateRef', STARTER_TEMPLATE_IDS.sleepCircuit), 'taskCount'),
-      { taskTypes: ['CIRCUIT'] }, taskInputSpecific(1), 'xp-s1'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.sleepCircuit] }, taskInputSpecific(1), 'xp-s1'),
     makeQuest('S2 — Walk Route',
       'Complete 6 walk route sessions.',
       makeTimely(makeTaskCountMarker(`${SP_ID}|0|1`, STARTER_TEMPLATE_IDS.walkRoute, 6, 'taskTemplateRef', STARTER_TEMPLATE_IDS.walkRoute), 'taskCount'),
-      { taskTypes: ['LOCATION_TRAIL'] }, taskInputSpecific(1), 'xp-s2'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.walkRoute] }, taskInputSpecific(1), 'xp-s2'),
     makeQuest('S3 — Workout Events',
       'Complete 12 full body circuits.',
       makeTimely(makeTaskCountMarker(`${SP_ID}|0|2`, STARTER_TEMPLATE_IDS.workoutCheck, 12, 'taskTemplateRef', STARTER_TEMPLATE_IDS.workoutCheck), 'taskCount'),
-      { taskTypes: ['CIRCUIT'] }, taskInputSpecific(1), 'xp-s3'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.workoutCheck] }, taskInputSpecific(1), 'xp-s3'),
     makeQuest('S4 — Circuit Streak',
       'Complete 24 full body circuits cumulatively.',
       makeTimely(makeTaskCountMarker(`${SP_ID}|0|3`, STARTER_TEMPLATE_IDS.workoutCheck, 24, 'taskTemplateRef', STARTER_TEMPLATE_IDS.workoutCheck), 'taskCount'),
-      { taskTypes: ['CIRCUIT'] }, taskInputSpecific(1), 'xp-s4'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.workoutCheck] }, taskInputSpecific(1), 'xp-s4'),
   ],
 );
 
@@ -580,19 +592,19 @@ const agilityAct = makeStatPathAct(
     makeQuest('A1 — Chores',
       'Complete 3 chore tasks.',
       makeTimely(makeTaskCountMarker(`${AG_ID}|0|0`, STARTER_TEMPLATE_IDS.chore, 3, 'taskTemplateRef', STARTER_TEMPLATE_IDS.chore), 'taskCount'),
-      { taskTypes: ['CHECK'] }, taskInputSpecific(1), 'xp-a1'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.chore] }, taskInputSpecific(1), 'xp-a1'),
     makeQuest('A2 — Clear Inbox',
       'Clear your inbox 6 times.',
       makeTimely(makeTaskCountMarker(`${AG_ID}|0|1`, STARTER_TEMPLATE_IDS.clearInbox, 6, 'taskTemplateRef', STARTER_TEMPLATE_IDS.clearInbox), 'taskCount'),
-      { taskTypes: ['CHECKLIST'] }, taskInputSpecific(1), 'xp-a2'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.clearInbox] }, taskInputSpecific(1), 'xp-a2'),
     makeQuest('A3 — Event Completions',
       'Complete 12 events of any type.',
       makeTimely(makeTaskCountMarker(`${AG_ID}|0|2`, STARTER_TEMPLATE_IDS.openWelcomeEvent, 12, 'systemEvent', 'event.completed'), 'taskCount'),
-      { taskTypes: ['CHECK'] }, taskInputSpecific(1), 'xp-a3'),
+      EMPTY_MEASURABLE, taskInputSpecific(1), 'xp-a3'),
     makeQuest('A4 — Quick Actions',
       'Complete 24 Quick Action tasks.',
       makeTimely(makeTaskCountMarker(`${AG_ID}|0|3`, STARTER_TEMPLATE_IDS.openWelcomeEvent, 24, 'systemEvent', 'quickAction.completed'), 'taskCount'),
-      { taskTypes: ['CHECK'] }, taskInputSpecific(1), 'xp-a4'),
+      EMPTY_MEASURABLE, taskInputSpecific(1), 'xp-a4'),
   ],
 );
 
@@ -606,19 +618,19 @@ const defenseAct = makeStatPathAct(
     makeQuest('DF1 — Schedule',
       'Create 3 one-time events.',
       makeTimely(makeTaskCountMarker(`${DF_ID}|0|0`, STARTER_TEMPLATE_IDS.openWelcomeEvent, 3, 'systemEvent', 'plannedEvent.created', 'plannedEvent.created'), 'taskCount'),
-      { taskTypes: ['CHECK'] }, taskInputSpecific(1), 'xp-df1'),
+      EMPTY_MEASURABLE, taskInputSpecific(1), 'xp-df1'),
     makeQuest('DF2 — Clear the Deck',
       'Complete all scheduled events on 6 different days.',
       makeTimely(makeTaskCountMarker(`${DF_ID}|0|1`, STARTER_TEMPLATE_IDS.openWelcomeEvent, 6, 'systemEvent', 'clearDeck.completed'), 'taskCount'),
-      { taskTypes: ['CHECK'] }, taskInputSpecific(1), 'xp-df2'),
+      EMPTY_MEASURABLE, taskInputSpecific(1), 'xp-df2'),
     makeQuest('DF3 — Log Transactions',
       'Log 12 financial transactions.',
       makeTimely(makeTaskCountMarker(`${DF_ID}|0|2`, STARTER_TEMPLATE_IDS.logTransaction, 12, 'taskTemplateRef', STARTER_TEMPLATE_IDS.logTransaction), 'taskCount'),
-      { taskTypes: ['LOG'] }, taskInputSpecific(1), 'xp-df3'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.logTransaction] }, taskInputSpecific(1), 'xp-df3'),
     makeQuest('DF4 — Inventory',
       'Replenish 24 inventory items.',
       makeTimely(makeTaskCountMarker(`${DF_ID}|0|3`, STARTER_TEMPLATE_IDS.inventoryReplenish, 24, 'taskTemplateRef', STARTER_TEMPLATE_IDS.inventoryReplenish), 'taskCount'),
-      { taskTypes: ['CHECK'] }, taskInputSpecific(1), 'xp-df4'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.inventoryReplenish] }, taskInputSpecific(1), 'xp-df4'),
   ],
 );
 
@@ -632,19 +644,19 @@ const charismaAct = makeStatPathAct(
     makeQuest('C1 — Self Compliment',
       'Log 3 self compliments.',
       makeTimely(makeTaskCountMarker(`${CH_ID}|0|0`, STARTER_TEMPLATE_IDS.selfCompliment, 3, 'taskTemplateRef', STARTER_TEMPLATE_IDS.selfCompliment), 'taskCount'),
-      { taskTypes: ['TEXT'] }, taskInputSpecific(1), 'xp-c1'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.selfCompliment] }, taskInputSpecific(1), 'xp-c1'),
     makeQuest('C2 — Gratitude',
       'Log 6 pieces of gratitude.',
       makeTimely(makeTaskCountMarker(`${CH_ID}|0|1`, STARTER_TEMPLATE_IDS.gratitude, 6, 'taskTemplateRef', STARTER_TEMPLATE_IDS.gratitude), 'taskCount'),
-      { taskTypes: ['TEXT'] }, taskInputSpecific(1), 'xp-c2'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.gratitude] }, taskInputSpecific(1), 'xp-c2'),
     makeQuest('C3 — Acts of Kindness',
       'Log 12 acts of kindness.',
       makeTimely(makeTaskCountMarker(`${CH_ID}|0|2`, STARTER_TEMPLATE_IDS.kindness, 12, 'taskTemplateRef', STARTER_TEMPLATE_IDS.kindness), 'taskCount'),
-      { taskTypes: ['TEXT'] }, taskInputSpecific(1), 'xp-c3'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.kindness] }, taskInputSpecific(1), 'xp-c3'),
     makeQuest('C4 — Reach Out',
       'Reach out to people 24 times.',
       makeTimely(makeTaskCountMarker(`${CH_ID}|0|3`, STARTER_TEMPLATE_IDS.reachOut, 24, 'taskTemplateRef', STARTER_TEMPLATE_IDS.reachOut), 'taskCount'),
-      { taskTypes: ['LOG'] }, taskInputSpecific(1), 'xp-c4'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.reachOut] }, taskInputSpecific(1), 'xp-c4'),
   ],
 );
 
@@ -658,19 +670,19 @@ const wisdomAct = makeStatPathAct(
     makeQuest('W1 — Meditation',
       'Complete 3 meditation sessions.',
       makeTimely(makeTaskCountMarker(`${WS_ID}|0|0`, STARTER_TEMPLATE_IDS.meditation, 3, 'taskTemplateRef', STARTER_TEMPLATE_IDS.meditation), 'taskCount'),
-      { taskTypes: ['TIMER'] }, taskInputSpecific(1), 'xp-w1'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.meditation] }, taskInputSpecific(1), 'xp-w1'),
     makeQuest('W2 — Mood Log',
       'Log your mood 6 times.',
       makeTimely(makeTaskCountMarker(`${WS_ID}|0|1`, STARTER_TEMPLATE_IDS.moodLog, 6, 'taskTemplateRef', STARTER_TEMPLATE_IDS.moodLog), 'taskCount'),
-      { taskTypes: ['CHOICE'] }, taskInputSpecific(1), 'xp-w2'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.moodLog] }, taskInputSpecific(1), 'xp-w2'),
     makeQuest('W3 — Study Session',
       'Complete 12 study sessions.',
       makeTimely(makeTaskCountMarker(`${WS_ID}|0|2`, STARTER_TEMPLATE_IDS.studySession, 12, 'taskTemplateRef', STARTER_TEMPLATE_IDS.studySession), 'taskCount'),
-      { taskTypes: ['DURATION'] }, taskInputSpecific(1), 'xp-w3'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.studySession] }, taskInputSpecific(1), 'xp-w3'),
     makeQuest('W4 — Dream Journal',
       'Complete 24 dream entries.',
       makeTimely(makeTaskCountMarker(`${WS_ID}|0|3`, STARTER_TEMPLATE_IDS.dreamEntry, 24, 'taskTemplateRef', STARTER_TEMPLATE_IDS.dreamEntry), 'taskCount'),
-      { taskTypes: ['TEXT'] }, taskInputSpecific(1), 'xp-w4'),
+      { taskTemplateRefs: [STARTER_TEMPLATE_IDS.dreamEntry] }, taskInputSpecific(1), 'xp-w4'),
   ],
 );
 

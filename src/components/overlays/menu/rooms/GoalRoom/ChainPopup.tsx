@@ -18,7 +18,6 @@ import type {
   Event,
 } from '../../../../../types';
 import type {
-  TaskType,
   RecurrenceFrequency,
   Weekday,
   RollInputFields,
@@ -31,12 +30,6 @@ import { starterTaskTemplates } from '../../../../../coach/StarterQuestLibrary';
 import { getAppDate } from '../../../../../utils/dateUtils';
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
-
-const ALL_TASK_TYPES: TaskType[] = [
-  'CHECK', 'COUNTER', 'SETS_REPS', 'CIRCUIT', 'DURATION', 'TIMER',
-  'RATING', 'TEXT', 'FORM', 'CHOICE', 'CHECKLIST', 'SCAN', 'LOG',
-  'LOCATION_POINT', 'LOCATION_TRAIL',
-];
 
 const WEEKDAYS: Weekday[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
@@ -77,7 +70,7 @@ function blankQuest(): Quest {
       resourceRef: null,
       resourceProperty: null,
     },
-    measurable: { taskTypes: [] },
+    measurable: { taskTemplateRefs: [] },
     attainable: {},
     relevant: {},
     timely: {
@@ -110,8 +103,8 @@ interface QuestFormState {
   targetValue: string;
   unit: string;
   sourceType: 'taskInput' | 'resourceRef';
-  taskTypes: TaskType[];
-  conditionType: 'interval' | 'xpThreshold' | 'taskCount';
+  taskTemplateRefs: string[];
+  conditionType: 'interval' | 'xpThreshold' | 'taskCount' | 'none';
   frequency: RecurrenceFrequency;
   days: Weekday[];
   intervalN: string;
@@ -132,7 +125,7 @@ function questToFormState(q: Quest): QuestFormState {
     targetValue: String(q.specific.targetValue),
     unit: q.specific.unit ?? '',
     sourceType: q.specific.sourceType,
-    taskTypes: [...q.measurable.taskTypes],
+    taskTemplateRefs: [...(q.measurable.taskTemplateRefs ?? [])],
     conditionType: q.timely.conditionType,
     frequency: q.timely.interval?.frequency ?? 'weekly',
     days: [...(q.timely.interval?.days ?? [])],
@@ -161,7 +154,7 @@ function formStateToQuest(f: QuestFormState, existing: Quest): Quest {
       resourceRef: existing.specific.resourceRef,
       resourceProperty: existing.specific.resourceProperty,
     },
-    measurable: { taskTypes: f.taskTypes },
+    measurable: f.taskTemplateRefs.length > 0 ? { taskTemplateRefs: f.taskTemplateRefs } : {},
     attainable: f.attainableText.trim() ? { text: f.attainableText.trim() } : {},
     relevant: f.relevantText.trim() ? { text: f.relevantText.trim() } : {},
     result: f.resultText.trim() ? { text: f.resultText.trim() } : {},
@@ -356,17 +349,22 @@ interface QuestFormPopupProps {
 function QuestFormPopup({ initialState, isEdit, onSave, onCancel }: QuestFormPopupProps) {
   const [f, setF] = useState<QuestFormState>(initialState);
   const [error, setError] = useState('');
+  const taskTemplates = useScheduleStore((s) => s.taskTemplates);
+  const availableTaskTemplates = [
+    ...Object.values(taskTemplates),
+    ...starterTaskTemplates.filter((template) => template.id && !(template.id in taskTemplates)),
+  ];
 
   function set<K extends keyof QuestFormState>(key: K, value: QuestFormState[K]) {
     setF((prev) => ({ ...prev, [key]: value }));
   }
 
-  function toggleTaskType(tt: TaskType) {
+  function toggleTaskTemplateRef(templateRef: string) {
     setF((prev) => ({
       ...prev,
-      taskTypes: prev.taskTypes.includes(tt)
-        ? prev.taskTypes.filter((x) => x !== tt)
-        : [...prev.taskTypes, tt],
+      taskTemplateRefs: prev.taskTemplateRefs.includes(templateRef)
+        ? prev.taskTemplateRefs.filter((x) => x !== templateRef)
+        : [...prev.taskTemplateRefs, templateRef],
     }));
   }
 
@@ -509,23 +507,25 @@ function QuestFormPopup({ initialState, isEdit, onSave, onCancel }: QuestFormPop
             />
           </Field>
 
-          {/* SMARTER M — measurable task types */}
-          <Field label="Measurable task types (SMARTER M)">
+          {/* SMARTER M — measurable task templates */}
+          <Field label="Measurable task templates (SMARTER M)">
             <div className="flex flex-wrap gap-1 mt-0.5">
-              {ALL_TASK_TYPES.map((tt) => {
-                const active = f.taskTypes.includes(tt);
+              {availableTaskTemplates.map((template) => {
+                if (!template.id) return null;
+                const active = f.taskTemplateRefs.includes(template.id);
                 return (
                   <button
-                    key={tt}
+                    key={template.id}
                     type="button"
-                    onClick={() => toggleTaskType(tt)}
+                    onClick={() => toggleTaskTemplateRef(template.id!)}
                     className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
                       active
                         ? 'bg-blue-500 text-white border-blue-500'
                         : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600'
                     }`}
+                    title={template.id}
                   >
-                    {tt}
+                    {template.name}
                   </button>
                 );
               })}
@@ -536,11 +536,13 @@ function QuestFormPopup({ initialState, isEdit, onSave, onCancel }: QuestFormPop
           <Field label="Condition type (SMARTER T)">
             <select
               value={f.conditionType}
-              onChange={(e) => set('conditionType', e.target.value as 'interval' | 'xpThreshold')}
+              onChange={(e) => set('conditionType', e.target.value as QuestFormState['conditionType'])}
               className={selectCls}
             >
               <option value="interval">interval</option>
               <option value="xpThreshold">xpThreshold</option>
+              <option value="taskCount">taskCount</option>
+              <option value="none">none</option>
             </select>
           </Field>
 
@@ -806,10 +808,10 @@ function QuestRow({
               <span className="text-gray-400">({quest.specific.sourceType})</span>
             </p>
           )}
-          {quest.measurable.taskTypes.length > 0 && (
+          {(quest.measurable.taskTemplateRefs?.length ?? 0) > 0 && (
             <p className="text-xs text-gray-600 dark:text-gray-300">
-              <span className="font-medium">Task types:</span>{' '}
-              {quest.measurable.taskTypes.join(', ')}
+              <span className="font-medium">Task templates:</span>{' '}
+              {quest.measurable.taskTemplateRefs?.join(', ')}
             </p>
           )}
           <p className="text-xs text-gray-600 dark:text-gray-300">

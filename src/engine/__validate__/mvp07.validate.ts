@@ -152,7 +152,7 @@ function makeQuest(options: {
       resourceRef:      null,
       resourceProperty: null,
     },
-    measurable: { taskTypes: ['action'] },
+    measurable: { taskTemplateRefs: [] },
     attainable: {},
     relevant:   {},
     timely: {

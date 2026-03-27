@@ -63,6 +63,11 @@ export interface Quest {
 
 export type ChainCompletionState = 'active' | 'complete' | 'failed';
 
+export interface ChainUnlockCondition {
+  type: 'immediate' | 'previousComplete' | 'manual' | 'date';
+  date?: string;
+}
+
 export interface Chain {
   name: string;
   description: string;
@@ -78,6 +83,8 @@ export interface Chain {
   plan: Record<string, unknown>;
   /** XP or item ref — granted on completion */
   chainReward: string;
+  /** Controls when this chain becomes available */
+  unlockCondition?: ChainUnlockCondition;
   /** Array of Quest objects — array-indexed (D27) */
   quests: Quest[];
   /** DQ5 stub — adaptive quests injected by Coach (future) */
@@ -98,6 +105,29 @@ export type SharedContactsStub = null;
 
 export type ActHabitat = 'habitats' | 'adventures';
 
+export interface ActToggle {
+  activeChainIndex: number;
+  autoAdvanceChains: boolean;
+  sleepWithChain: boolean;
+  /** STUB: MULTI-USER — additional toggle fields */
+}
+
+export const DEFAULT_ACT_TOGGLE: ActToggle = {
+  activeChainIndex: 0,
+  autoAdvanceChains: true,
+  sleepWithChain: true,
+};
+
+export function makeDefaultActToggle(): ActToggle {
+  return { ...DEFAULT_ACT_TOGGLE };
+}
+
+export function makeDefaultChainUnlockCondition(chainIndex: number): ChainUnlockCondition {
+  return chainIndex === 0
+    ? { type: 'immediate' }
+    : { type: 'previousComplete' };
+}
+
 export interface Act {
   /** uuid — only Act gets a uuid in the quest hierarchy (D27) */
   id: string;
@@ -116,7 +146,7 @@ export interface Act {
   /** ACTS C — trackedTaskRefs and routineRefs (D07, D08) */
   commitment: ActCommitment;
   /** ACTS T — gating logic stub — BUILD-time (D08) */
-  toggle: Record<string, unknown>;
+  toggle: ActToggle | null;
   completionState: ActCompletionState;
   /** STUB: MULTI-USER — stores contact refs shared into this Act when the MULTI-USER chapter is enabled. */
   sharedContacts: SharedContactsStub;

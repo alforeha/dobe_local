@@ -17,7 +17,7 @@ import type { RecurrenceRule } from '../taskTemplate';
  * xpThreshold  — fires when the qualifying XP amount is reached.
  * taskCount    — fires when tracked task/event count reaches threshold (D76).
  */
-export type MarkerConditionType = 'interval' | 'xpThreshold' | 'taskCount';
+export type MarkerConditionType = 'interval' | 'xpThreshold' | 'taskCount' | 'none';
 
 /**
  * Trigger source for non-rollover Marker evaluation (D80).

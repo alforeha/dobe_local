@@ -217,6 +217,7 @@ export function evaluateQuestSpecific(quest: Quest, completedTask: Task): boolea
  */
 export function evaluateMarkerCondition(marker: Marker, currentUserXp: number): boolean {
   if (!marker.activeState) return false;
+  if (marker.conditionType === 'none') return false;
   if (marker.conditionType !== 'xpThreshold') return false;
   if (marker.xpThreshold === null) return false;
   const baseline = marker.xpAtLastFire ?? 0;
@@ -278,10 +279,10 @@ export function deriveQuestProgress(quest: Quest): number {
  * Estimate next check-in date as a proxy for Quest.timely.projectedFinish.
  *
  * Q01 DECISION — Option B applied (pending PM confirmation):
- *   Only PlannedEvents whose taskList includes a TaskTemplate with taskType
- *   in Quest.measurable.taskTypes contribute to the XP rate estimate.
+ *   Only PlannedEvents whose taskList includes a TaskTemplate referenced in
+ *   Quest.measurable.taskTemplateRefs contribute to the XP rate estimate.
  *   To switch to Option A (all active PlannedEvents), remove the measurable
- *   taskType filter below.
+ *   template-ref filter below.
  *
  * interval path:
  *   Returns the nextFire date of the first active Marker, or null.
@@ -293,7 +294,7 @@ export function deriveQuestProgress(quest: Quest): number {
  *   Returns null when no qualifying events are found in the store.
  *   Note: taskTemplates in the store are user custom only (D34). System
  *   templates from the Coach bundle are not visible here — the function will
- *   return null for quests that reference only system-provided task types.
+ *   return null for quests that reference only system-provided task templates.
  */
 export function computeProjectedFinish(quest: Quest): string | null {
   if (quest.completionState !== 'active') return null;
@@ -311,7 +312,8 @@ export function computeProjectedFinish(quest: Quest): string | null {
     const user = useUserStore.getState().user;
     if (!user) return null;
 
-    const measurableTypes = new Set(quest.measurable.taskTypes);
+    const measurableTemplateRefs = new Set(quest.measurable.taskTemplateRefs ?? []);
+    if (measurableTemplateRefs.size === 0) return null;
 
     // Option B: only PlannedEvents with qualifying task types
     let dailyXP = 0;
@@ -320,7 +322,7 @@ export function computeProjectedFinish(quest: Quest): string | null {
 
       const sessionXP = pe.taskList.reduce((sum, templateRef) => {
         const template = scheduleStore.taskTemplates[templateRef];
-        if (!template || !measurableTypes.has(template.taskType)) return sum;
+        if (!template || !measurableTemplateRefs.has(templateRef)) return sum;
         return sum + Object.values(template.xpAward).reduce((s, v) => s + v, 0) + (template.xpBonus ?? 0);
       }, 0);
 
